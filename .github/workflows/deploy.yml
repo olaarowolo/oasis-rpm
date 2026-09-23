@@ -26,6 +26,15 @@ jobs:
             exit 1
           }
 
+      - name: Prepare Laravel writable directories
+        run: |
+          mkdir -p bootstrap/cache \
+            storage/framework/cache \
+            storage/framework/sessions \
+            storage/framework/testing \
+            storage/logs
+          chmod -R u+rwX bootstrap/cache storage
+
       - name: Install Composer dependencies
         run: |
           composer install \
