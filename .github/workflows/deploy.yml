@@ -74,9 +74,9 @@ jobs:
           cat > clear-view-cache.php <<'PHP'
           <?php
 
-          require __DIR__ . '/vendor/autoload.php';
+          require __DIR__ . '/../vendor/autoload.php';
 
-          $app = require_once __DIR__ . '/bootstrap/app.php';
+          $app = require_once __DIR__ . '/../bootstrap/app.php';
 
           $kernel = $app->make(
               Illuminate\Contracts\Console\Kernel::class
@@ -90,7 +90,7 @@ jobs:
           curl --fail --silent --show-error \
             -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
             -T clear-view-cache.php \
-            "$FTP_ENDPOINT/clear-view-cache.php"
+            "$FTP_ENDPOINT/public/clear-view-cache.php"
 
           curl --fail --silent --show-error \
             "$DEPLOY_URL/clear-view-cache.php"
@@ -98,6 +98,6 @@ jobs:
           curl --fail --silent --show-error \
             -u "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
             -X DELETE \
-            "$FTP_ENDPOINT/clear-view-cache.php"
+            "$FTP_ENDPOINT/public/clear-view-cache.php"
 
           rm -f clear-view-cache.php
