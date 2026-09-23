@@ -12,46 +12,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: "8.3"
-          extensions: mbstring, xml, ctype, iconv, mysql, zip
-          coverage: none
-
-      - name: Verify Composer lockfile exists
-        run: |
-          test -f composer.lock || {
-            echo "composer.lock is required for deployment. Commit the lockfile and push again." >&2
-            exit 1
-          }
-
-      - name: Prepare Laravel writable directories
-        run: |
-          mkdir -p bootstrap/cache \
-            storage/framework/cache \
-            storage/framework/cache/data \
-            storage/framework/sessions \
-            storage/framework/testing \
-            storage/framework/views \
-            storage/logs
-
-          find storage/framework/cache -mindepth 1 -type f ! -name '.gitkeep' -delete
-          find storage/framework/sessions -mindepth 1 -type f ! -name '.gitkeep' -delete
-          find storage/framework/testing -mindepth 1 -type f ! -name '.gitkeep' -delete
-          find storage/framework/views -mindepth 1 -type f ! -name '.gitkeep' -delete
-          find storage/logs -mindepth 1 -type f ! -name '.gitkeep' -delete
-
-          touch bootstrap/cache/.gitkeep \
-            storage/framework/cache/.gitkeep \
-            storage/framework/cache/data/.gitkeep \
-            storage/framework/sessions/.gitkeep \
-            storage/framework/testing/.gitkeep \
-            storage/framework/views/.gitkeep \
-            storage/logs/.gitkeep
-
-          chmod -R u+rwX bootstrap/cache storage
-
       # ---------------------------------------------------------
       # Deploy application
       # ---------------------------------------------------------
