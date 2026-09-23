@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Mail\PortalEmail;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -78,11 +79,34 @@ class NotificationController extends BaseController
 
     public function getUnreadNotifications(Request $request)
     {
-        return $this->success([], 'Notifications retrieved successfully');
+        $user = $request->user();
+        if (!$user) {
+            return $this->error('User not authenticated', 401);
+        }
+
+        $notifications = Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->orderBy('created_at', 'desc')
+            ->take(50)
+            ->get();
+
+        return $this->success($notifications);
     }
 
     public function markAsRead(Request $request, $id)
     {
-        return $this->success(null, 'Notification marked as read');
+        $notification = Notification::find($id);
+        if (!$notification) {
+            return $this->error('Notification not found', 404);
+        }
+
+        $user = $request->user();
+        if ($notification->user_id !== $user->id) {
+            return $this->error('Unauthorized', 403);
+        }
+
+        $notification->markAsRead();
+
+        return $this->success($notification);
     }
 }

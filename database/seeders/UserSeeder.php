@@ -29,22 +29,15 @@ class UserSeeder extends Seeder
             [
                 'university_id' => 1,
                 'email' => 'olaarowolo.ng@gmail.com',
-                'password' => 'Admin@2026',
-                'name' => 'Dr. Olasunkanmi Arowolo',
-                'role' => 'admin',
-            ],
-            [
-                'university_id' => 1,
-                'email' => 'supervisor@lasu.edu.ng',
                 'password' => 'Supervisor@2026',
-                'name' => 'Dr. Arowolo',
+                'name' => 'Olasunkanmi Arowolo, PhD',
                 'role' => 'supervisor',
             ],
             [
                 'university_id' => 1,
                 'email' => 'olaarowolo.uk@gmail.com',
                 'password' => 'Supervisor@2026',
-                'name' => 'Dr. Olasunkanmi Arowolo',
+                'name' => 'Dr. Olasunkanmi Arowolo (UK)',
                 'role' => 'supervisor',
             ],
             [

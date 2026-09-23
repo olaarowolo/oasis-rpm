@@ -25,7 +25,7 @@ class PasswordResetController extends BaseController
         $user = User::where('email', $validated['email'])->first();
 
         if (!$user) {
-            return $this->error('If email exists, reset link will be sent', 200);
+            return $this->success(null, 'If email exists, reset link will be sent');
         }
 
         // Check rate limiting
@@ -52,10 +52,7 @@ class PasswordResetController extends BaseController
         // Send reset email
         Mail::to($user->email)->send(new \App\Mail\PasswordResetMail($token, $user->name));
 
-        return $this->success([
-            'message' => 'If email exists, reset link will be sent',
-            'user_id' => $user->id,
-        ], 'Password reset link sent');
+        return $this->success(null, 'If email exists, reset link will be sent');
     }
 
     /**

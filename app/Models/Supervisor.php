@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class Supervisor extends Model
 {
     protected $fillable = [
-        'user_id', 'university_id', 'title', 'department', 'research_areas',
+        'user_id', 'university_id', 'title', 'department', 'research_areas', 'booking_url',
         'pin_code', 'passphrase', 'is_active', 'google_oauth_id'
     ];
 
@@ -28,16 +28,9 @@ class Supervisor extends Model
         return $this->belongsTo(University::class);
     }
 
-    public function students()
+    public function students(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        return $this->hasManyThrough(
-            Student::class,
-            User::class,
-            'university_id',
-            'university_id',
-            'university_id',
-            'university_id'
-        )->where('students.university_id', $this->university_id);
+        return $this->hasMany(Student::class, 'supervisor_id');
     }
 
     public function isActive(): bool

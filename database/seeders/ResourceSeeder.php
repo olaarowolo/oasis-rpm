@@ -10,53 +10,93 @@ class ResourceSeeder extends Seeder
     public function run(): void
     {
         $resources = [
-            // Stage 1 Resources
-            ['university_id' => 1, 'section' => 'Stage 1', 'type' => 'document', 'title' => 'Topic Selection Guide', 'stage' => 1, 'points' => 10],
-            ['university_id' => 1, 'section' => 'Stage 1', 'type' => 'video', 'title' => 'Research Topic Workshop', 'stage' => 1, 'points' => 15],
-            
-            // Stage 2 Resources
-            ['university_id' => 1, 'section' => 'Stage 2', 'type' => 'document', 'title' => 'Literature Review Framework', 'stage' => 2, 'points' => 15],
-            ['university_id' => 1, 'section' => 'Stage 2', 'type' => 'link', 'title' => 'Academic Database Access', 'stage' => 2, 'points' => 10],
-            
-            // Stage 3 Resources
-            ['university_id' => 1, 'section' => 'Stage 3', 'type' => 'document', 'title' => 'Chapter 1 Template', 'stage' => 3, 'points' => 20],
-            ['university_id' => 1, 'section' => 'Stage 3', 'type' => 'video', 'title' => 'Introduction Writing Tips', 'stage' => 3, 'points' => 15],
-            
-            // Stage 4 Resources
-            ['university_id' => 1, 'section' => 'Stage 4', 'type' => 'document', 'title' => 'Literature Review Template', 'stage' => 4, 'points' => 25],
-            ['university_id' => 1, 'section' => 'Stage 4', 'type' => 'quiz', 'title' => 'Citation Styles Quiz', 'stage' => 4, 'points' => 10],
+            [
+                'section' => 'Current Assignment',
+                'type' => 'video',
+                'title' => 'BSc Project Guide for Nigerian Students — Research Expectations Explained',
+                'url' => 'https://youtu.be/v26gZYpOvmQ',
+                'description' => 'Current assignment video 3.',
+                'sort_order' => 1,
+                'is_mandatory' => true,
+                'stage' => 1,
+                'points' => 10,
+            ],
+            [
+                'section' => 'Required Worksheets',
+                'type' => 'document',
+                'title' => 'rg-worksheet.pdf',
+                'url' => 'http://olaarowolo.com/OAsis-AA',
+                'description' => 'Research gap worksheet (RG).',
+                'sort_order' => 1,
+                'is_mandatory' => true,
+                'stage' => 2,
+                'points' => 10,
+            ],
+            [
+                'section' => 'Required Worksheets',
+                'type' => 'document',
+                'title' => 'rge-worksheet.pdf',
+                'url' => 'http://olaarowolo.com/OAsis-AA',
+                'description' => 'Research gap worksheet extended (RGE).',
+                'sort_order' => 2,
+                'is_mandatory' => true,
+                'stage' => 2,
+                'points' => 10,
+            ],
+            [
+                'section' => 'Prerequisite Videos',
+                'type' => 'video',
+                'title' => 'How to Email Your Project Supervisor Correctly — Student Guide for Academic Emails',
+                'url' => 'https://youtu.be/yZ5murFFSJs',
+                'description' => 'Video 1 — must be completed.',
+                'sort_order' => 1,
+                'is_mandatory' => true,
+                'stage' => 2,
+                'points' => 10,
+            ],
+            [
+                'section' => 'Prerequisite Videos',
+                'type' => 'video',
+                'title' => 'Undergraduate Dissertation Blueprint — 12 Week Roadmap, Supervision Strategy and AI Ethics',
+                'url' => 'https://youtu.be/9LfcXS4wVzQ',
+                'description' => 'Video 2 — must be completed.',
+                'sort_order' => 2,
+                'is_mandatory' => true,
+                'stage' => 2,
+                'points' => 10,
+            ],
+            [
+                'section' => 'Prerequisite Videos',
+                'type' => 'video',
+                'title' => 'How to Email Your Project Supervisor Correctly — Student Guide for Academic Emails (Lesson 1)',
+                'url' => 'https://youtu.be/yZ5murFFSJs?is=pOJ99TyootbwwcN6',
+                'description' => 'Lesson 1 — supplementary.',
+                'sort_order' => 3,
+                'is_mandatory' => false,
+                'stage' => 2,
+                'points' => 5,
+            ],
         ];
 
-        foreach ($resources as $resource) {
-            Resource::create([
-                'university_id' => $resource['university_id'],
-                'section' => $resource['section'],
-                'type' => $resource['type'],
-                'title' => $resource['title'],
-                'url' => 'https://example.com/resources/' . strtolower(str_replace(' ', '-', $resource['title'])),
-                'description' => 'Resource for ' . $resource['title'],
-                'sort_order' => 0,
-                'is_mandatory' => true,
-                'stage' => $resource['stage'],
-                'points' => $resource['points']
-            ]);
-        }
-
-        // Replicate for UI
-        foreach ($resources as $resource) {
-            $resource['university_id'] = 2;
-            Resource::create([
-                'university_id' => 2,
-                'section' => $resource['section'],
-                'type' => $resource['type'],
-                'title' => $resource['title'],
-                'url' => 'https://example.com/resources/' . strtolower(str_replace(' ', '-', $resource['title'])),
-                'description' => 'Resource for ' . $resource['title'],
-                'sort_order' => 0,
-                'is_mandatory' => true,
-                'stage' => $resource['stage'],
-                'points' => $resource['points']
-            ]);
+        foreach ([1, 2] as $universityId) {
+            foreach ($resources as $resource) {
+                Resource::firstOrCreate(
+                    [
+                        'university_id' => $universityId,
+                        'section' => $resource['section'],
+                        'title' => $resource['title'],
+                    ],
+                    [
+                        'type' => $resource['type'],
+                        'url' => $resource['url'],
+                        'description' => $resource['description'],
+                        'sort_order' => $resource['sort_order'],
+                        'is_mandatory' => $resource['is_mandatory'],
+                        'stage' => $resource['stage'],
+                        'points' => $resource['points'],
+                    ]
+                );
+            }
         }
     }
 }

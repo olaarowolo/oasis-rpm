@@ -88,12 +88,13 @@
         </table>
     </div>
 
-    <div class="mt-6">
-        <button onclick="window.location.href='{{ route('student.archive.submit') }}'" 
-            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded font-semibold"
+    <div class="mt-6 flex items-center gap-4">
+        <button onclick="window.location.href='{{ route('student.dashboard') }}'"
+            class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             @if($defenseScore < 70) disabled @endif>
             Submit for Defense
         </button>
+        <a href="{{ route('student.dashboard') }}" class="text-sm text-blue-600 hover:text-blue-900">&larr; Back to Dashboard</a>
     </div>
 </div>
 @endsection

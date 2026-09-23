@@ -17,14 +17,18 @@ class ResourceController extends BaseController
     public function listStudentResources(Request $request)
     {
         $student = Student::find(session('student_id'));
+        $universityId = session('university_id');
 
-        $resources = Resource::where([
-            ['university_id', '=', session('university_id')],
-            ['stage', '<=', $student->current_stage],
-        ])->orderBy('stage')->orderBy('sort_order')->get();
+        // The student-facing UI renders all university resources and then locks
+        // future-stage items client-side. Filtering here by current stage removes
+        // valid resources from the page and triggers the empty-state message.
+        $resources = Resource::where('university_id', $universityId)
+            ->orderBy('stage')
+            ->orderBy('sort_order')
+            ->get();
 
         $resourcesWithProgress = $resources->map(function ($resource) use ($student) {
-            $progress = $resource->progress()->where('student_id', $student->id)->first();
+            $progress = $student ? $resource->progress()->where('student_id', $student->id)->first() : null;
             return [
                 'id' => $resource->id,
                 'section' => $resource->section,
@@ -81,14 +85,11 @@ class ResourceController extends BaseController
             ]
         );
 
-        // Find supervisor for this university
-        $supervisor = Supervisor::where('university_id', session('university_id'))
-            ->where('is_active', true)
-            ->first();
+        // Notify the assigned supervisor for this student.
+        $student = Student::find(session('student_id'));
+        $supervisor = $student ? $student->supervisor()->with('user')->first() : null;
 
         if ($supervisor && $supervisor->user) {
-            // Get student info for the email
-            $student = Student::find(session('student_id'));
             
             // Send email notification to supervisor
             $mail = new PortalEmail('resource-submitted', [
@@ -126,7 +127,9 @@ class ResourceController extends BaseController
         $resources = ResourceProgress::where([
             ['university_id', '=', session('university_id')],
             ['status', '=', 'submitted'],
-        ])->with('resource', 'student')->orderBy('submitted_date')->get();
+        ])->whereHas('student', function ($query) {
+            $query->where('supervisor_id', session('supervisor_id'));
+        })->with('resource', 'student')->orderBy('submitted_date')->get();
 
         return $this->success($resources, 'Pending resources retrieved successfully');
     }
@@ -134,6 +137,9 @@ class ResourceController extends BaseController
     public function listResourceSubmissions(Request $request)
     {
         $resources = ResourceProgress::where('university_id', session('university_id'))
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
             ->with('resource', 'student')
             ->orderBy('submitted_date', 'desc')
             ->get();
@@ -149,7 +155,7 @@ class ResourceController extends BaseController
         ]);
 
         $progress = ResourceProgress::find($id);
-        if (!$progress || $progress->university_id != session('university_id')) {
+        if (!$progress || $progress->university_id != session('university_id') || ($progress->student && $progress->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Resource progress not found', 404);
         }
 
@@ -204,7 +210,7 @@ class ResourceController extends BaseController
         ]);
 
         $progress = ResourceProgress::find($id);
-        if (!$progress || $progress->university_id != session('university_id')) {
+        if (!$progress || $progress->university_id != session('university_id') || ($progress->student && $progress->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Resource progress not found', 404);
         }
 

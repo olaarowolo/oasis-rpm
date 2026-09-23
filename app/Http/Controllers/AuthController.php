@@ -21,6 +21,8 @@ class AuthController extends BaseController
 {
     protected $authGuard;
 
+    private const ADMIN_MFA_TTL = 300;
+
     public function __construct()
     {
         parent::__construct();
@@ -79,9 +81,11 @@ class AuthController extends BaseController
             'user_id' => $student->user_id,
             'student_id' => $student->id,
             'name' => $student->full_name,
+            'role' => 'student',
             'matric_number' => $student->matric_number,
             'university_id' => $university->id,
             'current_stage' => $student->current_stage,
+            'dashboard_url' => $this->getDashboardUrl('student'),
             'token' => $this->generateSecureToken($student->user_id),
         ], 'Student login successful');
     }
@@ -93,6 +97,7 @@ class AuthController extends BaseController
     {
         $validated = $request->validate([
             'university_code' => 'required|string',
+            'email' => 'sometimes|email',
             'pin_code' => 'required|string',
             'passphrase' => 'required|string',
         ]);
@@ -104,10 +109,28 @@ class AuthController extends BaseController
             return $this->error('Invalid credentials', 401);
         }
 
-        $supervisor = Supervisor::where([
-            ['university_id', '=', $university->id],
-            ['is_active', '=', true],
-        ])->first();
+        // If email is provided, find the specific supervisor by email
+        if (!empty($validated['email'])) {
+            $supervisorUser = User::where('email', $validated['email'])
+                ->where('role', 'supervisor')
+                ->first();
+
+            if (!$supervisorUser) {
+                $this->simulateSlowOperation();
+                return $this->error('Invalid credentials', 401);
+            }
+
+            $supervisor = Supervisor::where('user_id', $supervisorUser->id)
+                ->where('university_id', $university->id)
+                ->where('is_active', true)
+                ->first();
+        } else {
+            // Fallback: find first active supervisor at university (legacy behavior)
+            $supervisor = Supervisor::where([
+                ['university_id', '=', $university->id],
+                ['is_active', '=', true],
+            ])->first();
+        }
 
         if (!$supervisor) {
             $this->simulateSlowOperation();
@@ -142,9 +165,11 @@ class AuthController extends BaseController
         return $this->success([
             'user_id' => $supervisor->user_id,
             'supervisor_id' => $supervisor->id,
+            'email' => $supervisor->user->email,
             'name' => $supervisor->user->name,
             'title' => $supervisor->title,
             'university_id' => $university->id,
+            'dashboard_url' => $this->getDashboardUrl('supervisor'),
             'token' => $this->generateSecureToken($supervisor->user_id),
         ], 'Supervisor login successful');
     }
@@ -159,10 +184,9 @@ class AuthController extends BaseController
             'password' => 'required|string',
         ]);
 
-        $user = User::where([
-            ['email', '=', $validated['email']],
-            ['role', '=', 'admin'],
-        ])->first();
+        $user = User::where('email', $validated['email'])
+            ->whereIn('role', ['admin', 'super_admin'])
+            ->first();
 
         // Use hash_equals for timing-safe password check
         if (!$user || !Hash::check($validated['password'], $user->password)) {
@@ -180,18 +204,84 @@ class AuthController extends BaseController
         session([
             'university_id' => $user->university_id,
             'user_id' => $user->id,
-            'role' => 'admin',
+            'role' => $user->role,
             'last_activity' => time(),
             'session_started' => time(),
         ]);
 
         return $this->success([
+            'requires_mfa' => true,
+            'challenge_id' => $this->createAdminMfaChallenge($request, $user),
             'user_id' => $user->id,
             'name' => $user->name,
-            'role' => 'admin',
+            'role' => $user->role,
             'university_id' => $user->university_id,
+            'dashboard_url' => $this->getDashboardUrl($user->role),
+            'mfa_expires_in' => self::ADMIN_MFA_TTL,
+        ], 'Admin credentials verified. MFA required');
+    }
+
+    /**
+     * Verify admin MFA challenge and finalize login.
+     */
+    public function verifyAdminMfa(Request $request)
+    {
+        $validated = $request->validate([
+            'challenge_id' => 'required|string',
+            'code' => 'required|string|max:10',
+        ]);
+
+        $cacheKey = $this->getAdminMfaCacheKey($validated['challenge_id']);
+        $challenge = Cache::get($cacheKey);
+
+        if (!$challenge) {
+            return $this->error('Invalid or expired verification code', 400);
+        }
+
+        if (($challenge['expires_at'] ?? now()->subMinute()) < now()) {
+            Cache::forget($cacheKey);
+            return $this->error('Verification code expired', 400);
+        }
+
+        if (($challenge['ip'] ?? null) !== $request->ip()) {
+            return $this->error('Verification code cannot be used from a different IP address', 403);
+        }
+
+        if (($challenge['user_agent'] ?? null) !== $request->userAgent()) {
+            return $this->error('Verification code cannot be used from a different device', 403);
+        }
+
+        if (!hash_equals((string) ($challenge['code'] ?? ''), trim($validated['code']))) {
+            return $this->error('Invalid verification code', 401);
+        }
+
+        $user = User::find($challenge['user_id'] ?? null);
+        if (!$user) {
+            Cache::forget($cacheKey);
+            return $this->error('User not found', 404);
+        }
+
+        Cache::forget($cacheKey);
+
+        $request->session()->regenerate();
+        session([
+            'university_id' => $user->university_id,
+            'user_id' => $user->id,
+            'role' => $user->role,
+            'last_activity' => time(),
+            'session_started' => time(),
+            'mfa_verified' => true,
+            'mfa_verified_at' => now()->timestamp,
+        ]);
+
+        return $this->success([
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'role' => $user->role,
+            'university_id' => $user->university_id,
+            'dashboard_url' => $this->getDashboardUrl($user->role),
             'token' => $this->generateSecureToken($user->id),
-        ], 'Admin login successful');
+        ], 'MFA verified successfully');
     }
 
     /**
@@ -235,6 +325,7 @@ class AuthController extends BaseController
             'name' => $user->name,
             'role' => 'super_admin',
             'university_id' => $user->university_id,
+            'dashboard_url' => $this->getDashboardUrl('super_admin'),
             'token' => $this->generateSecureToken($user->id),
         ], 'Super Admin login successful');
     }
@@ -250,7 +341,7 @@ class AuthController extends BaseController
 
         // Find student by email in either Student.email or User.email
         $student = Student::where('email', $validated['email'])->first();
-        
+
         if (!$student) {
             // Try to find by User email instead
             $user = User::where('email', $validated['email'])->first();
@@ -258,14 +349,14 @@ class AuthController extends BaseController
                 $student = Student::where('user_id', $user->id)->first();
             }
         }
-        
+
         if (!$student) {
-            return $this->error('Student account not found with this email', 404);
+            return $this->success(null, 'If an account matches this email, a verification code will be sent');
         }
-        
+
         $user = $student->user;
         if (!$user || $user->role !== 'student') {
-            return $this->error('Student account not found with this email', 404);
+            return $this->success(null, 'If an account matches this email, a verification code will be sent');
         }
 
         // Generate cryptographically secure OTP
@@ -307,7 +398,7 @@ class AuthController extends BaseController
 
         // Find student by email in either Student.email or User.email
         $student = Student::where('email', $validated['email'])->first();
-        
+
         if (!$student) {
             // Try to find by User email instead
             $user = User::where('email', $validated['email'])->first();
@@ -315,14 +406,14 @@ class AuthController extends BaseController
                 $student = Student::where('user_id', $user->id)->first();
             }
         }
-        
+
         if (!$student) {
-            return $this->error('Student account not found', 404);
+            return $this->error('Verification code is invalid or has expired', 401);
         }
-        
+
         $user = $student->user;
         if (!$user || $user->role !== 'student') {
-            return $this->error('Invalid OTP request', 401);
+            return $this->error('Verification code is invalid or has expired', 401);
         }
 
         // Find the OTP (match against Student email or User email)
@@ -362,10 +453,143 @@ class AuthController extends BaseController
             'user_id' => $user->id,
             'student_id' => $student->id,
             'name' => $student->full_name,
+            'role' => 'student',
             'email' => $student->email ?? $user->email,
             'university_id' => $user->university_id,
             'current_stage' => $student->current_stage,
+            'dashboard_url' => $this->getDashboardUrl('student'),
             'token' => $this->generateSecureToken($user->id),
+        ], 'OTP verified successfully');
+    }
+
+    /**
+     * Send an email-verification OTP to a supervisor before they enter credentials.
+     * Mirrors the student pre-verification step. Does NOT log the user in.
+     */
+    public function sendSupervisorOtp(Request $request)
+    {
+        return $this->sendRoleVerificationOtp($request, 'supervisor');
+    }
+
+    /**
+     * Verify the supervisor email OTP. On success the credentials step is revealed.
+     * Does NOT log the user in.
+     */
+    public function verifySupervisorOtp(Request $request)
+    {
+        return $this->verifyRoleVerificationOtp($request, 'supervisor');
+    }
+
+    /**
+     * Send an email-verification OTP to an admin/super_admin before they enter credentials.
+     * Mirrors the student pre-verification step. Does NOT log the user in.
+     */
+    public function sendAdminOtp(Request $request)
+    {
+        return $this->sendRoleVerificationOtp($request, 'admin');
+    }
+
+    /**
+     * Verify the admin/super_admin email OTP. On success the credentials step is revealed.
+     * Does NOT log the user in.
+     */
+    public function verifyAdminOtp(Request $request)
+    {
+        return $this->verifyRoleVerificationOtp($request, 'admin');
+    }
+
+    /**
+     * Shared helper: send an email-verification OTP for a given login role.
+     * Always returns a generic message to avoid account enumeration.
+     */
+    private function sendRoleVerificationOtp(Request $request, string $role)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $genericMessage = 'If an account matches this email, a verification code will be sent';
+
+        // For "admin" the entered email may belong to an admin or super_admin.
+        $allowedRoles = $role === 'admin' ? ['admin', 'super_admin'] : [$role];
+
+        $user = User::where('email', $validated['email'])
+            ->whereIn('role', $allowedRoles)
+            ->first();
+
+        if (!$user) {
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
+        // Generate a cryptographically secure OTP
+        $code = $this->generateSecureOtp();
+        $expiresAt = now()->addMinutes(5);
+
+        // Remove any existing verification OTPs for this user/role
+        OtpToken::where('user_id', $user->id)->where('role', $role)->delete();
+
+        $otp = OtpToken::create([
+            'user_id' => $user->id,
+            'role' => $role,
+            'email' => $validated['email'],
+            'code' => $code,
+            'expires_at' => $expiresAt,
+        ]);
+
+        Mail::to($validated['email'])->send(new LoginOtpMail($code, $user->role, $user->name));
+
+        return $this->success([
+            'email' => $validated['email'],
+            'expires_at' => $otp->expires_at->toISOString(),
+        ], 'Verification code sent to your email');
+    }
+
+    /**
+     * Shared helper: verify an email-verification OTP for a given login role.
+     * On success the OTP is consumed but the user is NOT logged in; the
+     * credential step (loginSupervisor / loginAdmin) still runs afterwards.
+     */
+    private function verifyRoleVerificationOtp(Request $request, string $role)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $allowedRoles = $role === 'admin' ? ['admin', 'super_admin'] : [$role];
+
+        $user = User::where('email', $validated['email'])
+            ->whereIn('role', $allowedRoles)
+            ->first();
+
+        if (!$user) {
+            $this->simulateSlowOperation();
+            return $this->error('Verification code is invalid or has expired', 401);
+        }
+
+        $otp = OtpToken::where('user_id', $user->id)
+            ->where('role', $role)
+            ->whereIn('email', [$validated['email'], $user->email])
+            ->whereNull('used_at')
+            ->latest()
+            ->first();
+
+        if (!$otp || $otp->expires_at->isPast()) {
+            return $this->error('Verification code has expired or is invalid', 401);
+        }
+
+        // Timing-safe comparison
+        if (!hash_equals((string) $otp->code, (string) $validated['otp'])) {
+            return $this->error('Invalid verification code', 401);
+        }
+
+        $otp->used_at = now();
+        $otp->save();
+
+        return $this->success([
+            'email' => $validated['email'],
+            'verified' => true,
         ], 'OTP verified successfully');
     }
 
@@ -398,7 +622,7 @@ class AuthController extends BaseController
 
             $university = University::where('code', $universityCode)->first();
             if (!$university) {
-                return $this->error('University not found', 404);
+                return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             $student = Student::where([
@@ -408,7 +632,7 @@ class AuthController extends BaseController
             ])->first();
 
             if (!$student) {
-                return $this->error('Invalid student credentials', 401);
+                return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             $user = User::find($student->user_id);
@@ -424,21 +648,21 @@ class AuthController extends BaseController
 
             $user = User::where('email', $email)->where('role', 'supervisor')->first();
             if (!$user) {
-                return $this->error('Invalid supervisor credentials', 401);
+                return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             $university = University::where('code', $universityCode)->first();
             if (!$university || $university->id !== $user->university_id) {
-                return $this->error('University mismatch', 401);
+                return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             $supervisor = Supervisor::where('user_id', $user->id)->where('university_id', $university->id)->first();
             if (!$supervisor) {
-                return $this->error('Supervisor account not found', 401);
+                return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             if (!Hash::check($pinCode, $supervisor->pin_code) || !Hash::check($passphrase, $supervisor->passphrase)) {
-                return $this->error('Invalid supervisor credentials', 401);
+                return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
         } else {
             $email = trim((string) ($validated['email'] ?? ''));
@@ -448,12 +672,12 @@ class AuthController extends BaseController
 
             $user = User::where('email', $email)->where('role', $validated['role'])->first();
             if (!$user || !Hash::check($validated['password'], $user->password)) {
-                return $this->error('Invalid credentials for this role', 401);
+                return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
         }
 
         if (!$user || $user->role !== $validated['role']) {
-            return $this->error('Invalid credentials for this role', 401);
+            return $this->success(null, 'If the provided details match an account, a verification code will be sent');
         }
 
         if (!empty($validated['university_code'])) {
@@ -500,7 +724,7 @@ class AuthController extends BaseController
 
         $user = User::where('email', $validated['email'])->first();
         if (!$user || $user->role !== $validated['role']) {
-            return $this->error('Invalid OTP request', 401);
+            return $this->error('Verification code is invalid or has expired', 401);
         }
 
         $otp = OtpToken::where('user_id', $user->id)
@@ -511,12 +735,12 @@ class AuthController extends BaseController
             ->first();
 
         if (!$otp || $otp->expires_at->isPast()) {
-            return $this->error('Verification code has expired or is invalid', 401);
+            return $this->error('Verification code is invalid or has expired', 401);
         }
 
         // Use hash_equals for timing-safe comparison
         if (!hash_equals((string) $otp->code, (string) $validated['otp'])) {
-            return $this->error('Invalid verification code', 401);
+            return $this->error('Verification code is invalid or has expired', 401);
         }
 
         $otp->used_at = now();
@@ -539,6 +763,7 @@ class AuthController extends BaseController
             'role' => $validated['role'],
             'email' => $user->email,
             'university_id' => $user->university_id,
+            'dashboard_url' => $this->getDashboardUrl($validated['role']),
             'token' => $this->generateSecureToken($user->id),
         ], 'OTP verified successfully');
     }
@@ -618,14 +843,15 @@ class AuthController extends BaseController
     {
         switch ($role) {
             case 'super_admin':
+                return route('super-admin.dashboard', [], false);
             case 'admin':
-                return route('admin.dashboard');
+                return route('admin.dashboard', [], false);
             case 'supervisor':
-                return route('supervisor.dashboard');
+                return route('supervisor.dashboard', [], false);
             case 'student':
-                return route('student.dashboard');
+                return route('student.dashboard', [], false);
             default:
-                return route('login');
+                return route('login', [], false);
         }
     }
 
@@ -648,7 +874,11 @@ class AuthController extends BaseController
         // Regenerate CSRF token
         $request->session()->regenerateToken();
 
-        return $this->success(null, 'Logout successful');
+        if ($request->is('api/*') || $request->expectsJson() || $request->wantsJson()) {
+            return $this->success(null, 'Logout successful');
+        }
+
+        return redirect()->route('login');
     }
 
     /**
@@ -657,6 +887,36 @@ class AuthController extends BaseController
     private function generateSecureToken(int $userId): string
     {
         return hash('sha256', $userId . random_int(1000000, 9999999) . microtime(true) . config('app.key'));
+    }
+
+    /**
+     * Create and store a pending MFA challenge for an admin login.
+     */
+    private function createAdminMfaChallenge(Request $request, User $user): string
+    {
+        $challengeId = Str::random(40);
+        $code = (string) random_int(100000, 999999);
+
+        Cache::put($this->getAdminMfaCacheKey($challengeId), [
+            'user_id' => $user->id,
+            'email' => $user->email,
+            'code' => $code,
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'expires_at' => now()->addSeconds(self::ADMIN_MFA_TTL),
+        ], self::ADMIN_MFA_TTL);
+
+        Mail::to($user->email)->send(new LoginOtpMail($code, $user->role, $user->name));
+
+        return $challengeId;
+    }
+
+    /**
+     * Build the cache key for admin MFA challenges.
+     */
+    private function getAdminMfaCacheKey(string $challengeId): string
+    {
+        return 'admin_mfa:' . $challengeId;
     }
 
     /**

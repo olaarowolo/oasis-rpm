@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redis;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use App\Models\User;
 use App\Models\OtpToken;
 use Illuminate\Support\Str;
@@ -86,10 +87,33 @@ class AuthGuard
             return false;
         }
 
+        // Ensure session role is still aligned with persisted user role.
+        if ((string) $user->role !== (string) $role) {
+            Log::warning('Session role mismatch detected', [
+                'user_id' => $userId,
+                'session_role' => $role,
+                'database_role' => $user->role,
+                'ip' => $request->ip(),
+            ]);
+            $request->session()->flush();
+            return false;
+        }
+
         // Check if user is active
         if ($role === 'student') {
             $student = \App\Models\Student::where('user_id', $userId)->first();
             if ($student && $student->status !== 'active' && $student->status !== 'graduated') {
+                return false;
+            }
+        }
+
+        if ($role === 'supervisor') {
+            $supervisorId = $request->session()->get('supervisor_id');
+            if (!$supervisorId) {
+                return false;
+            }
+            $supervisor = \App\Models\Supervisor::where('id', $supervisorId)->where('user_id', $userId)->first();
+            if (!$supervisor) {
                 return false;
             }
         }
@@ -105,7 +129,11 @@ class AuthGuard
         $lastActivity = $request->session()->get('last_activity');
         $now = time();
 
-        if (!$lastActivity || ($now - $lastActivity) > self::SESSION_TTL) {
+        if (!$lastActivity) {
+            return false;
+        }
+
+        if (($now - $lastActivity) > self::SESSION_TTL) {
             return true;
         }
 
@@ -141,10 +169,10 @@ class AuthGuard
      */
     protected function requiresMfa(Request $request): bool
     {
-        $userLevel = $request->session()->get('mfa_required');
+        $role = $request->session()->get('role');
 
-        // Require MFA for admin roles
-        return in_array($request->session()->get('role'), ['admin', 'super_admin']);
+        // Require MFA for admin roles once the login has been initiated and the session is established.
+        return in_array($role, ['admin', 'super_admin'], true) && !$request->session()->has('mfa_verified');
     }
 
     /**
@@ -290,7 +318,7 @@ class AuthGuard
                     . "If you did not attempt to log in, please contact your system administrator immediately.";
 
                 // Send email notification
-                \Mail::raw($message, function ($mail) use ($user, $subject) {
+                Mail::raw($message, function ($mail) use ($user, $subject) {
                     $mail->to($user->email)
                         ->subject($subject);
                 });

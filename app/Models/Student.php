@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Student extends Model
 {
     protected $fillable = [
-        'user_id', 'university_id', 'matric_number', 'lastname', 'full_name',
+        'user_id', 'university_id', 'supervisor_id', 'matric_number', 'lastname', 'full_name',
         'email', 'degree_level', 'phone', 'research_topic', 'research_topic_approved_date',
         'current_stage', 'progress_percentage', 'points_earned', 'status',
         'account_status', 'personal_drive_url', 'last_meeting_date',
@@ -32,6 +32,11 @@ class Student extends Model
     public function university(): BelongsTo
     {
         return $this->belongsTo(University::class);
+    }
+
+    public function supervisor(): BelongsTo
+    {
+        return $this->belongsTo(Supervisor::class);
     }
 
     public function proposals(): HasMany

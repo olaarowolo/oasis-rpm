@@ -30,9 +30,9 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                             {{ $user->role === 'super_admin' ? 'bg-purple-100 text-purple-800' :
-                               $user->role === 'admin' ? 'bg-green-100 text-green-800' :
-                               $user->role === 'supervisor' ? 'bg-blue-100 text-blue-800' :
-                               'bg-gray-100 text-gray-800' }}">
+                               ($user->role === 'admin' ? 'bg-green-100 text-green-800' :
+                               ($user->role === 'supervisor' ? 'bg-blue-100 text-blue-800' :
+                               'bg-gray-100 text-gray-800')) }}">
                             {{ ucfirst($user->role) }}
                         </span>
                     </td>

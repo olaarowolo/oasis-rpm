@@ -7,6 +7,7 @@ use App\Models\ArchiveSubmission;
 use App\Models\Supervisor;
 use App\Models\Student;
 use App\Models\StageHistory;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -42,6 +43,7 @@ class SupervisorController extends BaseController
         $student = Student::create([
             'user_id' => $user->id,
             'university_id' => $supervisor->university_id,
+            'supervisor_id' => $supervisor->id,
             'matric_number' => $validated['matric_number'],
             'lastname' => $validated['lastname'],
             'full_name' => $validated['full_name'],
@@ -87,7 +89,9 @@ class SupervisorController extends BaseController
     public function dashboard(Request $request)
     {
         $supervisor = Supervisor::with('user')->find(session('supervisor_id'));
-        $students = Student::where('university_id', session('university_id'))->get();
+        $students = Student::where('university_id', session('university_id'))
+            ->where('supervisor_id', session('supervisor_id'))
+            ->get();
 
         $stats = [
             'total_students' => $students->count(),
@@ -102,7 +106,12 @@ class SupervisorController extends BaseController
 
     public function getProfile(Request $request)
     {
-        $supervisor = Supervisor::find(session('supervisor_id'));
+        $supervisor = Supervisor::with(['user', 'university'])->find(session('supervisor_id'));
+
+        if (!$supervisor) {
+            return $this->error('Supervisor not found', 404);
+        }
+
         return $this->success($supervisor->makeHidden(['pin_code', 'passphrase']), 'Profile retrieved');
     }
 
@@ -112,6 +121,7 @@ class SupervisorController extends BaseController
             'title' => 'sometimes|string|max:50',
             'department' => 'sometimes|string|max:100',
             'research_areas' => 'sometimes|string|nullable',
+            'booking_url' => 'sometimes|url|nullable',
         ]);
 
         $supervisor = Supervisor::find(session('supervisor_id'));
@@ -123,6 +133,7 @@ class SupervisorController extends BaseController
     public function getRoster(Request $request)
     {
         $students = Student::where('university_id', session('university_id'))
+            ->where('supervisor_id', session('supervisor_id'))
             ->with('user', 'proposals', 'meetingLogs')
             ->get();
 
@@ -134,6 +145,7 @@ class SupervisorController extends BaseController
         $student = Student::where([
             ['id', '=', $id],
             ['university_id', '=', session('university_id')],
+            ['supervisor_id', '=', session('supervisor_id')],
         ])->with('proposals', 'meetingLogs', 'resourceProgress', 'stageHistory')
             ->first();
 
@@ -153,7 +165,7 @@ class SupervisorController extends BaseController
         ]);
 
         $student = Student::find($id);
-        if (!$student || $student->university_id != session('university_id')) {
+        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -173,6 +185,22 @@ class SupervisorController extends BaseController
             'note' => $validated['note'] ?? "Moved from stage {$oldStage}",
         ]);
 
+        $student->loadMissing('user');
+
+        $studentEmail = $student->user?->email ?: $student->email;
+        if ($studentEmail) {
+            $mail = new PortalEmail('stage-advanced', [
+                'studentName' => $student->full_name,
+                'stage' => $validated['stage'],
+                'total' => $maxStage,
+                'stageName' => config('research.stages')[$validated['stage'] - 1]['name'] ?? 'Stage ' . $validated['stage'],
+                'note' => $validated['note'] ?: 'Your research stage has been updated by your supervisor.',
+                'url' => route('student.dashboard'),
+            ]);
+
+            Mail::to($studentEmail)->send($mail);
+        }
+
         return $this->success($student, 'Student stage updated successfully');
     }
 
@@ -188,7 +216,7 @@ class SupervisorController extends BaseController
         }
 
         $student = Student::find($id);
-        if (!$student || $student->university_id != session('university_id')) {
+        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -207,7 +235,7 @@ class SupervisorController extends BaseController
         $validated = $request->validate(['student_id' => 'required|integer']);
 
         $student = Student::find($validated['student_id']);
-        if (!$student || $student->university_id != session('university_id')) {
+        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -258,7 +286,7 @@ class SupervisorController extends BaseController
         ]);
 
         $student = Student::find($validated['student_id']);
-        if (!$student || $student->university_id != session('university_id')) {
+        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -277,6 +305,9 @@ class SupervisorController extends BaseController
     public function listPendingArchiveSubmissions(Request $request)
     {
         $rows = ArchiveSubmission::where('university_id', session('university_id'))
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
             ->whereIn('submission_status', [
                 ArchiveSubmission::STATUS_SUBMITTED,
                 ArchiveSubmission::STATUS_UNDER_REVIEW,
@@ -291,6 +322,9 @@ class SupervisorController extends BaseController
     public function getArchiveSubmission(Request $request, $id)
     {
         $archive = ArchiveSubmission::where('university_id', session('university_id'))
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
             ->with('student', 'reviewer')
             ->find($id);
 
@@ -308,7 +342,11 @@ class SupervisorController extends BaseController
             'reviewer_note' => 'sometimes|string|nullable',
         ]);
 
-        $archive = ArchiveSubmission::where('university_id', session('university_id'))->find($id);
+        $archive = ArchiveSubmission::where('university_id', session('university_id'))
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
+            ->find($id);
         if (!$archive) {
             return $this->error('Archive submission not found', 404);
         }
@@ -342,7 +380,11 @@ class SupervisorController extends BaseController
             'reviewer_note' => 'required|string|min:5',
         ]);
 
-        $archive = ArchiveSubmission::where('university_id', session('university_id'))->find($id);
+        $archive = ArchiveSubmission::where('university_id', session('university_id'))
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
+            ->find($id);
         if (!$archive) {
             return $this->error('Archive submission not found', 404);
         }

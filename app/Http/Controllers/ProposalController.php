@@ -44,11 +44,8 @@ class ProposalController extends BaseController
         $student = Student::find(session('student_id'));
         $user = $student->user;
         
-        // Find supervisor for this student - try to find by matching university
-        // and get the first active supervisor
-        $supervisor = Supervisor::where('university_id', $student->university_id)
-            ->where('is_active', true)
-            ->first();
+        // Send the submission to the student's assigned supervisor.
+        $supervisor = $student->supervisor()->with('user')->first();
         
         if ($supervisor && $supervisor->user) {
             // Send email notification to supervisor
@@ -81,7 +78,7 @@ class ProposalController extends BaseController
     public function getProposal(Request $request, $id)
     {
         $proposal = Proposal::find($id);
-        if (!$proposal || $proposal->university_id != session('university_id')) {
+        if (!$proposal || $proposal->university_id != session('university_id') || ($proposal->student && $proposal->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Proposal not found', 404);
         }
         return $this->success($proposal, 'Proposal retrieved successfully');
@@ -90,7 +87,7 @@ class ProposalController extends BaseController
     public function updateProposal(Request $request, $id)
     {
         $proposal = Proposal::find($id);
-        if (!$proposal || $proposal->university_id != session('university_id')) {
+        if (!$proposal || $proposal->university_id != session('university_id') || ($proposal->student && $proposal->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Proposal not found', 404);
         }
         if ($proposal->status !== 'pending') {
@@ -112,7 +109,9 @@ class ProposalController extends BaseController
         $proposals = Proposal::where([
             ['university_id', '=', session('university_id')],
             ['status', '=', 'pending'],
-        ])->with('student')->get();
+        ])->whereHas('student', function ($query) {
+            $query->where('supervisor_id', session('supervisor_id'));
+        })->with('student')->get();
 
         return $this->success($proposals, 'Pending proposals retrieved successfully');
     }
@@ -124,7 +123,7 @@ class ProposalController extends BaseController
         ]);
 
         $proposal = Proposal::find($id);
-        if (!$proposal || $proposal->university_id != session('university_id')) {
+        if (!$proposal || $proposal->university_id != session('university_id') || ($proposal->student && $proposal->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Proposal not found', 404);
         }
 
@@ -170,7 +169,7 @@ class ProposalController extends BaseController
         ]);
 
         $proposal = Proposal::find($id);
-        if (!$proposal || $proposal->university_id != session('university_id')) {
+        if (!$proposal || $proposal->university_id != session('university_id') || ($proposal->student && $proposal->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Proposal not found', 404);
         }
 
@@ -210,7 +209,7 @@ class ProposalController extends BaseController
         ]);
 
         $proposal = Proposal::find($id);
-        if (!$proposal || $proposal->university_id != session('university_id')) {
+        if (!$proposal || $proposal->university_id != session('university_id') || ($proposal->student && $proposal->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Proposal not found', 404);
         }
 

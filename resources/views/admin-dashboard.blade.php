@@ -1,87 +1,38 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50 text-slate-800">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Super Admin Portal | TheOAsis Research Supervision System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
-          colors: {
-            academic: {
-              50: '#f0f4f8',
-              100: '#d9e2ec',
-              500: '#102a43',
-              600: '#0b69a3',
-              700: '#035388',
-              800: '#003e6b',
-              900: '#002744',
-            },
-            lasu: {
-              gold: '#f59e0b',
-              blue: '#002744',
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03); }
-    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 4px; }
-  </style>
-</head>
-<body class="h-full flex flex-col font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-  
-  <!-- ================= HEADER ================= -->
-  <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      
-      <!-- Brand & Title -->
+<x-layouts.app title="Admin Dashboard | TheOAsis Research Supervision System">
+  @php
+    $adminName = $currentUser->name ?? 'Admin';
+    $adminEmail = $currentUser->email ?? 'admin@example.com';
+    $adminInitials = collect(explode(' ', $adminName))->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('');
+    $adminInitials = $adminInitials ?: 'AD';
+    $roleLabel = $currentUser?->isSuperAdmin() ? 'Super Admin' : 'Admin';
+  @endphp
+
+  <header class="sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
       <div class="flex items-center gap-3 min-w-0">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-academic-900 via-academic-800 to-amber-600 flex items-center justify-center text-white shadow-md">
-          <i class="fa-solid fa-newspaper text-lg"></i>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-academic-900 via-academic-800 to-amber-500 flex items-center justify-center text-white shadow-md">
+          <i class="fa-solid fa-layer-group text-lg"></i>
         </div>
         <div class="min-w-0">
-          <h1 class="font-bold text-lg text-slate-900 dark:text-white leading-tight flex items-center gap-2">
-            <span class="truncate">Research Supervision Portal</span>
-            <span class="hidden xs:inline text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300 font-bold">LASU</span>
-          </h1>
-          <p class="text-[11px] text-slate-500 dark:text-slate-400">System Administration Portal</p>
+          <h1 class="font-bold text-lg text-slate-900 dark:text-white leading-tight truncate">Admin Dashboard</h1>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">Dynamic operations view for user access, settings, and platform oversight</p>
         </div>
       </div>
 
-      <!-- User Profile -->
       <div class="flex items-center gap-3">
-        <!-- Role Badge -->
-        <div class="px-3 py-1.5 rounded-lg bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-bold flex items-center gap-2">
-          <i class="fa-solid fa-user-shield"></i>
-          <span>Super Admin</span>
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+          <i class="fa-solid fa-circle-check"></i>
+          Live data
         </div>
-
-        <!-- User Avatar -->
         <div class="flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-700">
-          <div id="user-avatar" class="w-9 h-9 rounded-full bg-academic-800 text-amber-400 border border-amber-500/30 flex items-center justify-center text-sm font-bold shadow-sm">
-            OA
+          <div class="w-9 h-9 rounded-full bg-academic-800 text-white border border-white/10 flex items-center justify-center text-sm font-bold shadow-sm">
+            {{ $adminInitials }}
           </div>
-          <div class="text-left">
-            <p class="text-xs font-semibold text-slate-800 dark:text-slate-100 leading-tight">Dr. O. Arowolo</p>
-            <p class="text-[10px] text-violet-600 dark:text-violet-400 font-medium">Super Admin</p>
+          <div class="text-left leading-tight">
+            <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">{{ $adminName }}</p>
+            <p class="text-[10px] text-slate-500 dark:text-slate-400">{{ $roleLabel }}</p>
           </div>
         </div>
-
-        <!-- Logout Button -->
         <button onclick="logout()" class="p-2 rounded-lg text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition" title="Log out">
           <i class="fa-solid fa-right-from-bracket text-base"></i>
         </button>
@@ -89,250 +40,193 @@
     </div>
   </header>
 
-  <!-- ================= MAIN CONTENT ================= -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-    
-    <!-- Welcome Banner -->
-    <div class="bg-gradient-to-r from-slate-900 via-academic-900 to-academic-800 rounded-2xl p-6 text-white shadow-lg">
-      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 class="text-2xl font-bold">Welcome, Super Admin</h2>
-          <p class="text-slate-300 mt-1">Manage all universities, users, system configuration, and monitor system health.</p>
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <section class="rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-br from-slate-950 via-academic-900 to-academic-800 overflow-hidden relative">
+      <div class="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.55),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.35),_transparent_28%)]"></div>
+      <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+        <div class="max-w-2xl space-y-4">
+          <p class="text-xs uppercase tracking-[0.3em] text-amber-300 font-semibold">Administrative overview</p>
+          <h2 class="text-3xl sm:text-4xl font-black leading-tight">Welcome, {{ $adminName }}</h2>
+          <p class="text-slate-300 text-sm sm:text-base">Manage users, configure system settings, and keep the supervision platform aligned across universities and departments.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <span class="px-3 py-1 rounded-full bg-violet-500 text-white text-xs font-bold">Super Admin Portal</span>
-          <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-bold flex items-center gap-1.5">
-            <i class="fa-solid fa-circle-check"></i> Online
-          </span>
+        <div class="flex flex-wrap gap-2">
+          <span class="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold">{{ $stats['total_universities'] ?? 0 }} universities</span>
+          <span class="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold">{{ $stats['active_users'] ?? 0 }} active users</span>
+          <span class="px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs font-semibold">{{ $stats['students'] ?? 0 }} students</span>
         </div>
       </div>
-    </div>
+    </section>
 
-    <!-- System Overview Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Total Universities</p>
-            <p class="mt-2 text-3xl font-bold text-academic-900 dark:text-white">0</p>
-          </div>
-          <div class="w-12 h-12 rounded-xl bg-academic-100 dark:bg-academic-900/30 text-academic-600 dark:text-academic-400 flex items-center justify-center">
-            <i class="fa-solid fa-building-columns text-xl"></i>
-          </div>
-        </div>
-      </div>
+    <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <article class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Universities</p>
+        <p class="mt-2 text-3xl font-black text-slate-900 dark:text-white">{{ $stats['total_universities'] ?? 0 }}</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Configured institutions in the system</p>
+      </article>
+      <article class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Users</p>
+        <p class="mt-2 text-3xl font-black text-emerald-700 dark:text-emerald-400">{{ $stats['active_users'] ?? 0 }}</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Users currently enabled for access</p>
+      </article>
+      <article class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Supervisors</p>
+        <p class="mt-2 text-3xl font-black text-amber-700 dark:text-amber-400">{{ $stats['supervisors'] ?? 0 }}</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Authorized supervision staff</p>
+      </article>
+      <article class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Pending Approvals</p>
+        <p class="mt-2 text-3xl font-black text-rose-700 dark:text-rose-400">{{ $stats['pending_approvals'] ?? 0 }}</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Students or supervisors needing review</p>
+      </article>
+    </section>
 
-      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Active Users</p>
-            <p class="mt-2 text-3xl font-bold text-emerald-900 dark:text-emerald-400">0</p>
-          </div>
-          <div class="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-            <i class="fa-solid fa-users text-xl"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Supervisors</p>
-            <p class="mt-2 text-3xl font-bold text-amber-900 dark:text-amber-400">0</p>
-          </div>
-          <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
-            <i class="fa-solid fa-user-shield text-xl"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div class="flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-wider">Students</p>
-            <p class="mt-2 text-3xl font-bold text-blue-900 dark:text-blue-400">0</p>
-          </div>
-          <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-            <i class="fa-solid fa-user-graduate text-xl"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- System Controls Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      
-      <!-- Universities & Tenants -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="bg-slate-50 dark:bg-slate-700/50 p-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-            <i class="fa-solid fa-building-columns text-academic-600 dark:text-academic-400"></i>
-            Universities &amp; Tenants
-          </h3>
-        </div>
-        <div class="p-4 space-y-3">
-          <button onclick="window.location.href='/admin/universities'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left">
-            <i class="fa-solid fa-building w-8 h-8 rounded-lg bg-academic-100 dark:bg-academic-900/30 text-academic-600 dark:text-academic-400 flex items-center justify-center text-sm"></i>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">Manage Universities</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Add, edit, or configure university tenants</p>
+    <section class="grid grid-cols-1 xl:grid-cols-[1.25fr_0.75fr] gap-6">
+      <div class="space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <a href="{{ route('admin.users') }}" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition group">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">User Management</p>
+                <h3 class="mt-2 text-lg font-bold text-slate-900 dark:text-white">Manage Users</h3>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Add, edit, and remove admins, supervisors, and students.</p>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 flex items-center justify-center group-hover:scale-105 transition">
+                <i class="fa-solid fa-user-gear"></i>
+              </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
-          <button onclick="window.location.href='/admin/config'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left">
-            <i class="fa-solid fa-sliders w-8 h-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 flex items-center justify-center text-sm"></i>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">System Configuration</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Configure global system settings</p>
+          </a>
+
+          <a href="{{ route('admin.config') }}" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition group">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">System Configuration</p>
+                <h3 class="mt-2 text-lg font-bold text-slate-900 dark:text-white">Configure Platform</h3>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Adjust Gemini, email, and platform settings.</p>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 flex items-center justify-center group-hover:scale-105 transition">
+                <i class="fa-solid fa-sliders"></i>
+              </div>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
+          </a>
+
+          <a href="{{ route('admin.users', ['role' => 'supervisor']) }}" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition group">
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Quick Filter</p>
+                <h3 class="mt-2 text-lg font-bold text-slate-900 dark:text-white">Supervisors</h3>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Jump straight to the supervisory roster.</p>
+              </div>
+              <div class="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 flex items-center justify-center group-hover:scale-105 transition">
+                <i class="fa-solid fa-chalkboard-user"></i>
+              </div>
+            </div>
+          </a>
         </div>
+
+        <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-lg text-slate-900 dark:text-white">Recent Users</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Latest accounts visible in the current admin scope</p>
+            </div>
+            <a href="{{ route('admin.users') }}" class="text-sm font-semibold text-academic-700 dark:text-academic-300 hover:underline">Open user manager</a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+              <thead class="bg-slate-50 dark:bg-slate-900/40 text-left text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <tr>
+                  <th class="px-5 py-3">Name</th>
+                  <th class="px-5 py-3">Role</th>
+                  <th class="px-5 py-3">University</th>
+                  <th class="px-5 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 dark:divide-slate-700 bg-white dark:bg-slate-800">
+                @forelse($recentUsers as $user)
+                  <tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition">
+                    <td class="px-5 py-4">
+                      <div class="font-semibold text-slate-900 dark:text-white">{{ $user->name }}</div>
+                      <div class="text-xs text-slate-500 dark:text-slate-400">{{ $user->email }}</div>
+                    </td>
+                    <td class="px-5 py-4 text-sm">
+                      <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $user->isSuperAdmin() ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300' : ($user->isAdmin() ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : ($user->isSupervisor() ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200')) }}">
+                        {{ ucfirst(str_replace('_', ' ', $user->role)) }}
+                      </span>
+                    </td>
+                    <td class="px-5 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $user->university->name ?? 'N/A' }}</td>
+                    <td class="px-5 py-4 text-sm">
+                      <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $user->is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' }}">
+                        {{ $user->is_active ? 'Active' : 'Inactive' }}
+                      </span>
+                    </td>
+                  </tr>
+                @empty
+                  <tr>
+                    <td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">No users found in the current scope.</td>
+                  </tr>
+                @endforelse
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
-      <!-- User Access & Roles -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="bg-slate-50 dark:bg-slate-700/50 p-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-            <i class="fa-solid fa-users-gear text-emerald-600 dark:text-emerald-400"></i>
-            User Access &amp; Roles
-          </h3>
-        </div>
-        <div class="p-4 space-y-3">
-          <button onclick="window.location.href='/admin/users'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left">
-            <i class="fa-solid fa-user-gear w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm"></i>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">Manage Users</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Create users and assign roles</p>
+      <aside class="space-y-6">
+        <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-lg text-slate-900 dark:text-white">Gemini Assistant</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">System tools and AI configuration access</p>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
-          <button onclick="window.location.href='/admin/roles'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left">
-            <i class="fa-solid fa-shield-halved w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm"></i>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">Roles & Permissions</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Configure role-based access control</p>
+            <div class="w-11 h-11 rounded-xl bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 flex items-center justify-center">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- Security & Audit -->
-      <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-        <div class="bg-slate-50 dark:bg-slate-700/50 p-4 border-b border-slate-200 dark:border-slate-700">
-          <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-            <i class="fa-solid fa-shield-halved text-rose-600 dark:text-rose-400"></i>
-            Security &amp; Audit
-          </h3>
-        </div>
-        <div class="p-4 space-y-3">
-          <button onclick="window.location.href='/admin/audit-logs'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left">
-            <i class="fa-solid fa-book-open w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center text-sm"></i>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">Audit Logs</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">View system activity and user actions</p>
+          </div>
+          <div class="mt-4 rounded-xl border border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-900/40 space-y-3">
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-500 dark:text-slate-400">Selected scope</span>
+              <span class="font-semibold text-slate-900 dark:text-white">{{ $selectedUniversityId ? 'University #' . $selectedUniversityId : 'All universities' }}</span>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
-          <button onclick="window.location.href='/admin/resources'" class="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition text-left">
-            <i class="fa-solid fa-database w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-sm"></i>
-            <div class="flex-1">
-              <p class="text-sm font-semibold text-slate-900 dark:text-white">Resource Management</p>
-              <p class="text-xs text-slate-500 dark:text-slate-400">Manage system resources and archives</p>
+            <div class="flex items-center justify-between text-sm">
+              <span class="text-slate-500 dark:text-slate-400">Status</span>
+              <span class="font-semibold text-emerald-600 dark:text-emerald-400">Ready</span>
             </div>
-            <i class="fa-solid fa-chevron-right text-slate-400"></i>
-          </button>
-        </div>
-      </div>
-    </div>
+            <a href="{{ route('admin.config') }}#ai-settings" class="inline-flex items-center gap-2 text-sm font-semibold text-academic-700 dark:text-academic-300 hover:underline">
+              Open AI settings
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+        </section>
 
-    <!-- System Status -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
-            <i class="fa-solid fa-server text-academic-600 dark:text-academic-400"></i>
-            System Status
-          </h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Real-time system health monitoring</p>
-        </div>
-        <span class="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
-          <i class="fa-solid fa-circle text-[8px] animate-pulse"></i>
-          System Operational
-        </span>
-      </div>
-      
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700">
-          <p class="text-xs text-slate-500 dark:text-slate-400">Database</p>
-          <p class="mt-1 flex items-center gap-2">
-            <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
-            <span class="text-sm font-semibold text-slate-900 dark:text-white">Connected</span>
-          </p>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700">
-          <p class="text-xs text-slate-500 dark:text-slate-400">Mail Server</p>
-          <p class="mt-1 flex items-center gap-2">
-            <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
-            <span class="text-sm font-semibold text-slate-900 dark:text-white">Active</span>
-          </p>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700">
-          <p class="text-xs text-slate-500 dark:text-slate-400">Session Storage</p>
-          <p class="mt-1 flex items-center gap-2">
-            <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
-            <span class="text-sm font-semibold text-slate-900 dark:text-white">Ready</span>
-          </p>
-        </div>
-        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-200 dark:border-slate-700">
-          <p class="text-xs text-slate-500 dark:text-slate-400">API Status</p>
-          <p class="mt-1 flex items-center gap-2">
-            <i class="fa-solid fa-circle-check text-emerald-500 text-xs"></i>
-            <span class="text-sm font-semibold text-slate-900 dark:text-white">Online</span>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="bg-gradient-to-r from-violet-900 to-academic-900 rounded-2xl p-6 text-white shadow-lg">
-      <h3 class="font-bold text-lg mb-4">Quick Actions</h3>
-      <div class="flex flex-wrap gap-3">
-        <button onclick="window.location.href='/admin/users/new'" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold transition flex items-center gap-2">
-          <i class="fa-solid fa-plus"></i> Create User
-        </button>
-        <button onclick="window.location.href='/admin/config/import'" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold transition flex items-center gap-2">
-          <i class="fa-solid fa-file-import"></i> Import Data
-        </button>
-        <button onclick="window.location.href='/admin/audit-logs/export'" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold transition flex items-center gap-2">
-          <i class="fa-solid fa-file-export"></i> Export Logs
-        </button>
-        <button onclick="window.location.href='/admin/system/backup'" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 text-sm font-semibold transition flex items-center gap-2">
-          <i class="fa-solid fa-database"></i> Create Backup
-        </button>
-      </div>
-    </div>
-
+        <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5">
+          <h3 class="font-bold text-lg text-slate-900 dark:text-white">System Snapshot</h3>
+          <div class="mt-4 space-y-3">
+            <div class="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-900/40 px-4 py-3">
+              <span class="text-sm text-slate-500 dark:text-slate-400">Database</span>
+              <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Connected</span>
+            </div>
+            <div class="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-900/40 px-4 py-3">
+              <span class="text-sm text-slate-500 dark:text-slate-400">API</span>
+              <span class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Operational</span>
+            </div>
+            <div class="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-900/40 px-4 py-3">
+              <span class="text-sm text-slate-500 dark:text-slate-400">Admin email</span>
+              <span class="text-sm font-semibold text-slate-900 dark:text-white truncate max-w-[12rem]">{{ $adminEmail }}</span>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
   </main>
 
-  <script>
-    // Logout function
-    function logout() {
-      if (confirm('Are you sure you want to log out?')) {
-        // Add your logout logic here
-        // This would typically call the backend logout endpoint
-        // and redirect to the login page
-        console.log('Logout functionality would be implemented here');
-      }
-    }
+  <form id="logout-form" method="POST" action="/logout" class="hidden">
+    @csrf
+  </form>
 
-    // Load user data on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      // You can fetch user data from the backend here
-      // if needed for dynamic content
-      console.log('Super Admin Dashboard loaded successfully');
-    });
+  <script>
+    function logout() {
+      const form = document.getElementById('logout-form');
+      if (form) form.submit();
+    }
   </script>
-</body>
-</html>
+</x-layouts.app>

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Student;
+use App\Models\Supervisor;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -13,6 +14,11 @@ class StudentSeeder extends Seeder
     {
         // Clear existing students
         Student::truncate();
+
+        // Get supervisor by email
+        $supervisorUser = User::where('email', 'olaarowolo.ng@gmail.com')->first();
+        $supervisor = $supervisorUser ? Supervisor::where('user_id', $supervisorUser->id)->first() : null;
+        $supervisorId = $supervisor?->id;
 
         // ============ NEW STUDENTS FOR DR. OLAAROWOLO (olaarowolo.ng@gmail.com) ============
         // Supervisor: Dr. Olasunkanmi Arowolo (olaarowolo.ng@gmail.com)
@@ -90,7 +96,7 @@ class StudentSeeder extends Seeder
                 'progress_percentage' => 5,
             ],
             [
-                'full_name' => 'Sunday Aro',
+                'full_name' => 'Olasunkanmi Arowolo',
                 'matric_number' => '100910031',
                 'email' => 'olasunkanmiarowolo@gmail.com',
                 'phone' => '08000000000',
@@ -226,6 +232,7 @@ class StudentSeeder extends Seeder
                 ['user_id' => $user->id],
                 [
                     'user_id' => $user->id,
+                    'supervisor_id' => $supervisorId,
                     'university_id' => 1,
                     'matric_number' => $studentData['matric_number'],
                     'lastname' => explode(' ', $studentData['full_name'])[count(explode(' ', $studentData['full_name'])) - 1],
@@ -245,8 +252,8 @@ class StudentSeeder extends Seeder
             );
         }
 
-        // ============ TEST STUDENT FOR OLAAROWOLO.UK (olaarowolo.uk@gmail.com) ============
-        // Supervisor: Dr. Olasunkanmi Arowolo (UK)
+        // ============ TEST STUDENT FOR OLAAROWOLO.NG (olaarowolo.ng@gmail.com) ============
+        // Supervisor: Dr. Olasunkanmi Arowolo (olaarowolo.ng@gmail.com)
         
         $user = User::updateOrCreate(
             ['email' => 'oamediakraft@gmail.com'],
@@ -262,6 +269,7 @@ class StudentSeeder extends Seeder
             ['user_id' => $user->id],
             [
                 'user_id' => $user->id,
+                'supervisor_id' => $supervisorId,
                 'university_id' => 1,
                 'matric_number' => 'LASU/TEST/001',
                 'lastname' => 'Test',

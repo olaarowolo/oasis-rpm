@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('title')->default('Dr.');
             $table->string('department');
             $table->text('research_areas')->nullable();
+            $table->text('booking_url')->nullable();
             $table->string('pin_code');
             $table->string('passphrase');
             $table->boolean('is_active')->default(true);

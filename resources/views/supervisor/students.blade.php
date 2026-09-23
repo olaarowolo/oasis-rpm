@@ -50,13 +50,13 @@
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                             {{ $student->status === 'active' ? 'bg-green-100 text-green-800' :
-                               $student->status === 'suspended' ? 'bg-red-100 text-red-800' :
-                               'bg-gray-100 text-gray-800' }}">
+                               ($student->status === 'suspended' ? 'bg-red-100 text-red-800' :
+                               'bg-gray-100 text-gray-800') }}">
                             {{ ucfirst($student->status) }}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <a href="{{ route('supervisor.students.view', $student->id) }}" class="text-blue-600 hover:text-blue-900">View</a>
+                        <a href="{{ url('/api/supervisor/students/' . $student->id) }}" class="text-blue-600 hover:text-blue-900">View</a>
                     </td>
                 </tr>
                 @endforeach

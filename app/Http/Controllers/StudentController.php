@@ -12,7 +12,7 @@ class StudentController extends BaseController
 {
     public function dashboard(Request $request)
     {
-        $student = Student::with('proposals', 'meetingLogs', 'resourceProgress', 'archiveSubmission')
+        $student = Student::with('proposals', 'meetingLogs', 'resourceProgress', 'archiveSubmission', 'supervisor.user')
             ->find(session('student_id'));
 
         if (!$student) {
@@ -23,6 +23,14 @@ class StudentController extends BaseController
 
         return $this->success([
             'student' => $student,
+            'supervisor' => $student->supervisor ? [
+                'id' => $student->supervisor->id,
+                'name' => $student->supervisor->user?->name ?? '',
+                'title' => $student->supervisor->title,
+                'department' => $student->supervisor->department,
+                'email' => $student->supervisor->user?->email ?? '',
+                'university_id' => $student->supervisor->university_id,
+            ] : null,
             'current_stage' => $currentStage,
             'progress' => [
                 'percentage' => $student->progress_percentage,

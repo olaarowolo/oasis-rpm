@@ -62,7 +62,7 @@ Route::middleware([CheckUniversity::class])->group(function () {
     // ========================================================
     // STUDENT ROUTES (EnsureStudentLogin middleware)
     // ========================================================
-    Route::middleware([EnsureStudentLogin::class])->prefix('/student')->group(function () {
+    Route::middleware(['app.auth', EnsureStudentLogin::class])->prefix('/student')->group(function () {
         // Dashboard & Profile
         Route::get('/dashboard', [StudentController::class, 'dashboard']);
         Route::get('/roadmap', [StudentController::class, 'getRoadmap']);
@@ -103,7 +103,7 @@ Route::middleware([CheckUniversity::class])->group(function () {
     // ========================================================
     // SUPERVISOR ROUTES (EnsureSupervisorLogin middleware)
     // ========================================================
-    Route::middleware([EnsureSupervisorLogin::class])->prefix('/supervisor')->group(function () {
+    Route::middleware(['app.auth', EnsureSupervisorLogin::class])->prefix('/supervisor')->group(function () {
         // Dashboard & Profile
         Route::get('/dashboard', [SupervisorController::class, 'dashboard']);
         Route::get('/profile', [SupervisorController::class, 'getProfile']);
@@ -158,7 +158,7 @@ Route::middleware([CheckUniversity::class])->group(function () {
     // ========================================================
     // ADMIN ROUTES (EnsureAdminLogin middleware)
     // ========================================================
-    Route::middleware([EnsureAdminLogin::class])->prefix('/admin')->group(function () {
+    Route::middleware(['app.auth', EnsureAdminLogin::class])->prefix('/admin')->group(function () {
         // Universities
         Route::get('/universities', [AdminController::class, 'listUniversities']);
         Route::post('/universities', [AdminController::class, 'createUniversity']);

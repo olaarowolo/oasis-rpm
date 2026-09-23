@@ -42,10 +42,8 @@ class MeetingLogController extends BaseController
         $student = Student::find(session('student_id'));
         $user = $student->user;
         
-        // Find supervisor for this student (via same university)
-        $supervisor = Supervisor::where('university_id', session('university_id'))
-            ->where('is_active', true)
-            ->first();
+        // Find the assigned supervisor for this student.
+        $supervisor = $student->supervisor()->with('user')->first();
         
         if ($supervisor && $supervisor->user) {
             // Send email notification to supervisor
@@ -78,7 +76,7 @@ class MeetingLogController extends BaseController
     public function getMeetingLog(Request $request, $id)
     {
         $meeting = MeetingLog::find($id);
-        if (!$meeting || $meeting->university_id != session('university_id')) {
+        if (!$meeting || $meeting->university_id != session('university_id') || ($meeting->student && $meeting->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Meeting log not found', 404);
         }
         return $this->success($meeting, 'Meeting log retrieved successfully');
@@ -87,7 +85,7 @@ class MeetingLogController extends BaseController
     public function updateMeetingLog(Request $request, $id)
     {
         $meeting = MeetingLog::find($id);
-        if (!$meeting || $meeting->university_id != session('university_id')) {
+        if (!$meeting || $meeting->university_id != session('university_id') || ($meeting->student && $meeting->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Meeting log not found', 404);
         }
         if (!$meeting->canEdit()) {
@@ -113,6 +111,9 @@ class MeetingLogController extends BaseController
     public function listAllMeetings(Request $request)
     {
         $meetings = MeetingLog::where('university_id', session('university_id'))
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
             ->with('student')
             ->orderBy('meeting_date', 'desc')
             ->get();
@@ -127,7 +128,7 @@ class MeetingLogController extends BaseController
         ]);
 
         $meeting = MeetingLog::find($id);
-        if (!$meeting || $meeting->university_id != session('university_id')) {
+        if (!$meeting || $meeting->university_id != session('university_id') || ($meeting->student && $meeting->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Meeting log not found', 404);
         }
 
@@ -163,7 +164,7 @@ class MeetingLogController extends BaseController
         ]);
 
         $meeting = MeetingLog::find($id);
-        if (!$meeting || $meeting->university_id != session('university_id')) {
+        if (!$meeting || $meeting->university_id != session('university_id') || ($meeting->student && $meeting->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Meeting log not found', 404);
         }
 
@@ -198,7 +199,7 @@ class MeetingLogController extends BaseController
         ]);
 
         $meeting = MeetingLog::find($id);
-        if (!$meeting || $meeting->university_id != session('university_id')) {
+        if (!$meeting || $meeting->university_id != session('university_id') || ($meeting->student && $meeting->student->supervisor_id != session('supervisor_id'))) {
             return $this->error('Meeting log not found', 404);
         }
 
@@ -213,6 +214,15 @@ class MeetingLogController extends BaseController
             'scheduled_date' => 'required|date',
             'meeting_mode' => 'required|in:in_person,virtual,hybrid',
         ]);
+
+        $student = Student::where('id', $validated['student_id'])
+            ->where('university_id', session('university_id'))
+            ->where('supervisor_id', session('supervisor_id'))
+            ->first();
+
+        if (!$student) {
+            return $this->error('Student not found', 404);
+        }
 
         $meeting = MeetingLog::create([
             'university_id' => session('university_id'),

@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Supervisor;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -10,35 +11,50 @@ class SupervisorSeeder extends Seeder
 {
     public function run(): void
     {
-        // Truncate existing supervisors to ensure clean state
         Supervisor::truncate();
 
-        // Supervisor 1: Dr. Olasunkanmi Arowolo (olaarowolo.ng@gmail.com)
-        // LASU - Department of Journalism & Media Studies
-        
-        Supervisor::create([
-            'user_id' => 17,
-            'university_id' => 1,
-            'title' => 'Dr.',
-            'department' => 'Journalism and Media Studies',
-            'research_areas' => 'Digital Media, Communication Studies, Journalism',
-            'pin_code' => Hash::make('2026'),
-            'passphrase' => Hash::make('LASU-Arowolo-2026'),
-            'is_active' => true
-        ]);
+        // olaarowolo.ng@gmail.com - NG Supervisor
+        $this->createSupervisorProfile(
+            'olaarowolo.ng@gmail.com',
+            'Lecturer & Research Supervisor',
+            'Dept. of Journalism & Media Studies',
+            'Journalism & Media Studies, Digital Media, Communication Studies',
+            'https://calendar.app.google/7hf8cS6m4yFj9f9y6',
+            'LASU-Arowolo-2026'
+        );
 
-        // Supervisor 2: Dr. Olasunkanmi Arowolo (olaarowolo.uk@gmail.com)
-        // LASU - Department of Journalism & Media Studies
-        
-        Supervisor::create([
-            'user_id' => 18,
-            'university_id' => 1,
-            'title' => 'Dr.',
-            'department' => 'Journalism and Media Studies',
-            'research_areas' => 'Digital Media, Communication Studies, Journalism',
-            'pin_code' => Hash::make('2026'),
-            'passphrase' => Hash::make('LASU-Arowolo-2026'),
-            'is_active' => true
-        ]);
+        // olaarowolo.uk@gmail.com - UK Supervisor (separate entity)
+        $this->createSupervisorProfile(
+            'olaarowolo.uk@gmail.com',
+            'Research Supervisor',
+            'UK Research Centre',
+            'Research Methods, Academic Writing, Graduate Studies',
+            'https://calendar.app.google/uk-booking-link',
+            'UK-Arowolo-2026'
+        );
+    }
+
+    protected function createSupervisorProfile(string $email, string $title, string $department, string $researchAreas, string $bookingUrl, string $passphrase): void
+    {
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return;
+        }
+
+        Supervisor::updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'user_id' => $user->id,
+                'university_id' => $user->university_id,
+                'title' => $title,
+                'department' => $department,
+                'research_areas' => $researchAreas,
+                'booking_url' => $bookingUrl,
+                'pin_code' => Hash::make('2026'),
+                'passphrase' => Hash::make($passphrase),
+                'is_active' => true,
+            ]
+        );
     }
 }

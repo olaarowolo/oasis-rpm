@@ -44,6 +44,17 @@ return [
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
+            // Some shared-hosting mail servers (older Exim on cPanel) complete
+            // the TLS handshake in a way PHP's strict defaults reject, surfacing
+            // as "SSL routines::wrong version number". Relaxing peer verification
+            // for the stream lets the implicit-SSL (port 465) handshake complete.
+            'stream' => [
+                'ssl' => [
+                    'verify_peer' => env('MAIL_VERIFY_PEER', false),
+                    'verify_peer_name' => env('MAIL_VERIFY_PEER', false),
+                    'allow_self_signed' => true,
+                ],
+            ],
         ],
 
         'ses' => [
