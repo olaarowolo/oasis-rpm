@@ -53,7 +53,11 @@
                             </td>
                             <td class="px-5 py-4 text-slate-500 dark:text-slate-400">{{ $resource->university->name ?? 'Platform' }}</td>
                             <td class="px-5 py-4 text-right">
-                                <a href="#" class="text-sm font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300">View</a>
+                                @if ($resource->url)
+                                    <a href="{{ $resource->url }}" target="_blank" rel="noopener noreferrer" class="text-sm font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300">Open Resource</a>
+                                @else
+                                    <span class="text-sm text-slate-400 dark:text-slate-500">No link</span>
+                                @endif
                             </td>
                         </tr>
                     @empty

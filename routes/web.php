@@ -167,10 +167,6 @@ Route::middleware(['app.auth', 'role:admin,super_admin'])->prefix('/admin')->gro
         return view('admin-dashboard', compact('currentUser', 'stats', 'recentUsers', 'selectedUniversityId'));
     })->name('admin.dashboard');
 
-    Route::get('/universities', function () {
-        return view('admin.universities');
-    })->name('admin.universities');
-
     Route::get('/users', function (Request $request) {
         $selectedUniversityId = $request->query('university_id', session('university_id'));
         $selectedRole = $request->query('role');

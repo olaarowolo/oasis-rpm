@@ -1123,9 +1123,11 @@ class SuperAdminWebController extends BaseController
     public function resources(): View
     {
         $resources = Resource::query()
+            ->with('university')
             ->orderBy('stage')
             ->orderBy('title')
-            ->get();
+            ->paginate(25)
+            ->withQueryString();
 
         return view('super-admin.resources', compact('resources'));
     }
