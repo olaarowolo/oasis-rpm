@@ -42,6 +42,8 @@ jobs:
           find storage/framework/views -mindepth 1 ! -name '.gitkeep' -delete
           find storage/logs -mindepth 1 ! -name '.gitkeep' -delete
 
+          mkdir -p storage/framework/cache/data
+
           touch bootstrap/cache/.gitkeep \
             storage/framework/cache/.gitkeep \
             storage/framework/cache/data/.gitkeep \
@@ -78,9 +80,7 @@ jobs:
 
           exclude: |
             **/.git/**
-            **/.git*
             **/.github/**
-            **/.github*
             **/node_modules/**
             **/tests/**
             **/.env
