@@ -1682,10 +1682,19 @@ class SuperAdminWebController extends BaseController
             return [];
         }
 
+        $stopwords = [
+            'a', 'an', 'and', 'are', 'as', 'at', 'by', 'dept', 'department', 'for', 'from',
+            'in', 'into', 'of', 'on', 'or', 'the', 'to', 'with', 'studies', 'study',
+        ];
+
         $normalized = preg_split('/[^a-z0-9]+/i', strtolower($value)) ?: [];
 
-        return array_values(array_unique(array_filter($normalized, function (string $token) {
-            return strlen($token) >= 2;
+        return array_values(array_unique(array_filter($normalized, function (string $token) use ($stopwords) {
+            if ((strlen($token) < 3 && $token !== 'ai') || in_array($token, $stopwords, true)) {
+                return false;
+            }
+
+            return true;
         })));
     }
 

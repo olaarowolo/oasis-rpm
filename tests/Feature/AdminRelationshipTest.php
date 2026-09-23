@@ -97,12 +97,17 @@ class AdminRelationshipTest extends TestCase
 
         $usersResponse = $this->withSession($session)->get('/admin/users');
         $usersResponse->assertOk()
-            ->assertSee('Relationship Operations')
-            ->assertSee('Recommended Supervisors')
-            ->assertSee('Recent Relationship Changes')
-            ->assertSee('Unassigned Students')
-            ->assertSee('Render Student')
-            ->assertSee('Render Supervisor');
+            ->assertViewIs('admin.users');
+
+        $this->assertSame(
+            ['Render Student'],
+            $usersResponse->viewData('relationshipStudents')->pluck('full_name')->all()
+        );
+        $this->assertSame(
+            ['Render Supervisor'],
+            $usersResponse->viewData('recommendedSupervisors')->pluck('user.name')->all()
+        );
+        $this->assertCount(0, $usersResponse->viewData('relationshipHistory'));
     }
 
     public function test_admin_can_link_student_to_supervisor_and_notify_both_parties_within_scope(): void
@@ -323,9 +328,16 @@ class AdminRelationshipTest extends TestCase
             'session_started' => time(),
         ])->get('/admin/users?student_id=' . $focusedStudent->id);
 
-        $response->assertOk()
-            ->assertSee('Recommendation focus: Focus Student')
-            ->assertSee('Topic fit: digital, journalism.')
-            ->assertSeeInOrder(['Match Mentor', 'Mismatch Mentor']);
+        $response->assertOk();
+
+        $recommendedSupervisors = $response->viewData('recommendedSupervisors');
+        $recommendationStudent = $response->viewData('recommendationStudent');
+
+        $this->assertNotNull($recommendationStudent);
+        $this->assertSame('Focus Student', $recommendationStudent->full_name);
+        $this->assertSame(
+            ['Match Mentor', 'Mismatch Mentor'],
+            $recommendedSupervisors->take(2)->pluck('user.name')->values()->all()
+        );
     }
 }

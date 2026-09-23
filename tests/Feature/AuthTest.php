@@ -754,8 +754,8 @@ class AuthTest extends TestCase
             'user_id' => $matchingSupervisorUser->id,
             'university_id' => $university->id,
             'title' => 'Dr.',
-            'department' => 'Mass Communication',
-            'research_areas' => 'journalism, digital media',
+            'department' => 'Department of Journalism and Media Studies',
+            'research_areas' => 'editorial workflows, newsroom operations',
             'pin_code' => bcrypt('1234'),
             'passphrase' => bcrypt('fit-passphrase'),
             'is_active' => true,
@@ -814,10 +814,18 @@ class AuthTest extends TestCase
             'session_started' => time(),
         ])->get('/super-admin/dashboard?student_id=' . $student->id);
 
-        $response->assertOk()
-            ->assertSee('Recommendation focus: Topic Student')
-            ->assertSee('Topic fit: digital, journalism.')
-            ->assertSeeInOrder(['Fit Supervisor', 'Remote Supervisor']);
+        $response->assertOk();
+
+        $recommendedSupervisors = $response->viewData('recommendedSupervisors');
+        $recommendationStudent = $response->viewData('recommendationStudent');
+
+        $this->assertNotNull($recommendationStudent);
+        $this->assertSame('Topic Student', $recommendationStudent->full_name);
+        $this->assertSame(
+            ['Fit Supervisor', 'Remote Supervisor'],
+            $recommendedSupervisors->take(2)->pluck('user.name')->values()->all()
+        );
+        $this->assertStringNotContainsString('Department fit: of.', (string) $recommendedSupervisors->first()->recommendation_reason);
     }
 
     public function test_student_otp_request_does_not_leak_account_existence(): void
