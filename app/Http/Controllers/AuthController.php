@@ -351,11 +351,19 @@ class AuthController extends BaseController
         }
 
         if (!$student) {
+            $this->logOtpLookupMiss('student_precheck', 'student_not_found', [
+                'email' => $validated['email'],
+            ]);
             return $this->success(null, 'If an account matches this email, a verification code will be sent');
         }
 
         $user = $student->user;
         if (!$user || $user->role !== 'student') {
+            $this->logOtpLookupMiss('student_precheck', 'student_user_missing_or_role_mismatch', [
+                'email' => $validated['email'],
+                'student_id' => $student->id,
+                'user_id' => $student->user_id,
+            ]);
             return $this->success(null, 'If an account matches this email, a verification code will be sent');
         }
 
@@ -375,8 +383,11 @@ class AuthController extends BaseController
             'expires_at' => $expiresAt,
         ]);
 
-        // Send OTP email
-        Mail::to($validated['email'])->send(new \App\Mail\LoginOtpMail($code, 'student', $student->full_name));
+        try {
+            $this->sendOtpMail($validated['email'], $code, 'student', $student->full_name, $user->id);
+        } catch (\Throwable $exception) {
+            return $this->error('Unable to send verification code right now. Please try again later.', 500);
+        }
 
         return $this->success([
             'user_id' => $user->id,
@@ -518,6 +529,10 @@ class AuthController extends BaseController
             ->first();
 
         if (!$user) {
+            $this->logOtpLookupMiss('role_precheck', 'user_not_found', [
+                'role' => $role,
+                'email' => $validated['email'],
+            ]);
             $this->simulateSlowOperation();
             return $this->success(null, $genericMessage);
         }
@@ -537,7 +552,11 @@ class AuthController extends BaseController
             'expires_at' => $expiresAt,
         ]);
 
-        Mail::to($validated['email'])->send(new LoginOtpMail($code, $user->role, $user->name));
+        try {
+            $this->sendOtpMail($validated['email'], $code, $user->role, $user->name, $user->id);
+        } catch (\Throwable $exception) {
+            return $this->error('Unable to send verification code right now. Please try again later.', 500);
+        }
 
         return $this->success([
             'email' => $validated['email'],
@@ -622,6 +641,10 @@ class AuthController extends BaseController
 
             $university = University::where('code', $universityCode)->first();
             if (!$university) {
+                $this->logOtpLookupMiss('generic_student_precheck', 'university_not_found', [
+                    'university_code' => $universityCode,
+                    'matric_number' => $matricNumber,
+                ]);
                 return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
@@ -632,6 +655,11 @@ class AuthController extends BaseController
             ])->first();
 
             if (!$student) {
+                $this->logOtpLookupMiss('generic_student_precheck', 'student_not_found', [
+                    'university_id' => $university->id,
+                    'matric_number' => $matricNumber,
+                    'lastname' => $lastname,
+                ]);
                 return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
@@ -648,20 +676,39 @@ class AuthController extends BaseController
 
             $user = User::where('email', $email)->where('role', 'supervisor')->first();
             if (!$user) {
+                $this->logOtpLookupMiss('generic_supervisor_precheck', 'user_not_found', [
+                    'email' => $email,
+                    'university_code' => $universityCode,
+                ]);
                 return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             $university = University::where('code', $universityCode)->first();
             if (!$university || $university->id !== $user->university_id) {
+                $this->logOtpLookupMiss('generic_supervisor_precheck', 'university_mismatch', [
+                    'email' => $email,
+                    'university_code' => $universityCode,
+                    'user_university_id' => $user->university_id,
+                    'resolved_university_id' => $university?->id,
+                ]);
                 return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             $supervisor = Supervisor::where('user_id', $user->id)->where('university_id', $university->id)->first();
             if (!$supervisor) {
+                $this->logOtpLookupMiss('generic_supervisor_precheck', 'supervisor_profile_missing', [
+                    'email' => $email,
+                    'user_id' => $user->id,
+                    'university_id' => $university->id,
+                ]);
                 return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
 
             if (!Hash::check($pinCode, $supervisor->pin_code) || !Hash::check($passphrase, $supervisor->passphrase)) {
+                $this->logOtpLookupMiss('generic_supervisor_precheck', 'credential_mismatch', [
+                    'email' => $email,
+                    'user_id' => $user->id,
+                ]);
                 return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
         } else {
@@ -672,11 +719,21 @@ class AuthController extends BaseController
 
             $user = User::where('email', $email)->where('role', $validated['role'])->first();
             if (!$user || !Hash::check($validated['password'], $user->password)) {
+                $this->logOtpLookupMiss('generic_admin_precheck', 'user_not_found_or_password_mismatch', [
+                    'email' => $email,
+                    'role' => $validated['role'],
+                    'user_found' => (bool) $user,
+                ]);
                 return $this->success(null, 'If the provided details match an account, a verification code will be sent');
             }
         }
 
         if (!$user || $user->role !== $validated['role']) {
+            $this->logOtpLookupMiss('generic_precheck', 'role_mismatch_after_lookup', [
+                'email' => $user?->email,
+                'expected_role' => $validated['role'],
+                'resolved_role' => $user?->role,
+            ]);
             return $this->success(null, 'If the provided details match an account, a verification code will be sent');
         }
 
@@ -701,7 +758,11 @@ class AuthController extends BaseController
             'expires_at' => $expiresAt,
         ]);
 
-        Mail::to($user->email)->send(new LoginOtpMail($code, $validated['role'], $user->name));
+        try {
+            $this->sendOtpMail($user->email, $code, $validated['role'], $user->name, $user->id);
+        } catch (\Throwable $exception) {
+            return $this->error('Unable to send verification code right now. Please try again later.', 500);
+        }
 
         return $this->success([
             'user_id' => $user->id,
@@ -906,7 +967,7 @@ class AuthController extends BaseController
             'expires_at' => now()->addSeconds(self::ADMIN_MFA_TTL),
         ], self::ADMIN_MFA_TTL);
 
-        Mail::to($user->email)->send(new LoginOtpMail($code, $user->role, $user->name));
+        $this->sendOtpMail($user->email, $code, $user->role, $user->name, $user->id);
 
         return $challengeId;
     }
@@ -917,6 +978,42 @@ class AuthController extends BaseController
     private function getAdminMfaCacheKey(string $challengeId): string
     {
         return 'admin_mfa:' . $challengeId;
+    }
+
+    private function sendOtpMail(string $email, string $code, string $role, string $name, ?int $userId = null): void
+    {
+        try {
+            Mail::to($email)->send(new LoginOtpMail($code, $role, $name));
+
+            Log::info('OTP email dispatched successfully', [
+                'email' => $email,
+                'role' => $role,
+                'user_id' => $userId,
+                'mailer' => config('mail.default'),
+            ]);
+        } catch (\Throwable $exception) {
+            Log::error('OTP email dispatch failed', [
+                'email' => $email,
+                'role' => $role,
+                'user_id' => $userId,
+                'mailer' => config('mail.default'),
+                'mail_host' => config('mail.mailers.smtp.host'),
+                'mail_port' => config('mail.mailers.smtp.port'),
+                'mail_encryption' => config('mail.mailers.smtp.encryption'),
+                'mail_from' => config('mail.from.address'),
+                'exception' => $exception->getMessage(),
+            ]);
+
+            throw $exception;
+        }
+    }
+
+    private function logOtpLookupMiss(string $flow, string $reason, array $context = []): void
+    {
+        Log::debug('OTP request did not resolve to a sendable account', array_merge([
+            'flow' => $flow,
+            'reason' => $reason,
+        ], $context));
     }
 
     /**
