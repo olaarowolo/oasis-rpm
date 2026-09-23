@@ -1,0 +1,13 @@
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Leave ACME challenge files alone so SSL issuance can still work.
+    RewriteRule ^\.well-known/ - [L]
+
+    # Route all web traffic through the public directory when the host cannot
+    # point the domain directly at Laravel's public/ folder.
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
