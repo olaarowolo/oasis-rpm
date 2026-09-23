@@ -126,6 +126,7 @@ Route::middleware(['app.auth', 'role:super_admin'])->prefix('/super-admin')->gro
         Route::put('/users/{user}', 'updateUser')->name('super-admin.users.update');
         Route::post('/users/{user}/toggle-status', 'toggleUserStatus')->name('super-admin.users.toggle-status');
         Route::post('/users/{user}/resend-invite', 'resendUserInvitation')->name('super-admin.users.resend-invite');
+        Route::post('/relationships/assign', 'assignStudentSupervisor')->name('super-admin.relationships.assign');
         Route::get('/config', 'config')->name('super-admin.config');
         Route::put('/config', 'updateConfig')->name('super-admin.config.update');
         Route::get('/audit-logs', 'auditLogs')->name('super-admin.audit-logs');

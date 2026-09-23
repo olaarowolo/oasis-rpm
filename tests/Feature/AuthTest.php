@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\LoginOtpMail;
+use App\Mail\PortalEmail;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\University;
@@ -618,6 +619,96 @@ class AuthTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.role', 'admin')
             ->assertJsonPath('data.user_id', $user->id);
+    }
+
+    public function test_super_admin_can_link_student_to_supervisor_and_notify_both_parties(): void
+    {
+        Mail::fake();
+
+        $university = University::create([
+            'name' => 'Link State University',
+            'code' => 'LSU',
+            'email' => 'info@lsu.edu',
+            'department' => 'Research Office',
+            'phone' => '08077777777',
+        ]);
+
+        $superAdmin = User::create([
+            'university_id' => $university->id,
+            'email' => 'super-admin@lsu.edu',
+            'password' => 'SuperAdmin@2026',
+            'name' => 'Link Super Admin',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+
+        $supervisorUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'supervisor.link@lsu.edu',
+            'password' => 'Supervisor@2026',
+            'name' => 'Supervisor Link',
+            'role' => 'supervisor',
+            'is_active' => true,
+        ]);
+
+        $supervisor = Supervisor::create([
+            'user_id' => $supervisorUser->id,
+            'university_id' => $university->id,
+            'title' => 'Dr.',
+            'department' => 'Computer Science',
+            'pin_code' => bcrypt('1234'),
+            'passphrase' => bcrypt('super-secret-passphrase'),
+            'is_active' => true,
+        ]);
+
+        $studentUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'student.link@lsu.edu',
+            'password' => 'Student@2026',
+            'name' => 'Student Link',
+            'role' => 'student',
+            'is_active' => true,
+        ]);
+
+        $student = Student::create([
+            'user_id' => $studentUser->id,
+            'university_id' => $university->id,
+            'supervisor_id' => null,
+            'matric_number' => 'LSU-001',
+            'lastname' => 'Link',
+            'full_name' => 'Student Link',
+            'email' => 'student.link@lsu.edu',
+            'degree_level' => 'BSc',
+            'current_stage' => 1,
+            'progress_percentage' => 0,
+            'status' => 'active',
+            'account_status' => 'active',
+        ]);
+
+        $response = $this->withSession([
+            'user_id' => $superAdmin->id,
+            'role' => 'super_admin',
+            'university_id' => $university->id,
+            'mfa_verified' => true,
+            'last_activity' => time(),
+            'session_started' => time(),
+        ])->post('/super-admin/relationships/assign', [
+            'student_id' => $student->id,
+            'supervisor_id' => $supervisor->id,
+        ]);
+
+        $response->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertSame($supervisor->id, $student->fresh()->supervisor_id);
+
+        Mail::assertSent(PortalEmail::class, function ($mail) use ($student) {
+            return $mail->viewName === 'supervision-linked' && $mail->hasTo($student->email);
+        });
+
+        Mail::assertSent(PortalEmail::class, function ($mail) use ($supervisorUser) {
+            return $mail->viewName === 'supervision-linked' && $mail->hasTo($supervisorUser->email);
+        });
     }
 
     public function test_student_otp_request_does_not_leak_account_existence(): void

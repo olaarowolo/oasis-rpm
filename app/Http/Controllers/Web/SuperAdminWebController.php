@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Web;
 
 use App\Http\Controllers\BaseController;
+use App\Mail\PortalEmail;
 use App\Models\AuditLog;
 use App\Models\PlatformSetting;
 use App\Models\Resource;
@@ -14,6 +15,8 @@ use App\Services\UserInvitationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -101,6 +104,13 @@ class SuperAdminWebController extends BaseController
                 'icon' => 'fa-user-graduate',
                 'route' => route('super-admin.users.create', ['role' => 'student']),
                 'tone' => 'academic',
+            ],
+            [
+                'title' => 'Link Supervision',
+                'description' => 'Pair students with supervisors and notify both parties instantly.',
+                'icon' => 'fa-link',
+                'route' => route('super-admin.dashboard') . '#relationship-orchestrator',
+                'tone' => 'emerald',
             ],
             [
                 'title' => 'Platform Config',
@@ -281,6 +291,40 @@ class SuperAdminWebController extends BaseController
             ->limit(6)
             ->get(['id', 'university_id', 'name', 'email', 'role', 'is_active', 'created_at']);
 
+        $relationshipStudents = Student::query()
+            ->with(['user', 'university', 'supervisor.user'])
+            ->whereHas('user', fn ($query) => $query->where('is_active', true))
+            ->orderByRaw('case when supervisor_id is null then 0 else 1 end')
+            ->orderBy('full_name')
+            ->limit(40)
+            ->get();
+
+        $assignmentSupervisors = Supervisor::query()
+            ->with(['user', 'university'])
+            ->withCount('students')
+            ->where('is_active', true)
+            ->whereHas('user', fn ($query) => $query->where('is_active', true))
+            ->orderBy('university_id')
+            ->orderBy('students_count')
+            ->orderBy('department')
+            ->get();
+
+        $unassignedStudents = $relationshipStudents
+            ->whereNull('supervisor_id')
+            ->take(8)
+            ->values();
+
+        $assignmentSummary = [
+            'students' => Student::count(),
+            'unassigned_students' => Student::whereNull('supervisor_id')->count(),
+            'active_supervisors' => Supervisor::where('is_active', true)
+                ->whereHas('user', fn ($query) => $query->where('is_active', true))
+                ->count(),
+            'avg_load' => $assignmentSupervisors->count() > 0
+                ? round($assignmentSupervisors->avg('students_count') ?? 0, 1)
+                : 0,
+        ];
+
         $systemSnapshot = [
             ['label' => 'Database', 'value' => $databaseStatus['message'], 'state' => $databaseStatus['ok'] ? 'healthy' : 'error'],
             ['label' => 'Mail', 'value' => $mailConfigured ? 'Configured' : 'Missing configuration', 'state' => $mailConfigured ? 'healthy' : 'warning'],
@@ -395,6 +439,14 @@ class SuperAdminWebController extends BaseController
                 'icon' => 'fa-wave-square',
                 'tone' => 'emerald',
             ],
+            [
+                'label' => 'Unassigned Students',
+                'count' => $assignmentSummary['unassigned_students'],
+                'detail' => 'Students still waiting for an assigned supervisor relationship.',
+                'route' => route('super-admin.dashboard') . '#relationship-orchestrator',
+                'icon' => 'fa-user-plus',
+                'tone' => 'academic',
+            ],
         ];
 
         $workstreamOwnership = [
@@ -489,7 +541,11 @@ class SuperAdminWebController extends BaseController
             'operatingModel',
             'priorityQueues',
             'workstreamOwnership',
-            'operatorLoop'
+            'operatorLoop',
+            'relationshipStudents',
+            'assignmentSupervisors',
+            'unassignedStudents',
+            'assignmentSummary'
         ));
     }
 
@@ -902,7 +958,9 @@ class SuperAdminWebController extends BaseController
     public function updateUser(Request $request, User $user): RedirectResponse
     {
         $oldValues = $user->toArray();
-        $user->load(['student', 'supervisor']);
+        $user->load(['student.supervisor.user', 'supervisor']);
+        $previousStudentSupervisor = $user->student?->supervisor;
+        $previousStudentSupervisorId = $previousStudentSupervisor?->id;
         $validated = $request->validate(array_merge([
             'university_id' => 'required|exists:universities,id',
             'name' => 'required|string|max:255',
@@ -949,18 +1007,98 @@ class SuperAdminWebController extends BaseController
 
         $this->syncUserRoleProfile($user->fresh(), $validated, false);
 
+        $refreshedUser = $user->fresh()->load(['student.supervisor.user', 'university']);
+        $updatedStudentSupervisorId = $refreshedUser->student?->supervisor_id;
+
+        if (($validated['role'] ?? null) === 'student'
+            && $updatedStudentSupervisorId
+            && (int) $updatedStudentSupervisorId !== (int) ($previousStudentSupervisorId ?? 0)
+            && $refreshedUser->student
+            && $refreshedUser->student->supervisor) {
+            $this->notifyRelationshipParties(
+                $refreshedUser->student,
+                $refreshedUser->student->supervisor,
+                $previousStudentSupervisor
+            );
+        }
+
         $this->writeAuditLog(
-            $user->fresh()->university,
+            $refreshedUser->university,
             'User',
             $user->id,
             'updated',
             $oldValues,
-            $user->fresh()->toArray()
+            $refreshedUser->toArray()
         );
 
         return redirect()
             ->route('super-admin.users')
             ->with('success', 'User updated successfully.');
+    }
+
+    public function assignStudentSupervisor(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'supervisor_id' => 'required|exists:supervisors,id',
+        ]);
+
+        $student = Student::query()
+            ->with(['user', 'university', 'supervisor.user'])
+            ->findOrFail($validated['student_id']);
+        $supervisor = Supervisor::query()
+            ->with(['user', 'university'])
+            ->findOrFail($validated['supervisor_id']);
+
+        if ((int) $student->university_id !== (int) $supervisor->university_id) {
+            return redirect()
+                ->back()
+                ->with('error', 'Student and supervisor must belong to the same university before they can be linked.');
+        }
+
+        if (! $supervisor->is_active || ! $supervisor->user?->is_active) {
+            return redirect()
+                ->back()
+                ->with('error', 'Only active supervisors can receive new student links.');
+        }
+
+        $previousSupervisor = $student->supervisor;
+        if ($previousSupervisor && (int) $previousSupervisor->id === (int) $supervisor->id) {
+            return redirect()
+                ->back()
+                ->with('success', $student->full_name . ' is already linked to ' . ($supervisor->user?->name ?? 'the selected supervisor') . '.');
+        }
+
+        $oldValues = [
+            'student_id' => $student->id,
+            'student_name' => $student->full_name,
+            'previous_supervisor_id' => $previousSupervisor?->id,
+            'previous_supervisor_name' => $previousSupervisor?->user?->name,
+        ];
+
+        $student->update(['supervisor_id' => $supervisor->id]);
+        $student->load(['user', 'university', 'supervisor.user']);
+
+        $this->writeAuditLog(
+            $student->university,
+            'Student',
+            $student->id,
+            'updated',
+            $oldValues,
+            [
+                'student_id' => $student->id,
+                'student_name' => $student->full_name,
+                'supervisor_id' => $supervisor->id,
+                'supervisor_name' => $supervisor->user?->name,
+                'transition' => $previousSupervisor ? 'supervisor_reassigned' : 'supervisor_linked',
+            ]
+        );
+
+        $this->notifyRelationshipParties($student, $supervisor, $previousSupervisor);
+
+        return redirect()
+            ->back()
+            ->with('success', 'Linked ' . $student->full_name . ' to ' . ($supervisor->user?->name ?? 'the selected supervisor') . ' and sent notifications to both parties.');
     }
 
     public function toggleUserStatus(User $user): RedirectResponse
@@ -1381,6 +1519,83 @@ class SuperAdminWebController extends BaseController
             })
             ->orderBy('department')
             ->get();
+    }
+
+    protected function notifyRelationshipParties(Student $student, Supervisor $supervisor, ?Supervisor $previousSupervisor = null): void
+    {
+        $student->loadMissing(['user', 'university', 'supervisor.user']);
+        $supervisor->loadMissing(['user', 'university']);
+
+        $studentEmail = $student->email ?: $student->user?->email;
+        $supervisorEmail = $supervisor->user?->email;
+        $universityCode = strtoupper((string) ($student->university?->code ?? 'LASU'));
+        $wasReassigned = $previousSupervisor && (int) $previousSupervisor->id !== (int) $supervisor->id;
+        $studentSubject = $wasReassigned
+            ? 'Your supervisor assignment has been updated'
+            : 'You have been linked to a supervisor';
+        $supervisorSubject = $wasReassigned
+            ? 'A student has been reassigned to you'
+            : 'A student has been linked to you';
+
+        if ($studentEmail) {
+            try {
+                Mail::to($studentEmail)->send(new PortalEmail('supervision-linked', [
+                    'subject' => $studentSubject,
+                    'title' => 'Supervisor assignment updated',
+                    'recipientName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
+                    'introText' => $wasReassigned
+                        ? 'Your supervision relationship has been updated. You now have a new assigned supervisor in the portal.'
+                        : 'Your supervision relationship is now active in the portal.',
+                    'counterpartName' => $supervisor->user?->name ?? 'Supervisor',
+                    'counterpartRole' => 'Assigned supervisor',
+                    'counterpartMeta' => $supervisor->department ?: 'Supervisor profile',
+                    'relationshipNote' => $wasReassigned && $previousSupervisor?->user?->name
+                        ? 'Previous supervisor: ' . $previousSupervisor->user->name
+                        : 'You can now continue your research workflow with a mapped supervisor.',
+                    'ctaLabel' => 'Open student dashboard',
+                    'url' => url('/student/dashboard'),
+                    'studentName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
+                    'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
+                    'universityCode' => $universityCode,
+                ]));
+            } catch (\Throwable $exception) {
+                Log::warning('Failed to send student supervision assignment email.', [
+                    'student_id' => $student->id,
+                    'supervisor_id' => $supervisor->id,
+                    'email' => $studentEmail,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        if ($supervisorEmail) {
+            try {
+                Mail::to($supervisorEmail)->send(new PortalEmail('supervision-linked', [
+                    'subject' => $supervisorSubject,
+                    'title' => 'Student relationship updated',
+                    'recipientName' => $supervisor->user?->name ?? 'Supervisor',
+                    'introText' => $wasReassigned
+                        ? 'A student has been reassigned to you from another supervision lane.'
+                        : 'A student has been linked to your supervision lane in the portal.',
+                    'counterpartName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
+                    'counterpartRole' => 'Assigned student',
+                    'counterpartMeta' => trim(($student->matric_number ? $student->matric_number . ' · ' : '') . ($student->degree_level ?: 'Research student')),
+                    'relationshipNote' => 'Review the student dashboard, proposal lane, and pending milestones from your supervisor hub.',
+                    'ctaLabel' => 'Open supervisor dashboard',
+                    'url' => url('/supervisor/dashboard'),
+                    'studentName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
+                    'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
+                    'universityCode' => $universityCode,
+                ]));
+            } catch (\Throwable $exception) {
+                Log::warning('Failed to send supervisor relationship assignment email.', [
+                    'student_id' => $student->id,
+                    'supervisor_id' => $supervisor->id,
+                    'email' => $supervisorEmail,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
     }
 
     protected function buildTrendSeries($query, string $column, int $days, string $label): array

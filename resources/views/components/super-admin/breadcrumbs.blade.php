@@ -95,7 +95,7 @@
         @endif
         
         @if(!$isLast)
-          <span class="flex-shrink-0" aria-hidden="true">{{ $separator }}</span>
+          <span class="flex-shrink-0" aria-hidden="true">{!! $separator !!}</span>
         @endif
       </li>
     @endforeach

@@ -206,7 +206,7 @@
         <div id="student-profile-card" class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 overflow-hidden {{ $currentRole === 'student' ? '' : 'hidden' }}">
             <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white">Student Profile</h2>
-                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Create the academic profile and map the student to a registered supervisor.</p>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Create the academic profile and map the student to a registered supervisor. Changing the mapped supervisor automatically notifies both the student and the supervisor.</p>
             </div>
             <div class="space-y-6 px-6 py-6">
                 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">

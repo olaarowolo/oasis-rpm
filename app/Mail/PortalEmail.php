@@ -207,6 +207,20 @@ class PortalEmail extends Mailable
                     'url' => $this->data['url'] ?? '',
                 ],
             ],
+            'supervision-linked' => [
+                'subject' => $this->data['subject'] ?? 'Supervision relationship updated',
+                'data' => [
+                    'title' => $this->data['title'] ?? 'Supervision relationship updated',
+                    'recipientName' => $this->data['recipientName'] ?? 'Portal user',
+                    'introText' => $this->data['introText'] ?? 'A supervision relationship has been updated in the portal.',
+                    'counterpartName' => $this->data['counterpartName'] ?? 'Assigned contact',
+                    'counterpartRole' => $this->data['counterpartRole'] ?? 'Relationship contact',
+                    'counterpartMeta' => $this->data['counterpartMeta'] ?? '',
+                    'relationshipNote' => $this->data['relationshipNote'] ?? '',
+                    'ctaLabel' => $this->data['ctaLabel'] ?? 'Open the portal',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
         ];
 
         $view = $viewMap[$this->viewName] ?? [

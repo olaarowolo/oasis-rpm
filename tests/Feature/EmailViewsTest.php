@@ -22,6 +22,7 @@ class EmailViewsTest extends TestCase
             'resource-submitted',
             'resource-approved',
             'resource-rejected',
+            'supervision-linked',
         ];
 
         foreach ($views as $view) {
@@ -44,6 +45,13 @@ class EmailViewsTest extends TestCase
                 'feedback' => 'Please revise and resubmit this section.',
                 'comment' => 'Keep the scope focused.',
                 'conditions' => "- Finalize your research gap\n- Add a method section",
+                'recipientName' => 'Ada Okafor',
+                'introText' => 'You have been linked to a supervisor in the portal.',
+                'counterpartName' => 'Dr. Bola Adeyemi',
+                'counterpartRole' => 'Assigned supervisor',
+                'counterpartMeta' => 'Mass Communication',
+                'relationshipNote' => 'Review the dashboard for your updated supervision workflow.',
+                'ctaLabel' => 'Open the portal',
                 'url' => 'https://example.com/portal',
             ]);
 

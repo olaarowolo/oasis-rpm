@@ -128,6 +128,111 @@
         @endforeach
     </div>
 
+    <div id="relationship-orchestrator" class="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Supervision Link Center</h2>
+                    <p class="mt-1 text-sm text-slate-500">Assign or reassign students to supervisors from one platform control point. Student and supervisor email notifications are sent automatically when the link changes.</p>
+                </div>
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Live linking</span>
+            </div>
+
+            <div class="space-y-5 p-5">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Students</p>
+                        <p class="mt-2 text-3xl font-black text-slate-900">{{ $assignmentSummary['students'] }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Unassigned</p>
+                        <p class="mt-2 text-3xl font-black text-amber-700">{{ $assignmentSummary['unassigned_students'] }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Active Supervisors</p>
+                        <p class="mt-2 text-3xl font-black text-emerald-700">{{ $assignmentSummary['active_supervisors'] }}</p>
+                    </div>
+                    <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Average Load</p>
+                        <p class="mt-2 text-3xl font-black text-blue-700">{{ $assignmentSummary['avg_load'] }}</p>
+                    </div>
+                </div>
+
+                <form action="{{ route('super-admin.relationships.assign') }}" method="POST" class="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
+                    @csrf
+                    <div>
+                        <label for="relationship-student-id" class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Student</label>
+                        <select id="relationship-student-id" name="student_id" required class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+                            <option value="">Select student</option>
+                            @foreach ($relationshipStudents as $student)
+                                <option value="{{ $student->id }}" data-university-id="{{ $student->university_id }}">
+                                    {{ $student->full_name ?: $student->user?->name ?: 'Student' }}
+                                    @if ($student->matric_number)
+                                        · {{ $student->matric_number }}
+                                    @endif
+                                    · {{ $student->university->code ?? 'UNI' }}
+                                    · {{ $student->supervisor?->user?->name ? 'Current: ' . $student->supervisor->user->name : 'Unassigned' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label for="relationship-supervisor-id" class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Supervisor</label>
+                        <select id="relationship-supervisor-id" name="supervisor_id" required class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+                            <option value="">Select supervisor</option>
+                            @foreach ($assignmentSupervisors as $supervisor)
+                                <option value="{{ $supervisor->id }}" data-university-id="{{ $supervisor->university_id }}">
+                                    {{ $supervisor->user?->name ?? 'Supervisor' }} · {{ $supervisor->university->code ?? 'UNI' }} · {{ $supervisor->students_count }} students
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700">
+                        <i class="fa-solid fa-link"></i>
+                        Link and notify
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-5 py-4">
+                    <h2 class="text-lg font-bold text-slate-900">Unassigned Students</h2>
+                    <p class="mt-1 text-sm text-slate-500">Students currently waiting for a supervisor relationship.</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($unassignedStudents as $student)
+                        <div class="px-5 py-4">
+                            <p class="font-semibold text-slate-900">{{ $student->full_name ?: $student->user?->name ?: 'Student' }}</p>
+                            <p class="mt-1 text-sm text-slate-500">{{ $student->university->name ?? 'No university' }} @if($student->matric_number) · {{ $student->matric_number }} @endif</p>
+                        </div>
+                    @empty
+                        <div class="px-5 py-8 text-sm text-slate-500">Every active student currently has a linked supervisor.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-5 py-4">
+                    <h2 class="text-lg font-bold text-slate-900">Supervisor Capacity Board</h2>
+                    <p class="mt-1 text-sm text-slate-500">Use current student load to decide who should receive the next assignment.</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    @foreach ($assignmentSupervisors->take(8) as $supervisor)
+                        <div class="flex items-center justify-between gap-4 px-5 py-4">
+                            <div>
+                                <p class="font-semibold text-slate-900">{{ $supervisor->user?->name ?? 'Supervisor' }}</p>
+                                <p class="mt-1 text-sm text-slate-500">{{ $supervisor->university->name ?? 'No university' }} · {{ $supervisor->department ?: 'Department pending' }}</p>
+                            </div>
+                            <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $supervisor->students_count }} students</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Command Model -->
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -586,4 +691,37 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        var studentSelect = document.getElementById('relationship-student-id');
+        var supervisorSelect = document.getElementById('relationship-supervisor-id');
+
+        function syncSupervisorAssignmentOptions() {
+            if (!studentSelect || !supervisorSelect) return;
+
+            var selectedStudent = studentSelect.options[studentSelect.selectedIndex];
+            var universityId = selectedStudent ? selectedStudent.dataset.universityId : '';
+
+            Array.prototype.forEach.call(supervisorSelect.options, function (option) {
+                if (!option.value) {
+                    option.hidden = false;
+                    return;
+                }
+
+                var matches = !universityId || option.dataset.universityId === universityId;
+                option.hidden = !matches;
+
+                if (!matches && option.selected) {
+                    supervisorSelect.value = '';
+                }
+            });
+        }
+
+        if (studentSelect) {
+            studentSelect.addEventListener('change', syncSupervisorAssignmentOptions);
+            syncSupervisorAssignmentOptions();
+        }
+    })();
+</script>
 @endsection

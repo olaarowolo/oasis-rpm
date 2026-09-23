@@ -183,7 +183,10 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4 text-right">
-                                <div class="flex justify-end gap-3">
+                                <div class="flex justify-end gap-3 flex-wrap">
+                                    @if (in_array($user->role, ['student', 'supervisor'], true))
+                                        <a href="{{ route('super-admin.dashboard') }}#relationship-orchestrator" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">Link</a>
+                                    @endif
                                     <a href="{{ route('super-admin.users.edit', $user) }}" class="text-sm font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300">Edit</a>
                                     @if (!$user->is_active && is_null($user->email_verified_at))
                                         <form action="{{ route('super-admin.users.resend-invite', $user) }}" method="POST">
