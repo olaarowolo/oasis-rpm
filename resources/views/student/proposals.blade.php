@@ -1,36 +1,43 @@
-@extends('layouts.app')
+@extends('layouts.student')
 
 @section('title', 'My Proposals')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="flex items-center justify-between mb-6">
-        <h1 class="text-3xl font-bold text-gray-800">My Proposals</h1>
-        <a href="{{ route('student.dashboard') }}" class="text-sm text-blue-600 hover:text-blue-900">&larr; Back to Dashboard</a>
+<div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm space-y-6">
+    <div class="flex items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700 pb-4">
+        <div>
+            <h1 class="text-xl font-bold text-slate-900 dark:text-white">My Proposals</h1>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Track topic submissions, approval status, and supervisor feedback.</p>
+        </div>
+        <a href="{{ route('student.dashboard', ['tab' => 'student-proposals']) }}" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-left"></i>
+            Dashboard
+        </a>
     </div>
 
-    <div class="mb-6">
-        <button onclick="window.location.href='{{ route('student.dashboard') }}'" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+    <div>
+        <button onclick="window.location.href='{{ route('student.dashboard', ['tab' => 'student-proposals']) }}'" class="inline-flex items-center gap-2 rounded-xl bg-academic-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-academic-800">
+            <i class="fa-solid fa-plus"></i>
             Create New Proposal
         </button>
     </div>
 
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+            <thead class="bg-slate-50 dark:bg-slate-900/40">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Submitted</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Title</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Date Submitted</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Location</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Status</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white dark:bg-slate-800 divide-y divide-slate-200 dark:divide-slate-700">
                 @forelse($proposals as $proposal)
                 <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $proposal->title }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ optional($proposal->date_submitted)->format('Y-m-d') }}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $proposal->location }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-white">{{ $proposal->title }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{{ optional($proposal->date_submitted)->format('Y-m-d') }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{{ $proposal->location }}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                             {{ $proposal->status === 'approved' ? 'bg-green-100 text-green-800' :
@@ -43,7 +50,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="4" class="px-6 py-8 text-center text-sm text-gray-400">No proposals yet.</td>
+                    <td colspan="4" class="px-6 py-8 text-center text-sm text-slate-400 dark:text-slate-500">No proposals yet.</td>
                 </tr>
                 @endforelse
             </tbody>

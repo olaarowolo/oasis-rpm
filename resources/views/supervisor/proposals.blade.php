@@ -1,105 +1,67 @@
-@extends('layouts.app')
+@extends('layouts.supervisor')
 
 @section('title', 'Topic Approvals | Research Supervision Portal | LASU')
 
 @section('content')
-<!-- MAIN LAYOUT CONTAINER -->
-<div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col md:flex-row gap-4 sm:gap-6">
-
-  <!-- SIDE NAVIGATION BAR -->
-  @include('components.sidebar')
-
-  <!-- MAIN CONTENT VIEWPORTS CONTAINER -->
-  <main class="flex-1 min-w-0 space-y-6">
-
-    <!-- ================= TAB 3: TOPIC PROPOSALS REVIEW ================= -->
-    <section id="tab-supervisor-proposals" class="tab-content hidden fade-in space-y-4">
-      <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+<section class="space-y-6">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 class="font-bold text-slate-900 dark:text-white text-base">Pending Research Proposals</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400">Review student topic submissions, approve titles, or request revisions.</p>
-          </div>
-          <span class="text-xs font-mono px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg border border-amber-200 dark:border-amber-800">
-            Supervisor Action Required
-          </span>
-        </div>
-
-        <!-- Sub-tabs: Pending Approval vs Conditionally Approved -->
-        <div class="mt-4 flex p-1 gap-1 bg-slate-100 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700 w-full sm:w-auto">
-          <button onclick="switchProposalSubTab('pending')" id="proposal-subtab-pending" class="proposal-subtab flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-hourglass-half"></i> Pending Approval
-            <span id="badge-pending-proposals-sub" class="ml-1 px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">0</span>
-          </button>
-          <button onclick="switchProposalSubTab('conditional')" id="proposal-subtab-conditional" class="proposal-subtab flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-clipboard-check"></i> Conditionally Approved
-            <span id="badge-conditional-proposals-sub" class="ml-1 px-1.5 py-0.5 text-[9px] font-bold rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">0</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Pending Approval list -->
-      <div id="proposals-pending-container" class="space-y-4 proposal-sub-panel">
-        <!-- Dynamically rendered pending proposal cards -->
-        @for($i=1; $i<=2; $i++)
-          <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
-            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-              <div class="flex-1">
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="text-xs font-mono px-2 py-0.5 bg-academic-50 dark:bg-academic-900/30 text-academic-700 dark:text-academic-300 rounded">
-                    Student: Demo Student {{ $i }}
-                  </span>
-                  <span class="text-xs font-mono px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">
-                    Matric: DEMO-00{{ $i }}
-                  </span>
-                  <span class="text-[10px] font-bold px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300 rounded-full">
-                    PENDING
-                  </span>
-                </div>
-                <h4 class="font-bold text-slate-900 dark:text-white text-lg mb-2">Sample Research Topic Title {{ $i }}</h4>
-                <div class="space-y-2">
-                  <div>
-                    <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">Location Focus:</span>
-                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">Lagos State Main Campus</p>
-                  </div>
-                  <div>
-                    <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">Abstract:</span>
-                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5 line-clamp-2">
-                      This research examines the relationship between media consumption and public opinion formation in Lagos State, with particular focus on broadcast journalism and its impact on civic engagement among undergraduates.
-                    </p>
-                  </div>
-                  <div class="pt-2">
-                    <span class="text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">Submitted:</span>
-                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">2 days ago</p>
-                  </div>
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-2 sm:items-end">
-                <button onclick="openConditionalApproval({{ $i }})" class="px-3 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-xs font-bold transition flex items-center gap-2">
-                  <i class="fa-solid fa-clipboard-check"></i> Approve with Conditions
-                </button>
-                <div class="flex gap-2">
-                  <button onclick="approveProposal({{ $i }})" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition">
-                    <i class="fa-solid fa-check"></i> Approve
-                  </button>
-                  <button onclick="rejectProposal({{ $i }})" class="px-3 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition">
-                    <i class="fa-solid fa-xmark"></i> Reject
-                  </button>
-                </div>
-              </div>
+            <div>
+                <h1 class="text-xl font-bold text-slate-900 dark:text-white">Topic Approvals</h1>
+                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Review student submissions assigned to your supervision roster.</p>
             </div>
-          </div>
-        @endfor
-      </div>
+            <div class="flex gap-2 text-xs font-semibold">
+                <span class="px-3 py-1.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">Pending: {{ $proposals->where('status', 'pending')->count() }}</span>
+                <span class="px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">Approved: {{ $proposals->where('status', 'approved')->count() }}</span>
+            </div>
+        </div>
+    </div>
 
-      <!-- Conditionally Approved list -->
-      <div id="proposals-conditional-container" class="space-y-4 proposal-sub-panel hidden">
-        <!-- Dynamically rendered conditionally-approved proposal cards -->
-      </div>
-    </section>
+    <div class="space-y-4">
+        @forelse ($proposals as $proposal)
+            <article class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm">
+                <div class="space-y-3">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ $proposal->proposal_id }}</span>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ $proposal->status === 'approved' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : ($proposal->status === 'revision_required' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300') }}">{{ str_replace('_', ' ', ucfirst($proposal->status)) }}</span>
+                        <span class="text-xs text-slate-500 dark:text-slate-400">{{ optional($proposal->date_submitted)->diffForHumans() ?? 'No submission date' }}</span>
+                    </div>
 
-  </main>
-</div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white">{{ $proposal->title }}</h2>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $proposal->student->full_name ?? 'Unknown student' }} · {{ $proposal->student->matric_number ?? 'No matric number' }}</p>
+                    </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Location Focus</p>
+                            <p class="mt-1 text-slate-700 dark:text-slate-200">{{ $proposal->location }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Student Email</p>
+                            <p class="mt-1 text-slate-700 dark:text-slate-200">{{ $proposal->student->email ?? 'No student email' }}</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Abstract</p>
+                        <p class="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{{ $proposal->abstract }}</p>
+                    </div>
+
+                    @if ($proposal->supervisor_comment)
+                        <div class="rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 p-4">
+                            <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Supervisor Comment</p>
+                            <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ $proposal->supervisor_comment }}</p>
+                        </div>
+                    @endif
+                </div>
+            </article>
+        @empty
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 border border-dashed border-slate-300 dark:border-slate-700 shadow-sm text-center">
+                <h2 class="text-lg font-bold text-slate-900 dark:text-white">No proposals found</h2>
+                <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">New topic submissions assigned to you will appear here.</p>
+            </div>
+        @endforelse
+    </div>
+</section>
 @endsection

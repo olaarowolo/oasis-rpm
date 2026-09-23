@@ -15,6 +15,7 @@ use App\Models\Supervisor;
 use App\Models\SystemConfig;
 use App\Models\Proposal;
 use App\Models\MeetingLog;
+use App\Models\ResourceProgress;
 use App\Models\University;
 use App\Models\User;
 
@@ -303,7 +304,16 @@ Route::middleware(['app.auth', 'role:supervisor'])->prefix('/supervisor')->group
 
     Route::post('/students/create', [SupervisorController::class, 'createStudent'])->name('supervisor.students.create');
     Route::get('/proposals', function () {
-        return view('supervisor.proposals');
+        $proposals = Proposal::where('university_id', session('university_id'))
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
+            ->with('student')
+            ->orderByRaw("case when status = 'pending' then 0 when status = 'revision_required' then 1 when status = 'approved' then 2 else 3 end")
+            ->orderByDesc('date_submitted')
+            ->get();
+
+        return view('supervisor.proposals', compact('proposals'));
     })->name('supervisor.proposals');
 
     Route::get('/meetings', [SupervisorMeetingWebController::class, 'index'])->name('supervisor.meetings');
@@ -312,11 +322,46 @@ Route::middleware(['app.auth', 'role:supervisor'])->prefix('/supervisor')->group
     Route::get('/meetings/{id}', [SupervisorMeetingWebController::class, 'show'])->name('supervisor.meetings.view');
 
     Route::get('/analytics', function () {
-        return view('supervisor.analytics');
+        $students = Student::where('university_id', session('university_id'))
+            ->where('supervisor_id', session('supervisor_id'))
+            ->get();
+
+        $studentIds = $students->pluck('id');
+        $proposals = Proposal::where('university_id', session('university_id'))
+            ->whereIn('student_id', $studentIds)
+            ->with('student')
+            ->orderByDesc('date_submitted')
+            ->get();
+        $meetings = MeetingLog::whereIn('student_id', $studentIds)
+            ->with('student')
+            ->orderByDesc('meeting_date')
+            ->get();
+
+        $analytics = [
+            'student_count' => $students->count(),
+            'pending_proposals' => $proposals->where('status', 'pending')->count(),
+            'approved_proposals' => $proposals->where('status', 'approved')->count(),
+            'monthly_meetings' => $meetings->filter(fn ($meeting) => optional($meeting->meeting_date)?->isCurrentMonth())->count(),
+            'average_progress' => $students->count() ? (int) round($students->avg('progress_percentage')) : 0,
+            'stage_counts' => collect(range(1, 6))->mapWithKeys(fn ($stage) => [$stage => $students->where('current_stage', $stage)->count()])->all(),
+            'recent_proposals' => $proposals->take(5),
+            'recent_meetings' => $meetings->take(5),
+        ];
+
+        return view('supervisor.analytics', compact('analytics'));
     })->name('supervisor.analytics');
 
     Route::get('/resources/pending', function () {
-        return view('supervisor.resources');
+        $pendingResources = ResourceProgress::where('university_id', session('university_id'))
+            ->where('status', 'submitted')
+            ->whereHas('student', function ($query) {
+                $query->where('supervisor_id', session('supervisor_id'));
+            })
+            ->with(['resource', 'student'])
+            ->orderByDesc('submitted_date')
+            ->get();
+
+        return view('supervisor.resources', compact('pendingResources'));
     })->name('supervisor.resources.pending');
 });
 

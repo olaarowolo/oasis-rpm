@@ -95,7 +95,7 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
-        View::composer('components.sidebar', function ($view) use ($resolveSupervisorSidebarData) {
+        View::composer(['components.sidebar', 'supervisor.partials.sidebar'], function ($view) use ($resolveSupervisorSidebarData) {
             $view->with('sidebarSupervisorProfile', $resolveSupervisorSidebarData());
         });
     }

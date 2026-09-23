@@ -8,6 +8,7 @@ use App\Models\Student;
 use App\Models\TopicHistory;
 use App\Models\Supervisor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -40,26 +41,38 @@ class ProposalController extends BaseController
             'action' => 'submitted',
         ]);
 
-        // Get student info
-        $student = Student::find(session('student_id'));
-        $user = $student->user;
-        
-        // Send the submission to the student's assigned supervisor.
-        $supervisor = $student->supervisor()->with('user')->first();
-        
-        if ($supervisor && $supervisor->user) {
-            // Send email notification to supervisor
+        $student = Student::with(['user', 'supervisor.user'])->find(session('student_id'));
+        $supervisor = $student?->supervisor;
+
+        if ($supervisor?->user?->email) {
             $mail = new PortalEmail('topic-submitted', [
                 'studentName' => $student->full_name,
-                'studentEmail' => $user->email,
+                'studentEmail' => $student->user?->email ?? $student->email,
                 'topic' => $validated['title'],
                 'matric' => $student->matric_number,
                 'proposalId' => $proposal->proposal_id,
                 'abstract' => $validated['abstract'],
                 'url' => route('supervisor.proposals'),
             ]);
-            
-            Mail::to($supervisor->user->email)->send($mail);
+
+            try {
+                Mail::to($supervisor->user->email)->send($mail);
+            } catch (\Throwable $exception) {
+                Log::warning('Supervisor proposal submission email failed', [
+                    'proposal_id' => $proposal->proposal_id,
+                    'student_id' => $student?->id,
+                    'supervisor_id' => $supervisor->id,
+                    'recipient' => $supervisor->user->email,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        } else {
+            Log::warning('Supervisor proposal submission email skipped', [
+                'proposal_id' => $proposal->proposal_id,
+                'student_id' => $student?->id,
+                'supervisor_id' => $student?->supervisor_id,
+                'reason' => 'missing_supervisor_or_email',
+            ]);
         }
 
         return $this->success($proposal, 'Proposal submitted successfully', 201);

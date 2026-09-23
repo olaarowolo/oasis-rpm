@@ -10,6 +10,7 @@ use App\Models\ResourceProgress;
 use App\Models\Student;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class ResourceController extends BaseController
@@ -86,12 +87,10 @@ class ResourceController extends BaseController
         );
 
         // Notify the assigned supervisor for this student.
-        $student = Student::find(session('student_id'));
-        $supervisor = $student ? $student->supervisor()->with('user')->first() : null;
+        $student = Student::with(['supervisor.user'])->find(session('student_id'));
+        $supervisor = $student?->supervisor;
 
-        if ($supervisor && $supervisor->user) {
-            
-            // Send email notification to supervisor
+        if ($supervisor?->user?->email) {
             $mail = new PortalEmail('resource-submitted', [
                 'studentName' => $student->full_name ?? 'Student',
                 'matric' => $student->matric_number ?? '',
@@ -101,7 +100,24 @@ class ResourceController extends BaseController
                 'url' => route('supervisor.resources.pending'),
             ]);
 
-            Mail::to($supervisor->user->email)->send($mail);
+            try {
+                Mail::to($supervisor->user->email)->send($mail);
+            } catch (\Throwable $exception) {
+                Log::warning('Supervisor resource submission email failed', [
+                    'resource_id' => $resource->id,
+                    'student_id' => $student?->id,
+                    'supervisor_id' => $supervisor->id,
+                    'recipient' => $supervisor->user->email,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        } else {
+            Log::warning('Supervisor resource submission email skipped', [
+                'resource_id' => $resource->id,
+                'student_id' => $student?->id,
+                'supervisor_id' => $student?->supervisor_id,
+                'reason' => 'missing_supervisor_or_email',
+            ]);
         }
 
         return $this->success($progress, 'Resource marked as submitted, awaiting approval');
@@ -197,7 +213,7 @@ class ResourceController extends BaseController
                 $validated['comment'] ?? null
             ));
         } catch (\Exception $e) {
-            \Log::warning('Email notification failed: ' . $e->getMessage());
+            Log::warning('Email notification failed: ' . $e->getMessage());
         }
 
         return $this->success($progress, 'Resource approved successfully');
@@ -247,7 +263,7 @@ class ResourceController extends BaseController
                 $validated['comment']
             ));
         } catch (\Exception $e) {
-            \Log::warning('Email notification failed: ' . $e->getMessage());
+            Log::warning('Email notification failed: ' . $e->getMessage());
         }
 
         return $this->success($progress, 'Resource rejected, student notified');
