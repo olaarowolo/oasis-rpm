@@ -80,9 +80,7 @@ jobs:
 
           exclude: |
             **/.git/**
-            **/.git*
             **/.github/**
-            **/.github*
             **/node_modules/**
             **/tests/**
             **/.env
