@@ -83,7 +83,7 @@
               <select name="student_id" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
                 <option value="">Select student</option>
                 @foreach($relationshipStudents as $student)
-                  <option value="{{ $student->id }}">{{ $student->full_name }}{{ $student->supervisor?->user?->name ? ' - Current: ' . $student->supervisor->user->name : ' - Unassigned' }}</option>
+                  <option value="{{ $student->id }}" @selected((int) optional($recommendationStudent)->id === (int) $student->id)>{{ $student->full_name }}{{ $student->supervisor?->user?->name ? ' - Current: ' . $student->supervisor->user->name : ' - Unassigned' }}</option>
                 @endforeach
               </select>
             </label>
@@ -104,6 +104,9 @@
 
           <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
             <h4 class="text-sm font-bold text-slate-900 dark:text-white">Recommended Supervisors</h4>
+            @if($recommendationStudent)
+              <p class="text-xs text-slate-500 dark:text-slate-400">Recommendation focus: {{ $recommendationStudent->full_name }} @if($recommendationStudent->research_topic)&middot; {{ $recommendationStudent->research_topic }} @else &middot; {{ $recommendationStudent->degree_level }} stage {{ $recommendationStudent->current_stage }} @endif</p>
+            @endif
             @forelse($recommendedSupervisors as $supervisor)
               <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
                 <div class="flex items-start justify-between gap-3">
@@ -252,7 +255,7 @@
                   </td>
                   <td class="px-5 py-4 text-right text-sm space-x-2 whitespace-nowrap">
                     @if($user->role === 'student' && $user->student)
-                      <a href="{{ route('admin.users', array_filter(['university_id' => $selectedUniversityId, 'queue' => 'unassigned_students'])) }}#relationship-operations" class="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30">{{ $user->student->supervisor_id ? 'Reassign' : 'Link' }}</a>
+                      <a href="{{ route('admin.users', array_filter(['university_id' => $selectedUniversityId, 'queue' => 'unassigned_students', 'student_id' => $user->student->id])) }}#relationship-operations" class="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30">{{ $user->student->supervisor_id ? 'Reassign' : 'Link' }}</a>
                     @endif
                     @if($user->role === 'supervisor')
                       <a href="{{ route('admin.users', array_filter(['university_id' => $selectedUniversityId, 'queue' => 'unassigned_students'])) }}#relationship-operations" class="px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">Review Queue</a>

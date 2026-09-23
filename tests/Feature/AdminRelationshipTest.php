@@ -205,4 +205,127 @@ class AdminRelationshipTest extends TestCase
         $this->assertSame('sent', data_get($auditLog->new_values, 'notifications.student.status'));
         $this->assertSame('sent', data_get($auditLog->new_values, 'notifications.supervisor.status'));
     }
+
+    public function test_admin_recommendations_prioritize_student_topic_fit_over_raw_load(): void
+    {
+        $university = University::create([
+            'name' => 'Heuristic State University',
+            'code' => 'HSU',
+            'email' => 'info@hsu.edu',
+            'department' => 'Research Office',
+            'phone' => '08077770000',
+        ]);
+
+        $admin = User::create([
+            'university_id' => $university->id,
+            'email' => 'heuristic-admin@hsu.edu',
+            'password' => 'Admin@2026',
+            'name' => 'Heuristic Admin',
+            'role' => 'admin',
+            'is_active' => true,
+        ]);
+
+        $matchingSupervisorUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'match-supervisor@hsu.edu',
+            'password' => 'Supervisor@2026',
+            'name' => 'Match Mentor',
+            'role' => 'supervisor',
+            'is_active' => true,
+        ]);
+
+        $matchingSupervisor = Supervisor::create([
+            'user_id' => $matchingSupervisorUser->id,
+            'university_id' => $university->id,
+            'title' => 'Dr.',
+            'department' => 'Mass Communication',
+            'research_areas' => 'journalism, digital media, communication studies',
+            'pin_code' => bcrypt('1234'),
+            'passphrase' => bcrypt('match-passphrase'),
+            'is_active' => true,
+        ]);
+
+        $mismatchSupervisorUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'mismatch-supervisor@hsu.edu',
+            'password' => 'Supervisor@2026',
+            'name' => 'Mismatch Mentor',
+            'role' => 'supervisor',
+            'is_active' => true,
+        ]);
+
+        Supervisor::create([
+            'user_id' => $mismatchSupervisorUser->id,
+            'university_id' => $university->id,
+            'title' => 'Dr.',
+            'department' => 'Physics',
+            'research_areas' => 'quantum mechanics, optics',
+            'pin_code' => bcrypt('1234'),
+            'passphrase' => bcrypt('mismatch-passphrase'),
+            'is_active' => true,
+        ]);
+
+        $focusedStudentUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'focus-student@hsu.edu',
+            'password' => 'Student@2026',
+            'name' => 'Focus Student',
+            'role' => 'student',
+            'is_active' => true,
+        ]);
+
+        $focusedStudent = Student::create([
+            'user_id' => $focusedStudentUser->id,
+            'university_id' => $university->id,
+            'supervisor_id' => null,
+            'matric_number' => 'HSU-001',
+            'lastname' => 'Student',
+            'full_name' => 'Focus Student',
+            'email' => 'focus-student@hsu.edu',
+            'degree_level' => 'BSc',
+            'research_topic' => 'digital journalism in higher education',
+            'current_stage' => 1,
+            'progress_percentage' => 0,
+            'status' => 'active',
+            'account_status' => 'active',
+        ]);
+
+        $assignedStudentUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'assigned-student@hsu.edu',
+            'password' => 'Student@2026',
+            'name' => 'Assigned Student',
+            'role' => 'student',
+            'is_active' => true,
+        ]);
+
+        Student::create([
+            'user_id' => $assignedStudentUser->id,
+            'university_id' => $university->id,
+            'supervisor_id' => $matchingSupervisor->id,
+            'matric_number' => 'HSU-002',
+            'lastname' => 'Assigned',
+            'full_name' => 'Assigned Student',
+            'email' => 'assigned-student@hsu.edu',
+            'degree_level' => 'BSc',
+            'current_stage' => 2,
+            'progress_percentage' => 20,
+            'status' => 'active',
+            'account_status' => 'active',
+        ]);
+
+        $response = $this->withSession([
+            'user_id' => $admin->id,
+            'role' => 'admin',
+            'university_id' => $university->id,
+            'mfa_verified' => true,
+            'last_activity' => time(),
+            'session_started' => time(),
+        ])->get('/admin/users?student_id=' . $focusedStudent->id);
+
+        $response->assertOk()
+            ->assertSee('Recommendation focus: Focus Student')
+            ->assertSee('Topic fit: digital, journalism.')
+            ->assertSeeInOrder(['Match Mentor', 'Mismatch Mentor']);
+    }
 }

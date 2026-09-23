@@ -32,9 +32,10 @@ class SuperAdminWebController extends BaseController
     {
     }
 
-    public function dashboard(): View
+    public function dashboard(Request $request): View
     {
         $currentUser = $this->actingUser()?->load('university');
+        $selectedStudentId = (int) $request->query('student_id', 0);
         $databaseStatus = $this->checkDatabaseStatus();
         $mailConfigured = (bool) config('mail.default');
         $queueDriver = (string) config('queue.default', 'sync');
@@ -301,6 +302,7 @@ class SuperAdminWebController extends BaseController
             ->orderBy('full_name')
             ->limit(40)
             ->get();
+        $recommendationStudent = $this->resolveRecommendationStudent($selectedStudentId, null, $relationshipStudents);
 
         $assignmentSupervisors = Supervisor::query()
             ->with(['user', 'university'])
@@ -311,13 +313,16 @@ class SuperAdminWebController extends BaseController
             ->orderBy('students_count')
             ->orderBy('department')
             ->get();
-        $assignmentSupervisors = $this->decorateSupervisorAssignments($assignmentSupervisors);
+        $assignmentSupervisors = $this->decorateSupervisorAssignments($assignmentSupervisors, $recommendationStudent);
 
         $unassignedStudents = $relationshipStudents
             ->whereNull('supervisor_id')
             ->take(8)
             ->values();
-        $recommendedSupervisors = $assignmentSupervisors->take(6);
+        $recommendedSupervisors = $assignmentSupervisors
+            ->filter(fn (Supervisor $supervisor) => ! $recommendationStudent || (int) $supervisor->university_id === (int) $recommendationStudent->university_id)
+            ->take(6)
+            ->values();
         $relationshipHistory = $this->recentRelationshipHistory();
         $loadPolicy = $this->loadPolicy();
 
@@ -554,6 +559,7 @@ class SuperAdminWebController extends BaseController
             'unassignedStudents',
             'assignmentSummary',
             'recommendedSupervisors',
+            'recommendationStudent',
             'relationshipHistory',
             'loadPolicy',
         ));
@@ -1545,26 +1551,142 @@ class SuperAdminWebController extends BaseController
         ];
     }
 
-    protected function decorateSupervisorAssignments($supervisors)
+    protected function decorateSupervisorAssignments($supervisors, ?Student $recommendationStudent = null)
     {
-        return $supervisors->map(function (Supervisor $supervisor) {
+        return $supervisors->map(function (Supervisor $supervisor) use ($recommendationStudent) {
             $studentsCount = (int) ($supervisor->students_count ?? 0);
             $loadBand = $this->loadBand($studentsCount);
+            $recommendationScore = max(0, 100 - ($studentsCount * 10));
+            $recommendationReasons = [];
+
+            if ($recommendationStudent) {
+                $fitSignals = $this->buildSupervisorFitSignals($recommendationStudent, $supervisor, $loadBand);
+                $recommendationScore += $fitSignals['score'];
+                $recommendationReasons = $fitSignals['reasons'];
+            }
+
+            if (empty($recommendationReasons)) {
+                $recommendationReasons[] = match ($loadBand) {
+                    'recommended' => 'Best next assignment based on current active load.',
+                    'watch' => 'Eligible for linking, but load should be reviewed.',
+                    default => 'Assignment is still possible, but supervisor load is high.',
+                };
+            }
+
+            if ($recommendationStudent && (int) $supervisor->university_id !== (int) $recommendationStudent->university_id) {
+                $recommendationScore -= 200;
+                array_unshift($recommendationReasons, 'Different university from the selected student, so this supervisor is not eligible for direct assignment.');
+            }
+
             $supervisor->setAttribute('load_band', $loadBand);
             $supervisor->setAttribute('load_label', match ($loadBand) {
                 'recommended' => 'Recommended',
                 'watch' => 'Watch load',
                 default => 'High load',
             });
-            $supervisor->setAttribute('recommendation_reason', match ($loadBand) {
-                'recommended' => 'Best next assignment based on current active load.',
-                'watch' => 'Eligible for linking, but load should be reviewed.',
-                default => 'Assignment is still possible, but supervisor load is high.',
-            });
-            $supervisor->setAttribute('recommendation_score', max(0, 100 - ($studentsCount * 10)));
+            $supervisor->setAttribute('recommendation_reason', implode(' ', array_slice($recommendationReasons, 0, 3)));
+            $supervisor->setAttribute('recommendation_score', $recommendationScore);
 
             return $supervisor;
         })->sortByDesc('recommendation_score')->values();
+    }
+
+    protected function resolveRecommendationStudent(int $selectedStudentId, ?int $universityId = null, $relationshipStudents = null): ?Student
+    {
+        if ($selectedStudentId > 0) {
+            $selectedStudent = Student::query()
+                ->with(['user', 'university', 'supervisor.user'])
+                ->when($universityId, fn ($query) => $query->where('university_id', $universityId))
+                ->whereKey($selectedStudentId)
+                ->first();
+
+            if ($selectedStudent) {
+                return $selectedStudent;
+            }
+        }
+
+        $relationshipStudents ??= Student::query()
+            ->with(['user', 'university', 'supervisor.user'])
+            ->when($universityId, fn ($query) => $query->where('university_id', $universityId))
+            ->orderByRaw('case when supervisor_id is null then 0 else 1 end')
+            ->orderBy('full_name')
+            ->limit(40)
+            ->get();
+
+        return $relationshipStudents->firstWhere('supervisor_id', null) ?: $relationshipStudents->first();
+    }
+
+    protected function buildSupervisorFitSignals(Student $student, Supervisor $supervisor, string $loadBand): array
+    {
+        $score = 0;
+        $reasons = [];
+
+        $researchAreaTokens = $this->tokenizeRecommendationText($supervisor->research_areas);
+        $departmentTokens = $this->tokenizeRecommendationText($supervisor->department);
+        $topicTokens = $this->tokenizeRecommendationText($student->research_topic);
+
+        if ($topicTokens !== []) {
+            $topicAreaOverlap = array_values(array_intersect($topicTokens, $researchAreaTokens));
+            $topicDepartmentOverlap = array_values(array_diff(array_intersect($topicTokens, $departmentTokens), $topicAreaOverlap));
+
+            if ($topicAreaOverlap !== []) {
+                $score += min(36, count($topicAreaOverlap) * 18);
+                $reasons[] = 'Topic fit: ' . implode(', ', array_slice($topicAreaOverlap, 0, 2)) . '.';
+            }
+
+            if ($topicDepartmentOverlap !== []) {
+                $score += min(12, count($topicDepartmentOverlap) * 6);
+                $reasons[] = 'Department fit: ' . implode(', ', array_slice($topicDepartmentOverlap, 0, 2)) . '.';
+            }
+
+            if ($topicAreaOverlap === [] && $topicDepartmentOverlap === []) {
+                $reasons[] = 'No direct topic overlap detected, so load and degree experience drive this recommendation.';
+            }
+        } else {
+            $reasons[] = 'No research topic declared yet, so recommendations lean on supervisor capacity and current lane coverage.';
+        }
+
+        $sameDegreeStudentsCount = $supervisor->students()
+            ->where('degree_level', $student->degree_level)
+            ->count();
+
+        if ($sameDegreeStudentsCount > 0) {
+            $score += min(12, $sameDegreeStudentsCount * 4);
+            $reasons[] = 'Already supervises ' . $sameDegreeStudentsCount . ' ' . $student->degree_level . ' student' . ($sameDegreeStudentsCount === 1 ? '' : 's') . '.';
+        }
+
+        if ((int) $student->current_stage <= 2 && $loadBand === 'recommended') {
+            $score += 8;
+            $reasons[] = 'Low-load fit for early-stage onboarding.';
+        }
+
+        if ((int) $student->current_stage >= 4 && $loadBand !== 'high') {
+            $score += 5;
+            $reasons[] = 'Capacity supports later-stage milestone follow-through.';
+        }
+
+        if ($loadBand === 'high') {
+            $score -= 18;
+            $reasons[] = 'Current load is high and should be reviewed before assigning another student.';
+        }
+
+        return [
+            'score' => $score,
+            'reasons' => $reasons,
+        ];
+    }
+
+    protected function tokenizeRecommendationText(?string $value): array
+    {
+        if (! $value) {
+            return [];
+        }
+
+        $normalized = preg_split('/[^a-z0-9]+/i', strtolower($value)) ?: [];
+
+        return array_values(array_unique(array_filter($normalized, function (string $token) {
+            return strlen($token) >= 2;
+        })));
     }
 
     protected function loadBand(int $studentsCount): string

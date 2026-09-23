@@ -143,7 +143,7 @@
                   <select id="dashboard-student-id" name="student_id" required class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm text-slate-900 dark:text-white">
                     <option value="">Select student</option>
                     @foreach($relationshipStudents as $student)
-                      <option value="{{ $student->id }}">{{ $student->full_name }}{{ $student->supervisor?->user?->name ? ' - Current: ' . $student->supervisor->user->name : ' - Unassigned' }}</option>
+                      <option value="{{ $student->id }}" @selected((int) optional($recommendationStudent)->id === (int) $student->id)>{{ $student->full_name }}{{ $student->supervisor?->user?->name ? ' - Current: ' . $student->supervisor->user->name : ' - Unassigned' }}</option>
                     @endforeach
                   </select>
                 </div>
@@ -173,6 +173,7 @@
                     <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
                       <p class="font-semibold text-slate-900 dark:text-white">{{ $student->full_name }}</p>
                       <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $student->matric_number }} · {{ $student->degree_level }}</p>
+                      <a href="{{ route('admin.dashboard', ['student_id' => $student->id]) }}#relationship-operations" class="mt-3 inline-flex text-xs font-semibold text-academic-700 hover:underline dark:text-academic-300">Focus recommendations</a>
                     </div>
                   @empty
                     <p class="text-sm text-slate-500 dark:text-slate-400">No unassigned students in the current scope.</p>
@@ -181,6 +182,9 @@
               </div>
               <div class="p-5">
                 <h4 class="text-sm font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Recommended Supervisors</h4>
+                @if($recommendationStudent)
+                  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Recommendation focus: {{ $recommendationStudent->full_name }} @if($recommendationStudent->research_topic)&middot; {{ $recommendationStudent->research_topic }} @else &middot; {{ $recommendationStudent->degree_level }} stage {{ $recommendationStudent->current_stage }} @endif</p>
+                @endif
                 <div class="mt-4 space-y-3">
                   @forelse($recommendedSupervisors as $supervisor)
                     <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">

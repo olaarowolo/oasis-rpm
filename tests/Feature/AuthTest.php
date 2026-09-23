@@ -722,6 +722,104 @@ class AuthTest extends TestCase
         $this->assertSame('sent', data_get($auditLog->new_values, 'notifications.supervisor.status'));
     }
 
+    public function test_super_admin_dashboard_prioritizes_matching_supervisors_for_selected_student(): void
+    {
+        $university = University::create([
+            'name' => 'Recommendation University',
+            'code' => 'RCU',
+            'email' => 'info@rcu.edu',
+            'department' => 'Research Office',
+            'phone' => '08012345678',
+        ]);
+
+        $superAdmin = User::create([
+            'university_id' => $university->id,
+            'email' => 'superadmin@rcu.edu',
+            'password' => 'SuperAdmin@2026',
+            'name' => 'Recommendation Super Admin',
+            'role' => 'super_admin',
+            'is_active' => true,
+        ]);
+
+        $matchingSupervisorUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'fit-supervisor@rcu.edu',
+            'password' => 'Supervisor@2026',
+            'name' => 'Fit Supervisor',
+            'role' => 'supervisor',
+            'is_active' => true,
+        ]);
+
+        Supervisor::create([
+            'user_id' => $matchingSupervisorUser->id,
+            'university_id' => $university->id,
+            'title' => 'Dr.',
+            'department' => 'Mass Communication',
+            'research_areas' => 'journalism, digital media',
+            'pin_code' => bcrypt('1234'),
+            'passphrase' => bcrypt('fit-passphrase'),
+            'is_active' => true,
+        ]);
+
+        $mismatchSupervisorUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'remote-supervisor@rcu.edu',
+            'password' => 'Supervisor@2026',
+            'name' => 'Remote Supervisor',
+            'role' => 'supervisor',
+            'is_active' => true,
+        ]);
+
+        Supervisor::create([
+            'user_id' => $mismatchSupervisorUser->id,
+            'university_id' => $university->id,
+            'title' => 'Dr.',
+            'department' => 'Physics',
+            'research_areas' => 'astrophysics',
+            'pin_code' => bcrypt('1234'),
+            'passphrase' => bcrypt('remote-passphrase'),
+            'is_active' => true,
+        ]);
+
+        $studentUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'topic-student@rcu.edu',
+            'password' => 'Student@2026',
+            'name' => 'Topic Student',
+            'role' => 'student',
+            'is_active' => true,
+        ]);
+
+        $student = Student::create([
+            'user_id' => $studentUser->id,
+            'university_id' => $university->id,
+            'supervisor_id' => null,
+            'matric_number' => 'RCU-001',
+            'lastname' => 'Student',
+            'full_name' => 'Topic Student',
+            'email' => 'topic-student@rcu.edu',
+            'degree_level' => 'BSc',
+            'research_topic' => 'digital journalism practice',
+            'current_stage' => 1,
+            'status' => 'active',
+            'account_status' => 'active',
+        ]);
+
+        $response = $this->withSession([
+            'user_id' => $superAdmin->id,
+            'role' => 'super_admin',
+            'university_id' => $university->id,
+            'mfa_verified' => true,
+            'last_activity' => time(),
+            'session_started' => time(),
+        ])->get('/super-admin/dashboard?student_id=' . $student->id);
+
+        $response->assertOk()
+            ->assertSee('Recommendation focus: Topic Student')
+            ->assertSee('Topic fit: digital, journalism.')
+            ->assertSeeInOrder(['Fit Supervisor', 'Remote Supervisor']);
+    }
+
     public function test_student_otp_request_does_not_leak_account_existence(): void
     {
         $response = $this->postJson('/api/auth/student/send-otp', [

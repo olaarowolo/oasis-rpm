@@ -165,7 +165,7 @@
                         <select id="relationship-student-id" name="student_id" required class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
                             <option value="">Select student</option>
                             @foreach ($relationshipStudents as $student)
-                                <option value="{{ $student->id }}" data-university-id="{{ $student->university_id }}">
+                                <option value="{{ $student->id }}" data-university-id="{{ $student->university_id }}" @selected((int) optional($recommendationStudent)->id === (int) $student->id)>
                                     {{ $student->full_name ?: $student->user?->name ?: 'Student' }}
                                     @if ($student->matric_number)
                                         · {{ $student->matric_number }}
@@ -209,6 +209,7 @@
                         <div class="px-5 py-4">
                             <p class="font-semibold text-slate-900">{{ $student->full_name ?: $student->user?->name ?: 'Student' }}</p>
                             <p class="mt-1 text-sm text-slate-500">{{ $student->university->name ?? 'No university' }} @if($student->matric_number) · {{ $student->matric_number }} @endif</p>
+                            <a href="{{ route('super-admin.dashboard', ['student_id' => $student->id]) }}#relationship-orchestrator" class="mt-3 inline-flex text-xs font-semibold text-violet-600 hover:underline">Focus recommendations</a>
                         </div>
                     @empty
                         <div class="px-5 py-8 text-sm text-slate-500">Every active student currently has a linked supervisor.</div>
@@ -220,6 +221,9 @@
                 <div class="border-b border-slate-200 px-5 py-4">
                     <h2 class="text-lg font-bold text-slate-900">Recommended Supervisors</h2>
                     <p class="mt-1 text-sm text-slate-500">Ranked by current active load so the next assignment goes to the strongest capacity candidate first.</p>
+                    @if($recommendationStudent)
+                        <p class="mt-2 text-xs text-slate-400">Recommendation focus: {{ $recommendationStudent->full_name ?: $recommendationStudent->user?->name ?: 'Student' }} @if($recommendationStudent->research_topic)· {{ $recommendationStudent->research_topic }} @else · {{ $recommendationStudent->degree_level }} stage {{ $recommendationStudent->current_stage }} @endif</p>
+                    @endif
                 </div>
                 <div class="divide-y divide-slate-100">
                     @foreach ($recommendedSupervisors as $supervisor)
