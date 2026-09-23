@@ -36,11 +36,11 @@ jobs:
             storage/framework/views \
             storage/logs
 
-          find storage/framework/cache -mindepth 1 ! -name '.gitkeep' -delete
-          find storage/framework/sessions -mindepth 1 ! -name '.gitkeep' -delete
-          find storage/framework/testing -mindepth 1 ! -name '.gitkeep' -delete
-          find storage/framework/views -mindepth 1 ! -name '.gitkeep' -delete
-          find storage/logs -mindepth 1 ! -name '.gitkeep' -delete
+          find storage/framework/cache -mindepth 1 -type f ! -name '.gitkeep' -delete
+          find storage/framework/sessions -mindepth 1 -type f ! -name '.gitkeep' -delete
+          find storage/framework/testing -mindepth 1 -type f ! -name '.gitkeep' -delete
+          find storage/framework/views -mindepth 1 -type f ! -name '.gitkeep' -delete
+          find storage/logs -mindepth 1 -type f ! -name '.gitkeep' -delete
 
           touch bootstrap/cache/.gitkeep \
             storage/framework/cache/.gitkeep \
