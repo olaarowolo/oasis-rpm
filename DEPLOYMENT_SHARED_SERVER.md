@@ -63,13 +63,12 @@ Notes:
 - Set `FILESYSTEM_DISK=public` because uploaded archive documents are returned through `/storage/...` URLs.
 - Enable `SENDGRID_ENABLED` or `GEMINI_ENABLED` only when the corresponding credentials are valid on the server.
 
-## 4. Install and optimize
+## 4. First-time server setup
 
-Run these commands after upload:
+Run the full setup only once on a new server or new app install:
 
 ```bash
 composer install --no-dev --optimize-autoloader
-php artisan key:generate --force
 php artisan migrate --force
 php artisan storage:link
 php artisan config:cache
@@ -77,15 +76,58 @@ php artisan route:cache
 php artisan view:cache
 ```
 
-If the app key already exists in `.env`, skip `php artisan key:generate --force`.
+Notes:
 
-## 5. Frontend assets
+- Do not run `php artisan key:generate --force` on an existing live install. Only generate an app key once, before the app is in use.
+- This project does not currently require a Node build step for deployment.
+
+## 5. Routine deploy for small code changes
+
+Use this path for normal updates where dependencies did not change and no new migration was added.
+
+```bash
+git pull origin main
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+This is the fastest safe deploy path for commits like:
+
+- `84c48e8` Add student portal and super admin workflow updates
+- `2d891ee` Add OTP mail delivery diagnostics
+
+## 6. Deploy when database schema changed
+
+If the pulled commit includes files under `database/migrations/`, run the routine deploy commands above and add:
+
+```bash
+php artisan migrate --force
+```
+
+Run `composer install --no-dev --optimize-autoloader` only when `composer.json` or `composer.lock` changed.
+
+## 7. Frontend assets
 
 This project currently loads Tailwind from CDN and serves local static assets from `public/`, so no Node build step is required for the current UI.
 
-## 6. Final checks
+## 8. Final checks
 
 - Verify login pages load without exposing `/public` in the URL.
 - Verify file uploads create files under `storage/app/public` and open through `/storage/...` URLs.
 - Verify outgoing mail with the configured SMTP provider.
 - Confirm `storage/logs/laravel.log` is writable.
+
+## 9. Quick shared-hosting deploy checklist
+
+Use this order to avoid long delays during routine production updates:
+
+1. Pull the latest code.
+2. Run `composer install --no-dev --optimize-autoloader` only if PHP dependencies changed.
+3. Run `php artisan migrate --force` only if new migrations were deployed.
+4. Clear and rebuild Laravel caches.
+5. Test one login and one email-triggering flow.
+6. If email is part of the release, inspect `storage/logs/laravel.log` immediately after the test.
