@@ -92,12 +92,49 @@
               <select name="supervisor_id" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
                 <option value="">Select supervisor</option>
                 @foreach($supervisors as $supervisor)
-                  <option value="{{ $supervisor->id }}">{{ $supervisor->user->name ?? 'Supervisor' }} - {{ $supervisor->department }}</option>
+                  <option value="{{ $supervisor->id }}">{{ $supervisor->user->name ?? 'Supervisor' }} - {{ $supervisor->department }} ({{ $supervisor->load_label }})</option>
                 @endforeach
               </select>
             </label>
+            <div class="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300">
+              Recommended load is up to {{ $loadPolicy['recommended_max'] }} students. Above {{ $loadPolicy['watch_max'] }} students, supervisors are treated as high load and should be reviewed before assignment.
+            </div>
             <button type="submit" class="w-full px-4 py-2.5 rounded-xl bg-academic-700 hover:bg-academic-800 text-white text-sm font-semibold">Link and notify</button>
           </form>
+
+          <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Recommended Supervisors</h4>
+            @forelse($recommendedSupervisors as $supervisor)
+              <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="font-semibold text-slate-900 dark:text-white">{{ $supervisor->user->name ?? 'Supervisor' }}</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $supervisor->department }}</p>
+                    <p class="mt-1 text-xs {{ $supervisor->load_band === 'recommended' ? 'text-emerald-600 dark:text-emerald-400' : ($supervisor->load_band === 'watch' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400') }}">{{ $supervisor->recommendation_reason }}</p>
+                  </div>
+                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ $supervisor->load_band === 'recommended' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : ($supervisor->load_band === 'watch' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300') }}">{{ $supervisor->students_count }} students</span>
+                </div>
+              </div>
+            @empty
+              <p class="text-sm text-slate-500 dark:text-slate-400">No active supervisors available in the current scope.</p>
+            @endforelse
+          </div>
+
+          <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Recent Relationship Changes</h4>
+            @forelse($relationshipHistory as $history)
+              <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+                <p class="font-semibold text-slate-900 dark:text-white">{{ data_get($history->new_values, 'student_name', 'Student') }} · {{ data_get($history->new_values, 'transition') === 'supervisor_reassigned' ? 'Reassigned' : 'Linked' }}</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Supervisor: {{ data_get($history->new_values, 'supervisor_name', 'Unknown') }} · Actor: {{ $history->user?->name ?? 'System' }}</p>
+                <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                  <span class="rounded-full px-2.5 py-1 {{ data_get($history->new_values, 'notifications.student.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">Student email: {{ data_get($history->new_values, 'notifications.student.status', 'unknown') }}</span>
+                  <span class="rounded-full px-2.5 py-1 {{ data_get($history->new_values, 'notifications.supervisor.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">Supervisor email: {{ data_get($history->new_values, 'notifications.supervisor.status', 'unknown') }}</span>
+                </div>
+              </div>
+            @empty
+              <p class="text-sm text-slate-500 dark:text-slate-400">No relationship changes recorded yet in this scope.</p>
+            @endforelse
+          </div>
         </section>
 
         <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">

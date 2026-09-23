@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\PortalEmail;
+use App\Models\AuditLog;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\University;
@@ -89,12 +90,16 @@ class AdminRelationshipTest extends TestCase
         $dashboardResponse = $this->withSession($session)->get('/admin/dashboard');
         $dashboardResponse->assertOk()
             ->assertSee('Supervision Link Desk')
+            ->assertSee('Recommended Supervisors')
+            ->assertSee('Recent Relationship Changes')
             ->assertSee('Unassigned Students')
             ->assertSee('Link and notify');
 
         $usersResponse = $this->withSession($session)->get('/admin/users');
         $usersResponse->assertOk()
             ->assertSee('Relationship Operations')
+            ->assertSee('Recommended Supervisors')
+            ->assertSee('Recent Relationship Changes')
             ->assertSee('Unassigned Students')
             ->assertSee('Render Student')
             ->assertSee('Render Supervisor');
@@ -189,5 +194,15 @@ class AdminRelationshipTest extends TestCase
         Mail::assertSent(PortalEmail::class, function ($mail) use ($supervisorUser) {
             return $mail->viewName === 'supervision-linked' && $mail->hasTo($supervisorUser->email);
         });
+
+        $auditLog = AuditLog::query()
+            ->where('model_type', 'Student')
+            ->where('model_id', $student->id)
+            ->latest()
+            ->first();
+
+        $this->assertNotNull($auditLog);
+        $this->assertSame('sent', data_get($auditLog->new_values, 'notifications.student.status'));
+        $this->assertSame('sent', data_get($auditLog->new_values, 'notifications.supervisor.status'));
     }
 }

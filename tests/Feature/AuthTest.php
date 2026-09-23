@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\LoginOtpMail;
 use App\Mail\PortalEmail;
+use App\Models\AuditLog;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\University;
@@ -709,6 +710,16 @@ class AuthTest extends TestCase
         Mail::assertSent(PortalEmail::class, function ($mail) use ($supervisorUser) {
             return $mail->viewName === 'supervision-linked' && $mail->hasTo($supervisorUser->email);
         });
+
+        $auditLog = AuditLog::query()
+            ->where('model_type', 'Student')
+            ->where('model_id', $student->id)
+            ->latest()
+            ->first();
+
+        $this->assertNotNull($auditLog);
+        $this->assertSame('sent', data_get($auditLog->new_values, 'notifications.student.status'));
+        $this->assertSame('sent', data_get($auditLog->new_values, 'notifications.supervisor.status'));
     }
 
     public function test_student_otp_request_does_not_leak_account_existence(): void

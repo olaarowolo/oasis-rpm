@@ -18,6 +18,9 @@ use Illuminate\View\View;
 
 class AdminDashboardWebController extends BaseController
 {
+    protected const LOAD_RECOMMENDED_MAX = 5;
+    protected const LOAD_WATCH_MAX = 8;
+
     public function dashboard(Request $request): View
     {
         $currentUser = $this->actingUser()?->load('university');
@@ -78,7 +81,10 @@ class AdminDashboardWebController extends BaseController
             ->limit(40)
             ->get();
 
-        $assignmentSupervisors = $this->availableSupervisors($selectedUniversityId);
+        $assignmentSupervisors = $this->decorateSupervisorAssignments($this->availableSupervisors($selectedUniversityId));
+        $recommendedSupervisors = $assignmentSupervisors->take(4);
+        $relationshipHistory = $this->recentRelationshipHistory($selectedUniversityId);
+        $loadPolicy = $this->loadPolicy();
 
         return view('admin-dashboard', compact(
             'currentUser',
@@ -88,7 +94,10 @@ class AdminDashboardWebController extends BaseController
             'unassignedStudents',
             'supervisorCapacity',
             'relationshipStudents',
-            'assignmentSupervisors'
+            'assignmentSupervisors',
+            'recommendedSupervisors',
+            'relationshipHistory',
+            'loadPolicy'
         ));
     }
 
@@ -157,13 +166,16 @@ class AdminDashboardWebController extends BaseController
             'super_admin' => 'Super Admin',
         ];
 
-        $supervisors = $this->availableSupervisors($selectedUniversityId);
+        $supervisors = $this->decorateSupervisorAssignments($this->availableSupervisors($selectedUniversityId));
         $relationshipStudents = Student::with(['user', 'supervisor.user'])
             ->when($selectedUniversityId, fn ($query) => $query->where('university_id', $selectedUniversityId))
             ->orderByRaw('case when supervisor_id is null then 0 else 1 end')
             ->orderBy('full_name')
             ->limit(40)
             ->get();
+        $recommendedSupervisors = $supervisors->take(4);
+        $relationshipHistory = $this->recentRelationshipHistory($selectedUniversityId);
+        $loadPolicy = $this->loadPolicy();
 
         return view('admin.users', compact(
             'users',
@@ -175,7 +187,10 @@ class AdminDashboardWebController extends BaseController
             'selectedStatus',
             'queue',
             'supervisors',
-            'relationshipStudents'
+            'relationshipStudents',
+            'recommendedSupervisors',
+            'relationshipHistory',
+            'loadPolicy'
         ));
     }
 
@@ -231,6 +246,8 @@ class AdminDashboardWebController extends BaseController
         $student->update(['supervisor_id' => $supervisor->id]);
         $student->load(['user', 'university', 'supervisor.user']);
 
+        $notificationStatus = $this->notifyRelationshipParties($student, $supervisor, $previousSupervisor);
+
         $this->writeAuditLog(
             $student->university,
             'Student',
@@ -243,10 +260,10 @@ class AdminDashboardWebController extends BaseController
                 'supervisor_id' => $supervisor->id,
                 'supervisor_name' => $supervisor->user?->name,
                 'transition' => $previousSupervisor ? 'supervisor_reassigned' : 'supervisor_linked',
+                'supervisor_load_band' => $this->loadBand((int) $supervisor->students()->count()),
+                'notifications' => $notificationStatus,
             ]
         );
-
-        $this->notifyRelationshipParties($student, $supervisor, $previousSupervisor);
 
         return redirect()
             ->back()
@@ -280,11 +297,74 @@ class AdminDashboardWebController extends BaseController
     protected function availableSupervisors(?int $universityId = null)
     {
         return Supervisor::with('user')
+            ->withCount('students')
             ->when($universityId, function ($query) use ($universityId) {
                 $query->where('university_id', $universityId);
             })
+            ->where('is_active', true)
+            ->whereHas('user', fn ($query) => $query->where('is_active', true))
+            ->orderBy('students_count')
             ->orderBy('department')
             ->get();
+    }
+
+    protected function loadPolicy(): array
+    {
+        return [
+            'recommended_max' => self::LOAD_RECOMMENDED_MAX,
+            'watch_max' => self::LOAD_WATCH_MAX,
+        ];
+    }
+
+    protected function decorateSupervisorAssignments($supervisors)
+    {
+        return $supervisors->map(function (Supervisor $supervisor) {
+            $studentsCount = (int) ($supervisor->students_count ?? 0);
+            $loadBand = $this->loadBand($studentsCount);
+            $supervisor->setAttribute('load_band', $loadBand);
+            $supervisor->setAttribute('load_label', match ($loadBand) {
+                'recommended' => 'Recommended',
+                'watch' => 'Watch load',
+                default => 'High load',
+            });
+            $supervisor->setAttribute('recommendation_reason', match ($loadBand) {
+                'recommended' => 'Best candidate based on current active load.',
+                'watch' => 'Still assignable, but capacity should be reviewed.',
+                default => 'Assignment is allowed, but supervisor load is high.',
+            });
+            $supervisor->setAttribute('recommendation_score', max(0, 100 - ($studentsCount * 10)));
+
+            return $supervisor;
+        })->sortByDesc('recommendation_score')->values();
+    }
+
+    protected function loadBand(int $studentsCount): string
+    {
+        if ($studentsCount <= self::LOAD_RECOMMENDED_MAX) {
+            return 'recommended';
+        }
+
+        if ($studentsCount <= self::LOAD_WATCH_MAX) {
+            return 'watch';
+        }
+
+        return 'high';
+    }
+
+    protected function recentRelationshipHistory(?int $universityId = null)
+    {
+        return AuditLog::with(['user', 'university'])
+            ->when($universityId, fn ($query) => $query->where('university_id', $universityId))
+            ->where('model_type', 'Student')
+            ->where('action', 'updated')
+            ->latest()
+            ->limit(25)
+            ->get()
+            ->filter(function (AuditLog $log) {
+                return in_array(data_get($log->new_values, 'transition'), ['supervisor_linked', 'supervisor_reassigned'], true);
+            })
+            ->take(6)
+            ->values();
     }
 
     protected function writeAuditLog(?University $university, string $modelType, int $modelId, string $action, ?array $oldValues, ?array $newValues): void
@@ -311,7 +391,7 @@ class AdminDashboardWebController extends BaseController
         return $userId ? User::find($userId) : null;
     }
 
-    protected function notifyRelationshipParties(Student $student, Supervisor $supervisor, ?Supervisor $previousSupervisor = null): void
+    protected function notifyRelationshipParties(Student $student, Supervisor $supervisor, ?Supervisor $previousSupervisor = null): array
     {
         $student->loadMissing(['user', 'university', 'supervisor.user']);
         $supervisor->loadMissing(['user', 'university']);
@@ -326,6 +406,11 @@ class AdminDashboardWebController extends BaseController
         $supervisorSubject = $wasReassigned
             ? 'A student has been reassigned to you'
             : 'A student has been linked to you';
+
+        $status = [
+            'student' => ['email' => $studentEmail, 'status' => $studentEmail ? 'pending' : 'skipped'],
+            'supervisor' => ['email' => $supervisorEmail, 'status' => $supervisorEmail ? 'pending' : 'skipped'],
+        ];
 
         if ($studentEmail) {
             try {
@@ -348,7 +433,10 @@ class AdminDashboardWebController extends BaseController
                     'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
                     'universityCode' => $universityCode,
                 ]));
+                $status['student']['status'] = 'sent';
             } catch (\Throwable $exception) {
+                $status['student']['status'] = 'failed';
+                $status['student']['error'] = $exception->getMessage();
                 Log::warning('Failed to send student supervision assignment email.', [
                     'student_id' => $student->id,
                     'supervisor_id' => $supervisor->id,
@@ -379,7 +467,10 @@ class AdminDashboardWebController extends BaseController
                     'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
                     'universityCode' => $universityCode,
                 ]));
+                $status['supervisor']['status'] = 'sent';
             } catch (\Throwable $exception) {
+                $status['supervisor']['status'] = 'failed';
+                $status['supervisor']['error'] = $exception->getMessage();
                 Log::warning('Failed to send supervisor supervision assignment email.', [
                     'student_id' => $student->id,
                     'supervisor_id' => $supervisor->id,
@@ -388,5 +479,7 @@ class AdminDashboardWebController extends BaseController
                 ]);
             }
         }
+
+        return $status;
     }
 }

@@ -25,6 +25,9 @@ use Illuminate\View\View;
 
 class SuperAdminWebController extends BaseController
 {
+    protected const LOAD_RECOMMENDED_MAX = 5;
+    protected const LOAD_WATCH_MAX = 8;
+
     public function __construct(private UserInvitationService $userInvitationService)
     {
     }
@@ -308,11 +311,15 @@ class SuperAdminWebController extends BaseController
             ->orderBy('students_count')
             ->orderBy('department')
             ->get();
+        $assignmentSupervisors = $this->decorateSupervisorAssignments($assignmentSupervisors);
 
         $unassignedStudents = $relationshipStudents
             ->whereNull('supervisor_id')
             ->take(8)
             ->values();
+        $recommendedSupervisors = $assignmentSupervisors->take(6);
+        $relationshipHistory = $this->recentRelationshipHistory();
+        $loadPolicy = $this->loadPolicy();
 
         $assignmentSummary = [
             'students' => Student::count(),
@@ -545,7 +552,10 @@ class SuperAdminWebController extends BaseController
             'relationshipStudents',
             'assignmentSupervisors',
             'unassignedStudents',
-            'assignmentSummary'
+            'assignmentSummary',
+            'recommendedSupervisors',
+            'relationshipHistory',
+            'loadPolicy',
         ));
     }
 
@@ -1079,6 +1089,8 @@ class SuperAdminWebController extends BaseController
         $student->update(['supervisor_id' => $supervisor->id]);
         $student->load(['user', 'university', 'supervisor.user']);
 
+        $notificationStatus = $this->notifyRelationshipParties($student, $supervisor, $previousSupervisor);
+
         $this->writeAuditLog(
             $student->university,
             'Student',
@@ -1091,10 +1103,10 @@ class SuperAdminWebController extends BaseController
                 'supervisor_id' => $supervisor->id,
                 'supervisor_name' => $supervisor->user?->name,
                 'transition' => $previousSupervisor ? 'supervisor_reassigned' : 'supervisor_linked',
+                'supervisor_load_band' => $this->loadBand((int) $supervisor->students()->count()),
+                'notifications' => $notificationStatus,
             ]
         );
-
-        $this->notifyRelationshipParties($student, $supervisor, $previousSupervisor);
 
         return redirect()
             ->back()
@@ -1514,14 +1526,77 @@ class SuperAdminWebController extends BaseController
     protected function availableSupervisors(?int $universityId = null)
     {
         return Supervisor::with('user')
+            ->withCount('students')
             ->when($universityId, function ($query) use ($universityId) {
                 $query->where('university_id', $universityId);
             })
+            ->where('is_active', true)
+            ->whereHas('user', fn ($query) => $query->where('is_active', true))
+            ->orderBy('students_count')
             ->orderBy('department')
             ->get();
     }
 
-    protected function notifyRelationshipParties(Student $student, Supervisor $supervisor, ?Supervisor $previousSupervisor = null): void
+    protected function loadPolicy(): array
+    {
+        return [
+            'recommended_max' => self::LOAD_RECOMMENDED_MAX,
+            'watch_max' => self::LOAD_WATCH_MAX,
+        ];
+    }
+
+    protected function decorateSupervisorAssignments($supervisors)
+    {
+        return $supervisors->map(function (Supervisor $supervisor) {
+            $studentsCount = (int) ($supervisor->students_count ?? 0);
+            $loadBand = $this->loadBand($studentsCount);
+            $supervisor->setAttribute('load_band', $loadBand);
+            $supervisor->setAttribute('load_label', match ($loadBand) {
+                'recommended' => 'Recommended',
+                'watch' => 'Watch load',
+                default => 'High load',
+            });
+            $supervisor->setAttribute('recommendation_reason', match ($loadBand) {
+                'recommended' => 'Best next assignment based on current active load.',
+                'watch' => 'Eligible for linking, but load should be reviewed.',
+                default => 'Assignment is still possible, but supervisor load is high.',
+            });
+            $supervisor->setAttribute('recommendation_score', max(0, 100 - ($studentsCount * 10)));
+
+            return $supervisor;
+        })->sortByDesc('recommendation_score')->values();
+    }
+
+    protected function loadBand(int $studentsCount): string
+    {
+        if ($studentsCount <= self::LOAD_RECOMMENDED_MAX) {
+            return 'recommended';
+        }
+
+        if ($studentsCount <= self::LOAD_WATCH_MAX) {
+            return 'watch';
+        }
+
+        return 'high';
+    }
+
+    protected function recentRelationshipHistory(?int $universityId = null)
+    {
+        return AuditLog::with(['user', 'university'])
+            ->when($universityId, fn ($query) => $query->where('university_id', $universityId))
+            ->where('model_type', 'Student')
+            ->where('action', 'updated')
+            ->latest()
+            ->limit(25)
+            ->get()
+            ->filter(function (AuditLog $log) {
+                return in_array(data_get($log->new_values, 'transition'), ['supervisor_linked', 'supervisor_reassigned'], true);
+            })
+            ->take(6)
+            ->values();
+    }
+
+    protected function notifyRelationshipParties(Student $student, Supervisor $supervisor, ?Supervisor $previousSupervisor = null): array
     {
         $student->loadMissing(['user', 'university', 'supervisor.user']);
         $supervisor->loadMissing(['user', 'university']);
@@ -1536,6 +1611,11 @@ class SuperAdminWebController extends BaseController
         $supervisorSubject = $wasReassigned
             ? 'A student has been reassigned to you'
             : 'A student has been linked to you';
+
+        $status = [
+            'student' => ['email' => $studentEmail, 'status' => $studentEmail ? 'pending' : 'skipped'],
+            'supervisor' => ['email' => $supervisorEmail, 'status' => $supervisorEmail ? 'pending' : 'skipped'],
+        ];
 
         if ($studentEmail) {
             try {
@@ -1558,7 +1638,10 @@ class SuperAdminWebController extends BaseController
                     'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
                     'universityCode' => $universityCode,
                 ]));
+                $status['student']['status'] = 'sent';
             } catch (\Throwable $exception) {
+                $status['student']['status'] = 'failed';
+                $status['student']['error'] = $exception->getMessage();
                 Log::warning('Failed to send student supervision assignment email.', [
                     'student_id' => $student->id,
                     'supervisor_id' => $supervisor->id,
@@ -1587,7 +1670,10 @@ class SuperAdminWebController extends BaseController
                     'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
                     'universityCode' => $universityCode,
                 ]));
+                $status['supervisor']['status'] = 'sent';
             } catch (\Throwable $exception) {
+                $status['supervisor']['status'] = 'failed';
+                $status['supervisor']['error'] = $exception->getMessage();
                 Log::warning('Failed to send supervisor relationship assignment email.', [
                     'student_id' => $student->id,
                     'supervisor_id' => $supervisor->id,
@@ -1596,6 +1682,8 @@ class SuperAdminWebController extends BaseController
                 ]);
             }
         }
+
+        return $status;
     }
 
     protected function buildTrendSeries($query, string $column, int $days, string $label): array

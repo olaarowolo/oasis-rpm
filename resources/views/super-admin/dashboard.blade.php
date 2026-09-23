@@ -182,10 +182,13 @@
                             <option value="">Select supervisor</option>
                             @foreach ($assignmentSupervisors as $supervisor)
                                 <option value="{{ $supervisor->id }}" data-university-id="{{ $supervisor->university_id }}">
-                                    {{ $supervisor->user?->name ?? 'Supervisor' }} · {{ $supervisor->university->code ?? 'UNI' }} · {{ $supervisor->students_count }} students
+                                    {{ $supervisor->user?->name ?? 'Supervisor' }} · {{ $supervisor->university->code ?? 'UNI' }} · {{ $supervisor->students_count }} students · {{ $supervisor->load_label }}
                                 </option>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-700 xl:col-span-2">
+                        Recommended load is up to {{ $loadPolicy['recommended_max'] }} students. Above {{ $loadPolicy['watch_max'] }} students, supervisors are flagged as high load for manual review.
                     </div>
                     <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700">
                         <i class="fa-solid fa-link"></i>
@@ -215,19 +218,47 @@
 
             <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
                 <div class="border-b border-slate-200 px-5 py-4">
-                    <h2 class="text-lg font-bold text-slate-900">Supervisor Capacity Board</h2>
-                    <p class="mt-1 text-sm text-slate-500">Use current student load to decide who should receive the next assignment.</p>
+                    <h2 class="text-lg font-bold text-slate-900">Recommended Supervisors</h2>
+                    <p class="mt-1 text-sm text-slate-500">Ranked by current active load so the next assignment goes to the strongest capacity candidate first.</p>
                 </div>
                 <div class="divide-y divide-slate-100">
-                    @foreach ($assignmentSupervisors->take(8) as $supervisor)
+                    @foreach ($recommendedSupervisors as $supervisor)
                         <div class="flex items-center justify-between gap-4 px-5 py-4">
                             <div>
                                 <p class="font-semibold text-slate-900">{{ $supervisor->user?->name ?? 'Supervisor' }}</p>
                                 <p class="mt-1 text-sm text-slate-500">{{ $supervisor->university->name ?? 'No university' }} · {{ $supervisor->department ?: 'Department pending' }}</p>
+                                <p class="mt-1 text-xs {{ $supervisor->load_band === 'recommended' ? 'text-emerald-600' : ($supervisor->load_band === 'watch' ? 'text-amber-600' : 'text-rose-600') }}">{{ $supervisor->recommendation_reason }}</p>
                             </div>
-                            <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{{ $supervisor->students_count }} students</span>
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $supervisor->load_band === 'recommended' ? 'bg-emerald-100 text-emerald-700' : ($supervisor->load_band === 'watch' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700') }}">{{ $supervisor->students_count }} students</span>
                         </div>
                     @endforeach
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-5 py-4">
+                    <h2 class="text-lg font-bold text-slate-900">Recent Relationship Changes</h2>
+                    <p class="mt-1 text-sm text-slate-500">Latest links and reassignments with notification delivery visibility.</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($relationshipHistory as $history)
+                        <div class="px-5 py-4">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-semibold text-slate-900">{{ data_get($history->new_values, 'student_name', 'Student') }} · {{ data_get($history->new_values, 'transition') === 'supervisor_reassigned' ? 'Reassigned' : 'Linked' }}</p>
+                                    <p class="mt-1 text-sm text-slate-500">Supervisor: {{ data_get($history->new_values, 'supervisor_name', 'Unknown') }} · {{ $history->university?->name ?? 'No university' }}</p>
+                                    <p class="mt-1 text-xs text-slate-400">Actor: {{ $history->user?->name ?? 'System' }}</p>
+                                </div>
+                                <span class="text-xs text-slate-400">{{ optional($history->created_at)->diffForHumans() }}</span>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                <span class="rounded-full px-2.5 py-1 {{ data_get($history->new_values, 'notifications.student.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">Student email: {{ data_get($history->new_values, 'notifications.student.status', 'unknown') }}</span>
+                                <span class="rounded-full px-2.5 py-1 {{ data_get($history->new_values, 'notifications.supervisor.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">Supervisor email: {{ data_get($history->new_values, 'notifications.supervisor.status', 'unknown') }}</span>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="px-5 py-8 text-sm text-slate-500">No relationship changes recorded yet.</div>
+                    @endforelse
                 </div>
             </div>
         </div>
