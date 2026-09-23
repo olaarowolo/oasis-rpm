@@ -19,6 +19,21 @@ jobs:
           extensions: mbstring, xml, ctype, iconv, mysql, zip
           coverage: none
 
+      - name: Verify Composer lockfile exists
+        run: |
+          test -f composer.lock || {
+            echo "composer.lock is required for deployment. Commit the lockfile and push again." >&2
+            exit 1
+          }
+
+      - name: Install Composer dependencies
+        run: |
+          composer install \
+            --prefer-dist \
+            --no-dev \
+            --no-progress \
+            --optimize-autoloader
+
       # ---------------------------------------------------------
       # Deploy application
       # ---------------------------------------------------------
