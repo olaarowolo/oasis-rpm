@@ -18,7 +18,6 @@ auth.json
 *.swo
 *~
 .composer
-composer.lock
 npm-debug.log
 yarn-error.log
 .env.testing
