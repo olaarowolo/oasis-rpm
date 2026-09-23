@@ -30,9 +30,26 @@ jobs:
         run: |
           mkdir -p bootstrap/cache \
             storage/framework/cache \
+            storage/framework/cache/data \
             storage/framework/sessions \
             storage/framework/testing \
+            storage/framework/views \
             storage/logs
+
+          find storage/framework/cache -mindepth 1 ! -name '.gitkeep' -delete
+          find storage/framework/sessions -mindepth 1 ! -name '.gitkeep' -delete
+          find storage/framework/testing -mindepth 1 ! -name '.gitkeep' -delete
+          find storage/framework/views -mindepth 1 ! -name '.gitkeep' -delete
+          find storage/logs -mindepth 1 ! -name '.gitkeep' -delete
+
+          touch bootstrap/cache/.gitkeep \
+            storage/framework/cache/.gitkeep \
+            storage/framework/cache/data/.gitkeep \
+            storage/framework/sessions/.gitkeep \
+            storage/framework/testing/.gitkeep \
+            storage/framework/views/.gitkeep \
+            storage/logs/.gitkeep
+
           chmod -R u+rwX bootstrap/cache storage
 
       - name: Install Composer dependencies
@@ -68,10 +85,6 @@ jobs:
             **/tests/**
             **/.env
             **/.env.*
-            **/storage/framework/cache/**
-            **/storage/framework/sessions/**
-            **/storage/framework/testing/**
-            **/storage/logs/**
             **/.gitignore
             **/.gitattributes
             **/.DS_Store
