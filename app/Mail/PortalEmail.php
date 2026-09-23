@@ -64,7 +64,7 @@ class PortalEmail extends Mailable
                 'subject' => $universityCode . ' Portal — test email',
                 'data' => [
                     'title' => 'Test email',
-                    'message' => 'This confirms the Research Supervision Portal can send email successfully.',
+                    'bodyText' => 'This confirms the Research Supervision Portal can send email successfully.',
                 ],
             ],
             'demo-request' => [

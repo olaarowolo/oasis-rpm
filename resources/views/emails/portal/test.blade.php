@@ -27,7 +27,7 @@
 
         <div style="padding:24px;">
             <h2 style="margin:0 0 12px;color:{{ $brandDark }};font-size:18px;">{{ $title ?? 'Notification' }}</h2>
-            <p style="margin:0 0 14px;color:{{ $ink }};font-size:14px;line-height:1.6;">{{ $message ?? 'This confirms the Research Supervision Portal can send email successfully.' }}</p>
+            <p style="margin:0 0 14px;color:{{ $ink }};font-size:14px;line-height:1.6;">{{ $bodyText ?? 'This confirms the Research Supervision Portal can send email successfully.' }}</p>
         </div>
 
         <div style="padding:14px 24px;border-top:1px solid {{ $line }};color:{{ $muted }};font-size:11px;">
