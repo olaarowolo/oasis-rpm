@@ -1,84 +1,13 @@
-<x-layouts.app title="Admin Dashboard | TheOAsis Research Supervision System">
+@extends('layouts.admin')
+
+@section('title', 'Admin Dashboard | TheOAsis Research Supervision System')
+
+@section('content')
   @php
     $adminName = $currentUser->name ?? 'Admin';
     $adminEmail = $currentUser->email ?? 'admin@example.com';
-    $adminInitials = collect(explode(' ', $adminName))->filter()->take(2)->map(fn ($part) => mb_substr($part, 0, 1))->implode('');
-    $adminInitials = $adminInitials ?: 'AD';
-    $roleLabel = $currentUser?->isSuperAdmin() ? 'Super Admin' : 'Admin';
   @endphp
 
-  <header class="sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-        <button id="mobile-nav-toggle" type="button" data-mobile-nav-toggle aria-controls="app-sidebar" aria-expanded="false" aria-label="Open navigation menu" class="mobile-nav-toggle md:hidden -ml-1 w-10 h-10 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition shrink-0">
-          <span class="mobile-nav-line" aria-hidden="true"></span>
-          <span class="mobile-nav-line" aria-hidden="true"></span>
-          <span class="mobile-nav-line" aria-hidden="true"></span>
-        </button>
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-academic-900 via-academic-800 to-amber-500 flex items-center justify-center text-white shadow-md">
-          <i class="fa-solid fa-layer-group text-lg"></i>
-        </div>
-        <div class="min-w-0">
-          <h1 class="font-bold text-sm sm:text-lg text-slate-900 dark:text-white leading-tight truncate">Admin Dashboard</h1>
-          <p class="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 truncate">Dynamic operations view for user access, settings, and platform oversight</p>
-        </div>
-      </div>
-
-      <div class="flex items-center gap-3">
-        <div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
-          <i class="fa-solid fa-circle-check"></i>
-          Live data
-        </div>
-        <div class="hidden md:flex items-center gap-3 pl-3 border-l border-slate-200 dark:border-slate-700">
-          <div class="w-9 h-9 rounded-full bg-academic-800 text-white border border-white/10 flex items-center justify-center text-sm font-bold shadow-sm">
-            {{ $adminInitials }}
-          </div>
-          <div class="text-left leading-tight">
-            <p class="text-xs font-semibold text-slate-800 dark:text-slate-100">{{ $adminName }}</p>
-            <p class="text-[10px] text-slate-500 dark:text-slate-400">{{ $roleLabel }}</p>
-          </div>
-        </div>
-        <button onclick="logout()" class="p-2 rounded-lg text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30 transition" title="Log out">
-          <i class="fa-solid fa-right-from-bracket text-base"></i>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <aside id="app-sidebar" aria-label="Admin navigation" class="md:hidden w-full flex-shrink-0 bg-slate-50 dark:bg-slate-900">
-    <div class="flex items-center justify-between mb-4">
-      <span class="font-bold text-slate-900 dark:text-white text-sm">Menu</span>
-      <button type="button" data-mobile-nav-close aria-label="Close menu" class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700/50">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
-    </div>
-
-    <nav class="bg-white dark:bg-slate-800 rounded-2xl p-2 shadow-sm border border-slate-200 dark:border-slate-700 space-y-1" aria-label="Admin navigation">
-      <div class="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">Admin Workspace</div>
-      <a href="{{ route('admin.dashboard') }}" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-semibold rounded-xl transition bg-academic-50 text-academic-700 dark:bg-academic-900/40 dark:text-academic-100">
-        <i class="fa-solid fa-chart-line w-5 text-center text-academic-600 dark:text-academic-400"></i>
-        Dashboard
-      </a>
-      <a href="{{ route('admin.users') }}" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
-        <i class="fa-solid fa-users w-5 text-center"></i>
-        Users
-      </a>
-      <a href="{{ route('admin.config') }}" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
-        <i class="fa-solid fa-sliders w-5 text-center"></i>
-        Configuration
-      </a>
-      <a href="{{ route('admin.resources') }}" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
-        <i class="fa-solid fa-book-open w-5 text-center"></i>
-        Resources
-      </a>
-      <a href="{{ route('admin.audit-logs') }}" class="nav-btn w-full flex items-center gap-3 px-3.5 py-2.5 text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">
-        <i class="fa-solid fa-shield-halved w-5 text-center"></i>
-        Audit Logs
-      </a>
-    </nav>
-  </aside>
-
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
     <section class="rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-br from-slate-950 via-academic-900 to-academic-800 overflow-hidden relative">
       <div class="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.55),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.35),_transparent_28%)]"></div>
       <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -255,16 +184,4 @@
         </section>
       </aside>
     </section>
-  </main>
-
-  <form id="logout-form" method="POST" action="/logout" class="hidden">
-    @csrf
-  </form>
-
-  <script>
-    function logout() {
-      const form = document.getElementById('logout-form');
-      if (form) form.submit();
-    }
-  </script>
-</x-layouts.app>
+@endsection

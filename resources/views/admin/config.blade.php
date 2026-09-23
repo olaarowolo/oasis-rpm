@@ -1,56 +1,8 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50 text-slate-800">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>System Configuration | TheOAsis Research Supervision System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          colors: {
-            academic: {
-              50: '#f0f4f8',
-              100: '#d9e2ec',
-              500: '#102a43',
-              600: '#0b69a3',
-              700: '#035388',
-              800: '#003e6b',
-              900: '#002744',
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03); }
-    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 4px; }
-  </style>
-</head>
-<body class="min-h-full font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
-  <header class="sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-      <div class="min-w-0">
-        <p class="text-xs uppercase tracking-[0.3em] text-violet-600 dark:text-violet-400 font-semibold">System settings</p>
-        <h1 class="font-bold text-lg text-slate-900 dark:text-white truncate">System Configuration</h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <a href="{{ route('admin.dashboard') }}" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">Dashboard</a>
-        <a href="{{ route('admin.users') }}" class="px-3 py-2 rounded-xl bg-academic-700 hover:bg-academic-800 text-white text-sm font-semibold shadow-sm transition">User management</a>
-      </div>
-    </div>
-  </header>
+@extends('layouts.admin')
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+@section('title', 'System Configuration | TheOAsis Research Supervision System')
+
+@section('content')
     <section class="rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-br from-slate-950 via-academic-900 to-academic-800 relative overflow-hidden">
       <div class="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.55),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.35),_transparent_28%)]"></div>
       <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -230,7 +182,6 @@
     </section>
 
     <p id="config-feedback" class="hidden rounded-2xl border px-4 py-3 text-sm"></p>
-  </main>
 
   <script>
     const csrfToken = @json(csrf_token());
@@ -314,5 +265,4 @@
       });
     });
   </script>
-</body>
-</html>
+@endsection

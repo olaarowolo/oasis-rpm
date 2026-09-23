@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Student;
 use App\Models\Supervisor;
+use App\Models\User;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -97,6 +98,43 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['components.sidebar', 'supervisor.partials.sidebar'], function ($view) use ($resolveSupervisorSidebarData) {
             $view->with('sidebarSupervisorProfile', $resolveSupervisorSidebarData());
+        });
+
+        $resolveAdminShellData = function (): array {
+            $profile = [
+                'name' => 'Admin',
+                'email' => 'admin@example.com',
+                'initials' => 'AD',
+                'roleLabel' => 'Admin',
+                'universityName' => 'All universities',
+            ];
+
+            $user = User::query()->with('university')->find(session('user_id'));
+            if (! $user) {
+                return $profile;
+            }
+
+            $profile['name'] = $user->name ?: $profile['name'];
+            $profile['email'] = $user->email ?: $profile['email'];
+            $profile['roleLabel'] = $user->role === 'super_admin' ? 'Super Admin' : 'Admin';
+            $profile['universityName'] = $user->university?->name ?: $profile['universityName'];
+
+            $parts = preg_split('/\s+/', trim($profile['name'])) ?: [];
+            $letters = collect($parts)
+                ->filter()
+                ->take(2)
+                ->map(fn ($part) => strtoupper(substr($part, 0, 1)))
+                ->implode('');
+
+            if ($letters !== '') {
+                $profile['initials'] = $letters;
+            }
+
+            return $profile;
+        };
+
+        View::composer(['layouts.admin', 'admin.partials.sidebar'], function ($view) use ($resolveAdminShellData) {
+            $view->with('adminShellProfile', $resolveAdminShellData());
         });
     }
 }
