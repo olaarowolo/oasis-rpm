@@ -5,8 +5,10 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SupervisorController;
+use App\Http\Controllers\UserInvitationController;
 use App\Http\Controllers\Web\AdminResourceWebController;
 use App\Http\Controllers\Web\AuditLogWebController;
+use App\Http\Controllers\Web\SuperAdminWebController;
 use App\Http\Controllers\Web\SupervisorMeetingWebController;
 use App\Models\Student;
 use App\Models\Supervisor;
@@ -72,13 +74,17 @@ Route::post('/student/login', [AuthController::class, 'loginStudent']);
 Route::post('/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::get('/me', [AuthController::class, 'me']);
-Route::post('/logout', [AuthController::class, 'logout']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // ================= PASSWORD RESET ROUTES =================
 Route::post('/password/reset-link', [PasswordResetController::class, 'sendResetLink'])->name('password.reset-link');
 Route::post('/password/verify-token', [PasswordResetController::class, 'verifyToken'])->name('password.verify-token');
 Route::post('/password/reset', [PasswordResetController::class, 'resetPassword'])->name('password.reset');
 Route::post('/password/change', [PasswordResetController::class, 'changePassword'])->name('password.change');
+
+// ================= ACCOUNT INVITATION ROUTES =================
+Route::get('/account-invitations/{token}', [UserInvitationController::class, 'show'])->name('account-invitations.show');
+Route::post('/account-invitations/{token}', [UserInvitationController::class, 'complete'])->name('account-invitations.complete');
 
 // ================= DASHBOARD VIEWS - Role-Based =================
 // Default redirect based on role
@@ -100,33 +106,31 @@ Route::get('/home', function () {
 
 // ================= SUPER ADMIN ROUTES (Platform-level access) =================
 Route::middleware(['app.auth', 'role:super_admin'])->prefix('/super-admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('super-admin-dashboard');
-    })->name('super-admin.dashboard');
-
-    Route::get('/universities', function () {
-        return view('super-admin.universities');
-    })->name('super-admin.universities');
-
-    Route::get('/users', function () {
-        return view('super-admin.users');
-    })->name('super-admin.users');
-
-    Route::get('/config', function () {
-        return view('super-admin.config');
-    })->name('super-admin.config');
-
-    Route::get('/audit-logs', function () {
-        return view('super-admin.audit-logs');
-    })->name('super-admin.audit-logs');
-
-    Route::get('/resources', function () {
-        return view('super-admin.resources');
-    })->name('super-admin.resources');
-
-    Route::get('/system-status', function () {
-        return view('super-admin.system-status');
-    })->name('super-admin.system-status');
+    Route::controller(SuperAdminWebController::class)->group(function () {
+        Route::get('/dashboard', 'dashboard')->name('super-admin.dashboard');
+        Route::get('/universities', 'universities')->name('super-admin.universities');
+        Route::get('/universities/create', 'createUniversity')->name('super-admin.universities.create');
+        Route::post('/universities', 'storeUniversity')->name('super-admin.universities.store');
+        Route::get('/universities/{university}', 'showUniversity')->name('super-admin.universities.show');
+        Route::get('/universities/{university}/edit', 'editUniversity')->name('super-admin.universities.edit');
+        Route::put('/universities/{university}', 'updateUniversity')->name('super-admin.universities.update');
+        Route::post('/universities/{university}/suspend', 'suspendUniversity')->name('super-admin.universities.suspend');
+        Route::post('/universities/{university}/activate', 'activateUniversity')->name('super-admin.universities.activate');
+        Route::post('/universities/{university}/archive', 'archiveUniversity')->name('super-admin.universities.archive');
+        Route::delete('/universities/{university}', 'destroyUniversity')->name('super-admin.universities.destroy');
+        Route::get('/users', 'users')->name('super-admin.users');
+        Route::get('/users/create', 'createUser')->name('super-admin.users.create');
+        Route::post('/users', 'storeUser')->name('super-admin.users.store');
+        Route::get('/users/{user}/edit', 'editUser')->name('super-admin.users.edit');
+        Route::put('/users/{user}', 'updateUser')->name('super-admin.users.update');
+        Route::post('/users/{user}/toggle-status', 'toggleUserStatus')->name('super-admin.users.toggle-status');
+        Route::post('/users/{user}/resend-invite', 'resendUserInvitation')->name('super-admin.users.resend-invite');
+        Route::get('/config', 'config')->name('super-admin.config');
+        Route::put('/config', 'updateConfig')->name('super-admin.config.update');
+        Route::get('/audit-logs', 'auditLogs')->name('super-admin.audit-logs');
+        Route::get('/resources', 'resources')->name('super-admin.resources');
+        Route::get('/system-status', 'systemStatus')->name('super-admin.system-status');
+    });
 });
 
 // ================= ADMIN ROUTES (University-level access) =================
@@ -198,7 +202,9 @@ Route::middleware(['app.auth', 'role:admin,super_admin'])->prefix('/admin')->gro
             'super_admin' => 'Super Admin',
         ];
 
-        return view('admin.users', compact('users', 'universities', 'stats', 'roles', 'selectedUniversityId', 'selectedRole'));
+        $supervisors = Supervisor::with('user')->orderBy('department')->get();
+
+        return view('admin.users', compact('users', 'universities', 'stats', 'roles', 'selectedUniversityId', 'selectedRole', 'supervisors'));
     })->name('admin.users');
 
     Route::get('/config', function (Request $request) {
@@ -319,6 +325,34 @@ Route::middleware(['app.auth', 'role:student'])->prefix('/student')->group(funct
     Route::get('/dashboard', function () {
         return view('student-dashboard');
     })->name('student.dashboard');
+
+    Route::get('/profile', function () {
+        $student = \App\Models\Student::with('user')->findOrFail(session('student_id'));
+
+        return view('student.profile', compact('student'));
+    })->name('student.profile');
+
+    Route::post('/profile', function (\Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'full_name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'personal_drive_url' => 'nullable|url|max:2048',
+            'degree_level' => 'required|in:BSc,MSc,PhD',
+        ]);
+
+        $student = \App\Models\Student::with('user')->findOrFail(session('student_id'));
+        $student->update($validated);
+
+        if ($student->user) {
+            $student->user->update([
+                'phone' => $validated['phone'] ?? null,
+            ]);
+        }
+
+        return redirect()
+            ->route('student.profile')
+            ->with('status', 'Profile settings updated successfully.');
+    })->name('student.profile.update');
 
     Route::get('/meetings', function () {
         // Data is fetched client-side from GET /api/student/meetings.

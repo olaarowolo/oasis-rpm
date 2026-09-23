@@ -13,7 +13,8 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $fillable = [
-        'university_id', 'email', 'password', 'name', 'role', 'email_verified_at'
+        'university_id', 'email', 'password', 'name', 'role', 'email_verified_at',
+        'department', 'phone', 'avatar_url', 'is_active'
     ];
 
     protected $hidden = [
@@ -23,6 +24,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_active' => 'boolean',
     ];
 
     public function university(): BelongsTo

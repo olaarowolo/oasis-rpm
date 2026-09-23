@@ -6,14 +6,27 @@
 
   @include('partials.dashboards.student-header')
 
-  <!-- Backdrop behind the mobile nav drawer -->
-  <div id="nav-backdrop" onclick="closeMobileNav()" class="hidden md:hidden fixed inset-0 z-40 bg-slate-900/50 opacity-0"></div>
-
   <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col md:flex-row gap-4 sm:gap-6">
 
     @include('partials.dashboards.student-sidebar')
 
     <main class="flex-1 min-w-0 space-y-6">
+
+      <div id="student-drive-card" class="rounded-2xl border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-5 py-4 shadow-sm text-xs text-slate-600 dark:text-slate-300">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+              <i class="fa-brands fa-google-drive text-emerald-600"></i>
+              Student Drive Folder
+            </p>
+            <p id="student-drive-text" class="mt-1">No drive folder has been added yet. Once you or your supervisor sets it, it will appear here.</p>
+          </div>
+          <a id="student-drive-link" href="#" target="_blank" rel="noopener" class="hidden shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 font-semibold text-white transition hover:bg-emerald-700">
+            <i class="fa-solid fa-up-right-from-square"></i>
+            Open Drive
+          </a>
+        </div>
+      </div>
 
       <!-- Summary metrics -->
       <div class="grid grid-cols-3 gap-4">
@@ -151,21 +164,25 @@
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
       ));
     }
-
-    /* ---- mobile drawer ---- */
-    function openMobileNav() {
-      document.getElementById('app-sidebar')?.classList.add('drawer-open');
-      document.getElementById('nav-backdrop')?.classList.remove('hidden');
-      document.body.classList.add('nav-drawer-locked');
-      requestAnimationFrame(() => { const b = document.getElementById('nav-backdrop'); if (b) b.style.opacity = '1'; });
-    }
-    function closeMobileNav() {
-      document.getElementById('app-sidebar')?.classList.remove('drawer-open');
-      const b = document.getElementById('nav-backdrop');
-      if (b) { b.style.opacity = '0'; setTimeout(() => b.classList.add('hidden'), 250); }
-      document.body.classList.remove('nav-drawer-locked');
-    }
     function switchTab() {}
+
+    function renderStudentDrive(student) {
+      const text = document.getElementById('student-drive-text');
+      const link = document.getElementById('student-drive-link');
+      if (!text || !link) return;
+
+      const driveUrl = student.personal_drive_url || '';
+
+      if (driveUrl) {
+        text.innerText = 'Your student drive folder is available for meeting notes, drafts, and shared files.';
+        link.href = driveUrl;
+        link.classList.remove('hidden');
+      } else {
+        text.innerText = 'No drive folder has been added yet. Once you or your supervisor sets it, it will appear here.';
+        link.href = '#';
+        link.classList.add('hidden');
+      }
+    }
 
     /* ---- toasts ---- */
     function showToast(message, type = 'success') {
@@ -260,6 +277,15 @@
       }
     }
 
+    async function loadStudentDrive() {
+      try {
+        const res = await apiGet('/student/profile');
+        renderStudentDrive(res.data || {});
+      } catch (err) {
+        renderStudentDrive({});
+      }
+    }
+
     /* ---- modal ---- */
     function openModal(id) { const el = document.getElementById(id); if (el) { el.classList.remove('hidden'); el.classList.add('flex'); } }
     function closeModal(id) { const el = document.getElementById(id); if (el) { el.classList.add('hidden'); el.classList.remove('flex'); } }
@@ -321,6 +347,9 @@
       form.submit();
     }
 
-    document.addEventListener('DOMContentLoaded', loadMeetings);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadMeetings();
+      loadStudentDrive();
+    });
   </script>
 </x-layouts.app>

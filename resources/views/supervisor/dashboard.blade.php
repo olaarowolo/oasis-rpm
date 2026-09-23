@@ -13,9 +13,6 @@
   </div>
 </div>
 
-<!-- Backdrop behind the mobile nav drawer (tap to close). Hidden on md+. -->
-<div id="nav-backdrop" onclick="closeMobileNav()" class="hidden md:hidden fixed inset-0 z-40 bg-slate-900/50 opacity-0"></div>
-
 <!-- MAIN LAYOUT CONTAINER -->
 <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col md:flex-row gap-4 sm:gap-6">
 

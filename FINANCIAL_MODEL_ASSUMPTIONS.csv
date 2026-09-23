@@ -1,0 +1,23 @@
+assumption_category,assumption_name,value,unit,notes
+pricing,essential_subscription,6000000,NGN per campus per year,Annual license
+pricing,professional_subscription,12000000,NGN per campus per year,Annual license
+pricing,enterprise_subscription,24000000,NGN per campus per year,Annual license
+pricing,average_implementation_fee,3500000,NGN per campus,Blended average across plans
+pricing,average_addon_revenue,1000000,NGN per campus,Represents 40 percent attach rate at 2500000 NGN addon value
+mix,essential_mix,50,percent of campuses,Scenario mix assumption
+mix,professional_mix,35,percent of campuses,Scenario mix assumption
+mix,enterprise_mix,15,percent of campuses,Scenario mix assumption
+mix,blended_subscription_value,10800000,NGN per campus per year,Weighted average subscription value
+mix,blended_first_year_contract_value,15300000,NGN per campus,Subscription plus implementation plus addon average
+collections,subscription_collection_current_month,50,percent,Cash collected in month of invoice
+collections,subscription_collection_next_month,40,percent,Cash collected one month after invoice
+collections,subscription_collection_second_month,10,percent,Cash collected two months after invoice
+collections,implementation_signing_invoice_share,60,percent of implementation fee,Invoiced at contract signature
+collections,implementation_golive_invoice_share,40,percent of implementation fee,Invoiced the month after contract signature
+collections,implementation_signing_collection_current_month,70,percent of signing invoice,Cash collected in month of invoice
+collections,implementation_signing_collection_next_month,30,percent of signing invoice,Cash collected one month after invoice
+collections,implementation_golive_collection_current_month,80,percent of golive invoice,Cash collected in month of invoice
+collections,implementation_golive_collection_next_month,20,percent of golive invoice,Cash collected one month after invoice
+collections,addon_invoice_timing,1,month after contract close,Assumes addon activates at go-live
+collections,addon_collection_current_month,60,percent of addon invoice,Cash collected in month of invoice
+collections,addon_collection_next_month,40,percent of addon invoice,Cash collected one month after invoice

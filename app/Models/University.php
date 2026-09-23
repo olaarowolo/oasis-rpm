@@ -10,12 +10,14 @@ class University extends Model
     protected $fillable = [
         'name', 'code', 'email', 'department', 'phone', 'logo_url',
         'branding_color', 'ai_model_config', 'email_config',
-        'google_chat_webhook_url', 'features_enabled'
+        'google_chat_webhook_url', 'is_active', 'archived_at', 'features_enabled'
     ];
 
     protected $casts = [
         'ai_model_config' => 'array',
         'email_config' => 'array',
+        'is_active' => 'boolean',
+        'archived_at' => 'datetime',
         'features_enabled' => 'array',
     ];
 

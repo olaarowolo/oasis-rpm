@@ -2,11 +2,11 @@
 <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col md:flex-row gap-4 sm:gap-6">
 
   <!-- SIDE NAVIGATION BAR (off-canvas drawer on mobile, inline on md+) -->
-  <aside id="app-sidebar" class="w-full md:w-64 flex-shrink-0 bg-slate-50 dark:bg-slate-900 md:bg-transparent md:dark:bg-transparent">
+  <aside id="app-sidebar" aria-label="Primary navigation" class="w-full md:w-64 flex-shrink-0 bg-slate-50 dark:bg-slate-900 md:bg-transparent md:dark:bg-transparent">
     <!-- Drawer header (mobile only) -->
     <div class="md:hidden flex items-center justify-between mb-3">
       <span class="font-bold text-slate-900 dark:text-white text-sm">Menu</span>
-      <button type="button" onclick="closeMobileNav()" aria-label="Close menu" class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700/50">
+      <button type="button" data-mobile-nav-close aria-label="Close menu" class="w-9 h-9 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700/50">
         <i class="fa-solid fa-xmark text-lg"></i>
       </button>
     </div>
@@ -97,30 +97,34 @@
     <div class="mt-4 p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-xs space-y-3">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-academic-800 text-amber-400 font-extrabold flex items-center justify-center text-sm shadow-md">
-          OA
+          {{ $sidebarSupervisorProfile['supervisorInitials'] }}
         </div>
         <div>
-          <h4 class="font-bold text-slate-900 dark:text-white text-xs">Olasunkanmi Arowolo, PhD</h4>
-          <p class="text-[10px] text-slate-500 dark:text-slate-400">Lecturer & Research Supervisor</p>
+          <h4 class="font-bold text-slate-900 dark:text-white text-xs">{{ $sidebarSupervisorProfile['supervisorName'] }}</h4>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400">{{ $sidebarSupervisorProfile['supervisorTitle'] }}</p>
         </div>
       </div>
 
-      <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
-        Journalism & Media Scholar
-      </p>
+      @if (!empty($sidebarSupervisorProfile['researchAreas']))
+        <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-snug">
+          {{ $sidebarSupervisorProfile['researchAreas'] }}
+        </p>
+      @endif
 
       <div class="pt-2 border-t border-slate-100 dark:border-slate-700 space-y-1.5 text-[11px]">
         <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
           <i class="fa-solid fa-building-columns text-academic-600 w-3.5 text-center"></i>
-          <span class="truncate">Dept. of Journalism & Media Studies</span>
+          <span class="truncate">{{ $sidebarSupervisorProfile['supervisorDepartment'] }}</span>
         </div>
-        <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
-          <i class="fa-solid fa-university text-academic-600 w-3.5 text-center"></i>
-          <span>Lagos State University (LASU)</span>
-        </div>
+        @if (!empty($sidebarSupervisorProfile['universityName']))
+          <div class="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+            <i class="fa-solid fa-university text-academic-600 w-3.5 text-center"></i>
+            <span>{{ $sidebarSupervisorProfile['universityName'] }}</span>
+          </div>
+        @endif
         <div class="flex items-center gap-1.5 font-mono text-[10px] text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900 p-1.5 rounded-lg border border-slate-100 dark:border-slate-800">
           <i class="fa-solid fa-envelope text-amber-500"></i>
-          <span class="truncate">olasunkanmi.arowolo@lasu.edu.ng</span>
+          <span class="truncate">{{ $sidebarSupervisorProfile['supervisorEmail'] }}</span>
         </div>
       </div>
     </div>
@@ -131,31 +135,23 @@
         <i class="fa-solid fa-calendar-alt text-academic-600 dark:text-academic-400"></i>
         Need to chat? Book a time:
       </h4>
-      <div class="space-y-2">
-        <!-- Primary: main supervision matters -->
-        <a href="https://calendar.app.google/aXvVfeyn2U3rdQtF6" target="_blank" rel="noopener"
+      @if (!empty($sidebarSupervisorProfile['bookingUrl']))
+        <a href="{{ $sidebarSupervisorProfile['bookingUrl'] }}" target="_blank" rel="noopener"
            class="flex items-center justify-between gap-2 p-3 rounded-xl bg-academic-600 hover:bg-academic-700 text-white font-bold shadow-md ring-2 ring-academic-300 dark:ring-academic-500/40 transition">
           <span class="flex items-center gap-2 leading-tight">
-            <i class="fa-solid fa-star"></i>
+            <i class="fa-solid fa-calendar-check"></i>
             <span>
-              Project Supervision (45 min)
-              <span class="block text-[10px] font-medium text-academic-100">Recommended for main supervision matters</span>
+              Book With Supervisor
+              <span class="block text-[10px] font-medium text-academic-100">Availability is set by your supervisor</span>
             </span>
           </span>
           <i class="fa-solid fa-up-right-from-square text-xs"></i>
         </a>
-
-        <a href="https://calendar.app.google/wpdUUELcqncM41bZ6" target="_blank" rel="noopener"
-           class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-academic-50 dark:bg-academic-900/30 hover:bg-academic-100 dark:hover:bg-academic-900/50 text-academic-700 dark:text-academic-200 text-xs font-semibold transition">
-          <span><i class="fa-solid fa-clock mr-1.5"></i> 15-Min Student Drop-In</span>
-          <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
-        </a>
-
-        <a href="https://calendar.app.google/TzbVPYxHxnKz6tjA6" target="_blank" rel="noopener"
-           class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-700/40 hover:bg-slate-100 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-semibold transition">
-          <span><i class="fa-solid fa-clock mr-1.5"></i> 30-Min General Drop-In</span>
-          <i class="fa-solid fa-up-right-from-square text-[10px]"></i>
-        </a>
-      </div>
+      @else
+        <div class="rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 px-3 py-3 text-xs font-medium text-slate-600 dark:text-slate-300">
+          <i class="fa-solid fa-user-clock mr-1.5 text-academic-600 dark:text-academic-400"></i>
+          To be set by supervisor.
+        </div>
+      @endif
     </div>
   </aside>

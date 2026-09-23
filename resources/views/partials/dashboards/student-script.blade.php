@@ -124,21 +124,14 @@
       navBtn.classList.add('bg-academic-50', 'text-academic-700', 'dark:bg-academic-900/40', 'dark:text-academic-100', 'font-semibold');
       navBtn.classList.remove('text-slate-600', 'dark:text-slate-300', 'font-medium');
     }
-    closeMobileNav();
+    closeMobileNav({ restoreFocus: false });
   }
 
-  /* ---------- mobile drawer ---------- */
-  function openMobileNav() {
-    document.getElementById('app-sidebar')?.classList.add('drawer-open');
-    document.getElementById('nav-backdrop')?.classList.remove('hidden');
-    document.body.classList.add('nav-drawer-locked');
-    requestAnimationFrame(() => { const b = document.getElementById('nav-backdrop'); if (b) b.style.opacity = '1'; });
-  }
-  function closeMobileNav() {
-    document.getElementById('app-sidebar')?.classList.remove('drawer-open');
-    const b = document.getElementById('nav-backdrop');
-    if (b) { b.style.opacity = '0'; setTimeout(() => b.classList.add('hidden'), 250); }
-    document.body.classList.remove('nav-drawer-locked');
+  function getInitialStudentTab() {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const allowedTabs = new Set(['student-dashboard', 'student-roadmap', 'student-proposals']);
+    return allowedTabs.has(tab) ? tab : 'student-dashboard';
   }
 
   /* ---------- roadmap rendering ---------- */
@@ -212,6 +205,48 @@
     }).join('');
   }
 
+  function renderStudentDrive(student) {
+    const text = document.getElementById('student-drive-text');
+    const link = document.getElementById('student-drive-link');
+    const dashboardDrive = document.getElementById('student-dashboard-drive');
+    const dashboardDriveText = document.getElementById('student-dashboard-drive-text');
+    const dashboardDriveLink = document.getElementById('student-dashboard-drive-link');
+
+    const driveUrl = student.personal_drive_url || '';
+
+    if (driveUrl) {
+      if (text) {
+        text.innerText = 'Your student drive folder is available for proposal drafts and related files.';
+      }
+      if (link) {
+        link.href = driveUrl;
+        link.classList.remove('hidden');
+      }
+      if (dashboardDrive && dashboardDriveLink) {
+        if (dashboardDriveText) {
+          dashboardDriveText.innerText = 'Student drive folder is ready for drafts, resources, and submissions.';
+        }
+        dashboardDriveLink.href = driveUrl;
+        dashboardDriveLink.classList.remove('hidden');
+      }
+    } else {
+      if (text) {
+        text.innerText = 'No drive folder has been added yet. Once you or your supervisor sets it, it will appear here.';
+      }
+      if (link) {
+        link.href = '#';
+        link.classList.add('hidden');
+      }
+      if (dashboardDrive && dashboardDriveLink) {
+        if (dashboardDriveText) {
+          dashboardDriveText.innerText = 'No student drive has been added yet. Once you or your supervisor sets it, it will appear here.';
+        }
+        dashboardDriveLink.href = '#';
+        dashboardDriveLink.classList.add('hidden');
+      }
+    }
+  }
+
   /* ---------- bind dashboard payload to the DOM ---------- */
   function bindDashboard(data) {
     studentState = data;
@@ -274,6 +309,8 @@
     document.getElementById('metric-progress').innerText = pct + '%';
     document.getElementById('metric-points').innerText = progress.points ?? student.points_earned ?? 0;
     document.getElementById('metric-meetings').innerText = (data.recent_meetings || []).length;
+
+    renderStudentDrive(student);
 
     // Roadmap uses the student's current stage
     renderStudentRoadmap(student.current_stage || 1, data.roadmap);
@@ -410,5 +447,8 @@
   }
 
   /* ---------- boot ---------- */
-  document.addEventListener('DOMContentLoaded', () => loadStudentData(false));
+  document.addEventListener('DOMContentLoaded', () => {
+    switchTab(getInitialStudentTab());
+    loadStudentData(false);
+  });
 </script>

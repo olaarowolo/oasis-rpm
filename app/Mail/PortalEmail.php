@@ -82,6 +82,16 @@ class PortalEmail extends Mailable
                     'portalBrand' => $this->data['portalBrand'] ?? 'TheOAsis',
                 ],
             ],
+            'account-invite' => [
+                'subject' => 'Complete your account setup for ' . ($this->data['universityName'] ?? $universityCode),
+                'data' => [
+                    'title' => 'Complete your account setup',
+                    'name' => $this->data['name'] ?? 'User',
+                    'roleLabel' => $this->data['roleLabel'] ?? 'User',
+                    'completionUrl' => $this->data['completionUrl'] ?? '',
+                    'expiresAt' => $this->data['expiresAt'] ?? '',
+                ],
+            ],
             'topic-submitted' => [
                 'subject' => 'New topic proposal from ' . ($this->data['studentName'] ?? 'a student'),
                 'data' => [

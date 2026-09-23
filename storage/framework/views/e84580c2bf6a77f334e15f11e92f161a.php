@@ -27,6 +27,13 @@
               <span id="student-portal-matric" class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">MATRIC: —</span>
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400">Supervisor: <strong id="student-supervisor-name" class="text-slate-800 dark:text-slate-200">—</strong></p>
+            <div id="student-dashboard-drive" class="mt-2">
+              <p id="student-dashboard-drive-text" class="text-[11px] text-slate-500 dark:text-slate-400">No student drive has been added yet.</p>
+              <a id="student-dashboard-drive-link" href="#" target="_blank" rel="noopener" class="hidden mt-1 inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/40">
+                <i class="fa-brands fa-google-drive"></i>
+                Open Student Drive
+              </a>
+            </div>
           </div>
         </div>
 
@@ -140,6 +147,21 @@
         <button id="btn-submit-topic-2" onclick="openSubmitTopicModal()" class="px-3 py-1.5 bg-academic-700 hover:bg-academic-800 text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5">
           <i class="fa-solid fa-plus"></i> New Proposal
         </button>
+      </div>
+      <div id="student-drive-card" class="mx-5 mt-5 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/40 px-4 py-4 text-xs text-slate-600 dark:text-slate-300">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <i class="fa-brands fa-google-drive text-emerald-600"></i>
+              Student Drive Folder
+            </p>
+            <p id="student-drive-text" class="mt-1">No drive folder has been added yet.</p>
+          </div>
+          <a id="student-drive-link" href="#" target="_blank" rel="noopener" class="hidden shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2 font-semibold text-white transition hover:bg-emerald-700">
+            <i class="fa-solid fa-up-right-from-square"></i>
+            Open Drive
+          </a>
+        </div>
       </div>
       <div id="student-proposals-list" class="p-5 space-y-3">
         <div class="text-center text-slate-400 text-xs py-6"><i class="fa-solid fa-spinner fa-spin mr-2"></i> Loading proposals...</div>

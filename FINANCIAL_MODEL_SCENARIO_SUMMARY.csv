@@ -1,0 +1,4 @@
+scenario,total_campuses,full_contract_value_ngn,total_invoiced_in_year_ngn,total_cash_collected_in_year_ngn,deferred_invoice_to_next_period_ngn,year_end_uncollected_cash_ngn,recurring_revenue_base_ngn
+10_campuses,10,153000000,150600000,143490000,2400000,7110000,118000000
+25_campuses,25,382500000,375300000,353970000,7200000,21330000,295000000
+50_campuses,50,765000000,748200000,697750000,16800000,50450000,590000000

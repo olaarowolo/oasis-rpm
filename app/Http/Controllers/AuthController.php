@@ -189,7 +189,7 @@ class AuthController extends BaseController
             ->first();
 
         // Use hash_equals for timing-safe password check
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (!$user || !$user->is_active || !Hash::check($validated['password'], $user->password)) {
             $this->recordFailedLoginAttempt($request, $validated['email']);
             $this->simulateSlowOperation();
             return $this->error('Invalid credentials', 401);
@@ -300,7 +300,7 @@ class AuthController extends BaseController
         ])->first();
 
         // Use hash_equals for timing-safe password check
-        if (!$user || !Hash::check($validated['password'], $user->password)) {
+        if (!$user || !$user->is_active || !Hash::check($validated['password'], $user->password)) {
             $this->recordFailedLoginAttempt($request, $validated['email']);
             $this->simulateSlowOperation();
             return $this->error('Invalid credentials', 401);

@@ -31,22 +31,6 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ===== Mobile off-canvas navigation drawer ===== */
-  @media (max-width: 767px) {
-    #app-sidebar {
-      position: fixed; top: 0; left: 0; bottom: 0;
-      z-index: 50; width: 84%; max-width: 20rem;
-      overflow-y: auto; -webkit-overflow-scrolling: touch;
-      padding: 1rem;
-      transform: translateX(-100%);
-      transition: transform 0.28s ease;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
-    }
-    #app-sidebar.drawer-open { transform: translateX(0); }
-    body.nav-drawer-locked { overflow: hidden; }
-  }
-  #nav-backdrop { transition: opacity 0.25s ease; }
-
   /* Roadmap connector pulse on the active stage */
   @keyframes stagePulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }

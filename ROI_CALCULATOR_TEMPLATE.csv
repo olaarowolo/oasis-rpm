@@ -1,0 +1,29 @@
+section,metric,input_or_formula,unit,notes
+institution,university_name,,text,Enter target institution name
+institution,deployment_scope,,text,Examples: postgraduate school or faculty-wide
+volume,active_students,500,count,Input current supervised or project students
+volume,active_supervisors,60,count,Input active supervisors
+operations,proposal_cycles_per_year,400,count,Input approximate annual proposal volume
+operations,average_proposal_turnaround_days_current,21,days,Current baseline turnaround time
+operations,target_turnaround_days_future,10,days,Target after implementation
+operations,admin_hours_per_month_current,240,hours,Total administrative coordination time today
+operations,admin_hourly_cost_ngn,4500,NGN per hour,Fully loaded admin cost assumption
+operations,printing_and_paper_cost_per_year_ngn,1200000,NGN,Current annual paper and printing cost
+operations,archive_retrieval_cost_per_year_ngn,600000,NGN,Current manual archive retrieval and record-chasing cost
+operations,meeting_compliance_gap_cost_per_year_ngn,1500000,NGN,Estimated cost of missed follow-up and escalation
+benefits,admin_hours_reduction_percent,35,percent,Expected reduction in admin work
+benefits,printing_cost_reduction_percent,80,percent,Expected reduction from digital workflow
+benefits,archive_cost_reduction_percent,70,percent,Expected reduction from searchable archive
+benefits,delay_cost_avoidance_per_year_ngn,2500000,NGN,Estimated value of faster approvals and fewer bottlenecks
+pricing,annual_subscription_ngn,12000000,NGN,Choose plan-based subscription amount
+pricing,implementation_fee_ngn,4000000,NGN,Choose plan-based implementation amount
+pricing,addon_fee_ngn,1500000,NGN,Optional add-on amount if applicable
+output,current_admin_cost_per_year_ngn,admin_hours_per_month_current*12*admin_hourly_cost_ngn,formula,Spreadsheet formula placeholder
+output,admin_savings_per_year_ngn,current_admin_cost_per_year_ngn*admin_hours_reduction_percent/100,formula,Spreadsheet formula placeholder
+output,printing_savings_per_year_ngn,printing_and_paper_cost_per_year_ngn*printing_cost_reduction_percent/100,formula,Spreadsheet formula placeholder
+output,archive_savings_per_year_ngn,archive_retrieval_cost_per_year_ngn*archive_cost_reduction_percent/100,formula,Spreadsheet formula placeholder
+output,total_quantified_benefit_per_year_ngn,admin_savings_per_year_ngn+printing_savings_per_year_ngn+archive_savings_per_year_ngn+delay_cost_avoidance_per_year_ngn+meeting_compliance_gap_cost_per_year_ngn,formula,Spreadsheet formula placeholder
+output,total_year_one_investment_ngn,annual_subscription_ngn+implementation_fee_ngn+addon_fee_ngn,formula,Spreadsheet formula placeholder
+output,net_year_one_value_ngn,total_quantified_benefit_per_year_ngn-total_year_one_investment_ngn,formula,Spreadsheet formula placeholder
+output,roi_percent,net_year_one_value_ngn/total_year_one_investment_ngn*100,formula,Spreadsheet formula placeholder
+output,payback_months,total_year_one_investment_ngn/(total_quantified_benefit_per_year_ngn/12),formula,Spreadsheet formula placeholder

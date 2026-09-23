@@ -8,11 +8,18 @@ use App\Models\SystemConfig;
 use App\Models\AuditLog;
 use App\Models\ArchiveSubmission;
 use App\Models\Resource;
+use App\Models\Supervisor;
+use App\Services\UserInvitationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class AdminController extends BaseController
 {
+    public function __construct(private UserInvitationService $userInvitationService)
+    {
+    }
+
     public function listUniversities(Request $request)
     {
         $universities = University::withCount(['users', 'students', 'supervisors'])->get();
@@ -97,12 +104,20 @@ class AdminController extends BaseController
     public function listUsers(Request $request)
     {
         $role = $request->query('role');
-        $universityId = $request->query('university_id', session('university_id'));
+        $universityId = $this->currentUserIsSuperAdmin()
+            ? $request->query('university_id', session('university_id'))
+            : $this->currentUniversityId();
         
         $query = User::with(['student', 'supervisor', 'university']);
         
         if ($role) {
+            if (!$this->currentUserIsSuperAdmin() && $role === 'super_admin') {
+                return $this->error('Unauthorized to view super admin accounts', 403);
+            }
+
             $query->where('role', $role);
+        } elseif (!$this->currentUserIsSuperAdmin()) {
+            $query->where('role', '!=', 'super_admin');
         }
         
         if ($universityId) {
@@ -119,14 +134,42 @@ class AdminController extends BaseController
             'university_id' => 'required|exists:universities,id',
             'email' => 'required|email|unique:users',
             'name' => 'required|string',
-            'password' => 'required|string|min:8',
             'role' => 'required|in:student,supervisor,admin,super_admin',
+            'department' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:255',
+            'require_supervisor_selection' => 'nullable|boolean',
+            'supervisor_id' => [
+                Rule::requiredIf(fn () => $request->input('role') === 'student' && $request->boolean('require_supervisor_selection')),
+                'nullable',
+                'exists:supervisors,id',
+            ],
         ]);
 
-        $validated['password'] = Hash::make($validated['password']);
-        $user = User::create($validated);
+        $validated['require_supervisor_selection'] = $request->boolean('require_supervisor_selection');
 
-        return $this->success($user, 'User created successfully', 201);
+        if (!$this->currentUserIsSuperAdmin()) {
+            if ($validated['role'] === 'super_admin') {
+                return $this->error('Unauthorized to create super admin accounts', 403);
+            }
+
+            $validated['university_id'] = $this->currentUniversityId();
+        }
+
+        if (($validated['role'] ?? null) === 'student' && !empty($validated['supervisor_id'])) {
+            $supervisor = Supervisor::find($validated['supervisor_id']);
+            if (!$supervisor || (int) $supervisor->university_id !== (int) $validated['university_id']) {
+                return $this->error('Selected supervisor must belong to the same university as the student.', 422);
+            }
+        }
+
+        if (($validated['role'] ?? null) === 'student' && empty($validated['supervisor_id']) && !$this->userInvitationService->findLeastLoadedSupervisorId((int) $validated['university_id'])) {
+            return $this->error('No active supervisors are available for this university. Select a supervisor first or create an active supervisor account.', 422);
+        }
+
+        $invitation = $this->userInvitationService->createInvitedUser($validated);
+        $user = $invitation['user'];
+
+        return $this->success($user, 'User invite created successfully. An email has been sent to complete onboarding.', 201);
     }
 
     public function getUser(Request $request, $id)
@@ -135,6 +178,11 @@ class AdminController extends BaseController
         if (!$user) {
             return $this->error('User not found', 404);
         }
+
+        if (!$this->canManageUser($user)) {
+            return $this->error('Unauthorized to access this user', 403);
+        }
+
         return $this->success($user, 'User retrieved successfully');
     }
 
@@ -145,12 +193,24 @@ class AdminController extends BaseController
             return $this->error('User not found', 404);
         }
 
+        if (!$this->canManageUser($user)) {
+            return $this->error('Unauthorized to update this user', 403);
+        }
+
         $validated = $request->validate([
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'name' => 'sometimes|string',
             'password' => 'sometimes|string|min:8',
             'role' => 'sometimes|in:student,supervisor,admin,super_admin',
         ]);
+
+        if (!$this->currentUserIsSuperAdmin()) {
+            if (($validated['role'] ?? $user->role) === 'super_admin') {
+                return $this->error('Unauthorized to assign the super admin role', 403);
+            }
+
+            $validated['university_id'] = $this->currentUniversityId();
+        }
 
         if (isset($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
@@ -166,20 +226,29 @@ class AdminController extends BaseController
         if (!$user) {
             return $this->error('User not found', 404);
         }
+
+        if (!$this->canManageUser($user)) {
+            return $this->error('Unauthorized to delete this user', 403);
+        }
+
         $user->delete();
         return $this->success(null, 'User deleted successfully');
     }
 
     public function getConfig(Request $request)
     {
-        $universityId = $request->query('university_id', session('university_id'));
+        $universityId = $this->resolveManagedUniversityId(
+            $request->query('university_id', session('university_id'))
+        );
         $configs = SystemConfig::where('university_id', $universityId)->get();
         return $this->success($configs->pluck('config_value', 'config_key'), 'Configuration retrieved');
     }
 
     public function getConfigValue(Request $request, $key)
     {
-        $universityId = $request->query('university_id', session('university_id'));
+        $universityId = $this->resolveManagedUniversityId(
+            $request->query('university_id', session('university_id'))
+        );
         $config = SystemConfig::where([
             ['university_id', '=', $universityId],
             ['config_key', '=', $key],
@@ -201,7 +270,9 @@ class AdminController extends BaseController
             'data_type' => 'sometimes|in:string,integer,boolean,json,array',
         ]);
 
-        $universityId = $validated['university_id'] ?? session('university_id');
+        $universityId = $this->resolveManagedUniversityId(
+            $validated['university_id'] ?? session('university_id')
+        );
         $dataType = $validated['data_type'] ?? 'string';
 
         $config = SystemConfig::updateOrCreate(
@@ -235,7 +306,9 @@ class AdminController extends BaseController
 
     public function getAuditLogs(Request $request)
     {
-        $universityId = $request->query('university_id', session('university_id'));
+        $universityId = $this->resolveManagedUniversityId(
+            $request->query('university_id', session('university_id'))
+        );
         $limit = $request->query('limit', 100);
 
         $logs = AuditLog::where('university_id', $universityId)
@@ -252,12 +325,19 @@ class AdminController extends BaseController
         if (!$log) {
             return $this->error('Audit log not found', 404);
         }
+
+        if (!$this->currentUserIsSuperAdmin() && (int) $log->university_id !== $this->currentUniversityId()) {
+            return $this->error('Unauthorized to access this audit log', 403);
+        }
+
         return $this->success($log, 'Audit log retrieved successfully');
     }
 
     public function listAllResources(Request $request)
     {
-        $universityId = $request->query('university_id', session('university_id'));
+        $universityId = $this->resolveManagedUniversityId(
+            $request->query('university_id', session('university_id'))
+        );
         $resources = Resource::where('university_id', $universityId)->get();
         return $this->success($resources, 'Resources retrieved successfully');
     }
@@ -276,6 +356,10 @@ class AdminController extends BaseController
             'is_mandatory' => 'sometimes|boolean',
         ]);
 
+        if (!$this->currentUserIsSuperAdmin()) {
+            $validated['university_id'] = $this->currentUniversityId();
+        }
+
         $resource = Resource::create($validated);
         return $this->success($resource, 'Resource created successfully', 201);
     }
@@ -285,6 +369,10 @@ class AdminController extends BaseController
         $resource = Resource::find($id);
         if (!$resource) {
             return $this->error('Resource not found', 404);
+        }
+
+        if (!$this->canManageUniversityRecord((int) $resource->university_id)) {
+            return $this->error('Unauthorized to update this resource', 403);
         }
 
         $validated = $request->validate([
@@ -306,13 +394,20 @@ class AdminController extends BaseController
         if (!$resource) {
             return $this->error('Resource not found', 404);
         }
+
+        if (!$this->canManageUniversityRecord((int) $resource->university_id)) {
+            return $this->error('Unauthorized to delete this resource', 403);
+        }
+
         $resource->delete();
         return $this->success(null, 'Resource deleted successfully');
     }
 
     public function listArchiveSubmissions(Request $request)
     {
-        $universityId = $request->query('university_id', session('university_id'));
+        $universityId = $this->resolveManagedUniversityId(
+            $request->query('university_id', session('university_id'))
+        );
         $status = $request->query('status');
         $degreeLevel = $request->query('degree_level');
 
@@ -329,5 +424,47 @@ class AdminController extends BaseController
         }
 
         return $this->success($query->get(), 'Archive submissions retrieved successfully');
+    }
+
+    protected function currentUserIsSuperAdmin(): bool
+    {
+        return session('role') === 'super_admin';
+    }
+
+    protected function currentUniversityId(): ?int
+    {
+        $universityId = session('university_id');
+
+        return $universityId === null ? null : (int) $universityId;
+    }
+
+    protected function resolveManagedUniversityId($requestedUniversityId): ?int
+    {
+        if ($this->currentUserIsSuperAdmin()) {
+            return $requestedUniversityId === null || $requestedUniversityId === ''
+                ? null
+                : (int) $requestedUniversityId;
+        }
+
+        return $this->currentUniversityId();
+    }
+
+    protected function canManageUniversityRecord(?int $universityId): bool
+    {
+        if ($this->currentUserIsSuperAdmin()) {
+            return true;
+        }
+
+        return $universityId !== null && $universityId === $this->currentUniversityId();
+    }
+
+    protected function canManageUser(User $user): bool
+    {
+        if ($this->currentUserIsSuperAdmin()) {
+            return true;
+        }
+
+        return $user->role !== 'super_admin'
+            && $this->canManageUniversityRecord($user->university_id === null ? null : (int) $user->university_id);
     }
 }

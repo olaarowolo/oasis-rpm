@@ -135,25 +135,36 @@
 
         <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
           <h3 class="font-bold text-lg text-slate-900 dark:text-white">Quick create</h3>
-          <p class="text-sm text-slate-600 dark:text-slate-300">Use this form to create a new account in the live admin API.</p>
+          <p class="text-sm text-slate-600 dark:text-slate-300">Create a user invite with the minimum identity details. The recipient completes setup from the email link.</p>
           <form id="create-user-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3" onsubmit="submitCreateUser(event)">
             <input name="name" required placeholder="Full name" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
             <input name="email" type="email" required placeholder="Email" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
-            <input name="password" type="password" required placeholder="Temporary password" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
-            <input name="phone" placeholder="Phone" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
-            <input name="department" placeholder="Department" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm sm:col-span-2">
-            <select name="role" required class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+            <select id="create-role" name="role" required class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
               @foreach($roles as $roleKey => $roleLabel)
                 <option value="{{ $roleKey }}">{{ $roleLabel }}</option>
               @endforeach
             </select>
-            <select name="university_id" required class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+            <select id="create-university-id" name="university_id" required class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
               <option value="">Select university</option>
               @foreach($universities as $university)
                 <option value="{{ $university->id }}" @selected((string) $selectedUniversityId === (string) $university->id)>{{ $university->name }}</option>
               @endforeach
             </select>
-            <button type="submit" class="sm:col-span-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-sm">Create user</button>
+            <div id="create-student-supervisor-box" class="hidden sm:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4 space-y-3">
+              <p class="text-sm text-slate-600 dark:text-slate-300">Student invites auto-assign the least-loaded active supervisor in the selected university unless you require a manual choice.</p>
+              <label class="inline-flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+                <input type="hidden" name="require_supervisor_selection" value="0">
+                <input id="create-require-supervisor-selection" type="checkbox" name="require_supervisor_selection" value="1" class="rounded border-slate-300 text-academic-700 focus:ring-academic-600">
+                Require supervisor selection before sending this student invite
+              </label>
+              <select id="create-supervisor-id" name="supervisor_id" class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+                <option value="">Auto-assign least-loaded supervisor</option>
+                @foreach($supervisors as $supervisor)
+                  <option value="{{ $supervisor->id }}" data-university-id="{{ $supervisor->university_id }}">{{ $supervisor->user->name ?? 'Supervisor' }} - {{ $supervisor->department }}</option>
+                @endforeach
+              </select>
+            </div>
+            <button type="submit" class="sm:col-span-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-sm">Send invite</button>
           </form>
           <p id="user-form-feedback" class="text-sm hidden"></p>
         </section>
@@ -196,8 +207,8 @@
                   </td>
                   <td class="px-5 py-4 text-sm text-slate-600 dark:text-slate-300">{{ $user->university->name ?? 'N/A' }}</td>
                   <td class="px-5 py-4 text-sm">
-                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ $user->is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' }}">
-                      {{ $user->is_active ? 'Active' : 'Inactive' }}
+                    <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold {{ !$user->is_active && is_null($user->email_verified_at) ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : ($user->is_active ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300') }}">
+                      {{ !$user->is_active && is_null($user->email_verified_at) ? 'Pending invite' : ($user->is_active ? 'Active' : 'Inactive') }}
                     </span>
                   </td>
                   <td class="px-5 py-4 text-right text-sm space-x-2 whitespace-nowrap">
@@ -259,6 +270,11 @@
     const editForm = document.getElementById('edit-user-form');
     const createForm = document.getElementById('create-user-form');
     const feedback = document.getElementById('user-form-feedback');
+    const createRoleSelect = document.getElementById('create-role');
+    const createUniversitySelect = document.getElementById('create-university-id');
+    const createSupervisorSelect = document.getElementById('create-supervisor-id');
+    const createSupervisorBox = document.getElementById('create-student-supervisor-box');
+    const createRequireSupervisorCheckbox = document.getElementById('create-require-supervisor-selection');
 
     function buildUrl(path) {
       return path;
@@ -317,7 +333,7 @@
       const payload = Object.fromEntries(formData.entries());
       try {
         await apiRequest('/api/admin/users', { method: 'POST', body: payload });
-        showFeedback('User created successfully.', 'success');
+        showFeedback('Invite sent successfully.', 'success');
         window.location.reload();
       } catch (error) {
         showFeedback(error.message || 'Could not create user.', 'error');
@@ -376,6 +392,66 @@
       feedback.className = 'text-sm ' + (type === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400');
       feedback.classList.remove('hidden');
       setTimeout(() => feedback.classList.add('hidden'), 4000);
+    }
+
+    function syncCreateSupervisorVisibility() {
+      if (!createRoleSelect || !createSupervisorBox) {
+        return;
+      }
+
+      const isStudent = createRoleSelect.value === 'student';
+      createSupervisorBox.classList.toggle('hidden', !isStudent);
+      syncCreateSupervisorOptions();
+      syncCreateSupervisorRequirement();
+    }
+
+    function syncCreateSupervisorOptions() {
+      if (!createUniversitySelect || !createSupervisorSelect) {
+        return;
+      }
+
+      const universityId = createUniversitySelect.value;
+      Array.prototype.forEach.call(createSupervisorSelect.options, function (option) {
+        if (!option.value) {
+          option.hidden = false;
+          return;
+        }
+
+        const matches = !universityId || option.dataset.universityId === universityId;
+        option.hidden = !matches;
+
+        if (!matches && option.selected) {
+          createSupervisorSelect.value = '';
+        }
+      });
+    }
+
+    function syncCreateSupervisorRequirement() {
+      if (!createRoleSelect || !createSupervisorSelect || !createRequireSupervisorCheckbox) {
+        return;
+      }
+
+      const requireSelection = createRoleSelect.value === 'student' && createRequireSupervisorCheckbox.checked;
+      createSupervisorSelect.required = requireSelection;
+
+      if (!requireSelection) {
+        createSupervisorSelect.value = '';
+      }
+    }
+
+    if (createRoleSelect) {
+      createRoleSelect.addEventListener('change', syncCreateSupervisorVisibility);
+      syncCreateSupervisorVisibility();
+    }
+
+    if (createUniversitySelect) {
+      createUniversitySelect.addEventListener('change', syncCreateSupervisorOptions);
+      syncCreateSupervisorOptions();
+    }
+
+    if (createRequireSupervisorCheckbox) {
+      createRequireSupervisorCheckbox.addEventListener('change', syncCreateSupervisorRequirement);
+      syncCreateSupervisorRequirement();
     }
 
     userModal.addEventListener('click', function (event) {

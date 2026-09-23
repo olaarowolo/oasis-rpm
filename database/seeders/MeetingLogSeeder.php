@@ -4,16 +4,15 @@ namespace Database\Seeders;
 
 use App\Models\MeetingLog;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class MeetingLogSeeder extends Seeder
 {
     public function run(): void
     {
-        MeetingLog::create([
+        $meetingLog = [
             'university_id' => 1,
             'student_id' => 1,
-            'log_id' => 'LOG-' . Str::upper(Str::random(8)),
+            'log_id' => 'LOG-LASU-001',
             'meeting_number' => 1,
             'meeting_date' => now()->subDays(7),
             'meeting_mode' => 'in_person',
@@ -33,7 +32,12 @@ class MeetingLogSeeder extends Seeder
             'signoff_date' => now()->subDays(5),
             'feedback_summary' => 'Good progress. Continue with current pace.',
             'areas_revision' => 'Refine introduction conclusion',
-            'agreed_actions' => 'Complete draft of Chapter 2 by next meeting'
-        ]);
+            'agreed_actions' => 'Complete draft of Chapter 2 by next meeting',
+        ];
+
+        MeetingLog::updateOrCreate(
+            ['log_id' => $meetingLog['log_id']],
+            $meetingLog
+        );
     }
 }

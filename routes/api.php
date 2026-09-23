@@ -159,13 +159,6 @@ Route::middleware([CheckUniversity::class])->group(function () {
     // ADMIN ROUTES (EnsureAdminLogin middleware)
     // ========================================================
     Route::middleware(['app.auth', EnsureAdminLogin::class])->prefix('/admin')->group(function () {
-        // Universities
-        Route::get('/universities', [AdminController::class, 'listUniversities']);
-        Route::post('/universities', [AdminController::class, 'createUniversity']);
-        Route::get('/universities/{id}', [AdminController::class, 'getUniversity']);
-        Route::put('/universities/{id}', [AdminController::class, 'updateUniversity']);
-        Route::delete('/universities/{id}', [AdminController::class, 'deleteUniversity']);
-
         // Users
         Route::get('/users', [AdminController::class, 'listUsers']);
         Route::post('/users', [AdminController::class, 'createUser']);
@@ -194,6 +187,15 @@ Route::middleware([CheckUniversity::class])->group(function () {
 
         // Archive Management
         Route::get('/archive/submissions', [AdminController::class, 'listArchiveSubmissions']);
+    });
+
+    Route::middleware(['app.auth', 'super_admin'])->prefix('/admin')->group(function () {
+        // Universities
+        Route::get('/universities', [AdminController::class, 'listUniversities']);
+        Route::post('/universities', [AdminController::class, 'createUniversity']);
+        Route::get('/universities/{id}', [AdminController::class, 'getUniversity']);
+        Route::put('/universities/{id}', [AdminController::class, 'updateUniversity']);
+        Route::delete('/universities/{id}', [AdminController::class, 'deleteUniversity']);
     });
 
     // ========================================================

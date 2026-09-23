@@ -15,9 +15,6 @@
 
   <?php echo $__env->make('partials.dashboards.student-header', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
 
-  <!-- Backdrop behind the mobile nav drawer -->
-  <div id="nav-backdrop" onclick="closeMobileNav()" class="hidden md:hidden fixed inset-0 z-40 bg-slate-900/50 opacity-0"></div>
-
   <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col md:flex-row gap-4 sm:gap-6">
 
     <?php echo $__env->make('partials.dashboards.student-sidebar', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
@@ -57,20 +54,6 @@
       return String(str ?? '').replace(/[&<>"']/g, c => (
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
       ));
-    }
-
-    /* ---- mobile drawer (shared with sidebar) ---- */
-    function openMobileNav() {
-      document.getElementById('app-sidebar')?.classList.add('drawer-open');
-      document.getElementById('nav-backdrop')?.classList.remove('hidden');
-      document.body.classList.add('nav-drawer-locked');
-      requestAnimationFrame(() => { const b = document.getElementById('nav-backdrop'); if (b) b.style.opacity = '1'; });
-    }
-    function closeMobileNav() {
-      document.getElementById('app-sidebar')?.classList.remove('drawer-open');
-      const b = document.getElementById('nav-backdrop');
-      if (b) { b.style.opacity = '0'; setTimeout(() => b.classList.add('hidden'), 250); }
-      document.body.classList.remove('nav-drawer-locked');
     }
     // switchTab is a no-op here (single-page); nav links navigate via href.
     function switchTab() {}

@@ -171,11 +171,10 @@
         </span>
         <div class="min-w-0">
           <span class="font-display font-bold text-sm sm:text-base text-academic-900 truncate block">TheOAsis Research Portal</span>
-          <span class="inline-flex mt-0.5 items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-slate-500">
+          {{-- <span class="inline-flex mt-0.5 items-center gap-1.5 text-[10px] sm:text-xs font-semibold text-slate-500">
             <span class="inline-flex items-center rounded-md bg-academic-900 px-2 py-1 shadow-sm">
-              <img src="/img/logo-white.svg" alt="Afriscribe" class="h-4 sm:h-5 w-auto" loading="lazy" decoding="async">
-            </span>
-          </span>
+<img src="https://afriscribe.org/afriscribe/img/afriscribe-logo-main-logo-white.png" alt="Afriscribe" class="h-5 sm:h-6 w-auto" loading="lazy" decoding="async">            </span>
+          </span> --}}
         </div>
       </a>
 

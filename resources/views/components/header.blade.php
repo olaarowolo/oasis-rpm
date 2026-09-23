@@ -5,8 +5,10 @@
     <!-- Brand & Title -->
     <div class="flex items-center gap-2 sm:gap-3 min-w-0">
       <!-- Mobile hamburger (opens the off-canvas nav drawer). Hidden on md+. -->
-      <button id="mobile-nav-toggle" type="button" onclick="toggleMobileNav()" aria-label="Open navigation menu" class="md:hidden -ml-1 w-10 h-10 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition shrink-0">
-        <i class="fa-solid fa-bars text-lg"></i>
+      <button id="mobile-nav-toggle" type="button" data-mobile-nav-toggle aria-controls="app-sidebar" aria-expanded="false" aria-label="Open navigation menu" class="mobile-nav-toggle md:hidden -ml-1 w-10 h-10 flex items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition shrink-0">
+        <span class="mobile-nav-line" aria-hidden="true"></span>
+        <span class="mobile-nav-line" aria-hidden="true"></span>
+        <span class="mobile-nav-line" aria-hidden="true"></span>
       </button>
       <div class="h-9 sm:h-10 px-2.5 sm:px-3 rounded-xl bg-gradient-to-tr from-academic-900 via-academic-800 to-amber-600 flex items-center justify-center shadow-md shadow-academic-800/20 shrink-0 ring-1 ring-white/10">
         <img src="{{ asset('img/afriscribe-logo-white.png') }}" alt="AfriScribe" class="h-4 sm:h-5 w-auto object-contain" loading="lazy" />
@@ -27,7 +29,7 @@
     <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
       
       <!-- Active User Role Selector Badge -->
-      <div class="flex items-center bg-slate-100 dark:bg-slate-700/80 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
+      <div class="hidden sm:flex items-center bg-slate-100 dark:bg-slate-700/80 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
         <button id="role-btn-supervisor" onclick="switchUserRole('supervisor')" class="px-2 sm:px-2.5 py-1.5 sm:py-1 text-xs font-semibold rounded-lg transition-all bg-white dark:bg-slate-800 text-academic-700 dark:text-academic-100 shadow-sm flex items-center gap-1" title="Supervisor Hub">
           <i class="fa-solid fa-user-shield text-amber-500"></i>
           <span class="hidden xs:inline">Supervisor Hub</span>

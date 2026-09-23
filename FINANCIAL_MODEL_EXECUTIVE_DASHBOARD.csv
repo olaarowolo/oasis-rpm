@@ -1,0 +1,10 @@
+metric,ten_campuses,twenty_five_campuses,fifty_campuses,notes
+Total Campuses,10,25,50,Scenario size
+Full Contract Value NGN,153000000,382500000,765000000,Subscription plus implementation plus blended add-on value
+Total Invoiced In Year NGN,150600000,375300000,748200000,Reflects timing of December go-live and add-on invoices
+Total Cash Collected In Year NGN,143490000,353970000,697750000,Reflects collection timing assumptions
+Deferred Invoice To Next Period NGN,2400000,7200000,16800000,Not invoiced by year end due to timing
+Year End Uncollected Cash NGN,7110000,21330000,50450000,Invoiced but not yet collected by year end
+Recurring Revenue Base NGN,118000000,295000000,590000000,Annual subscription plus recurring add-on base
+Average First Year Value Per Campus NGN,15300000,15300000,15300000,Blended value per campus
+Average Recurring Value Per Campus NGN,11800000,11800000,11800000,Subscription plus recurring add-on average

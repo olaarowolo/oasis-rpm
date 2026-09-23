@@ -1,0 +1,29 @@
+section,row_order,label,input_value,formula_hint,display_format,notes
+Header,1,University Name,,Manual entry,Text,Enter target institution
+Header,2,Deployment Scope,,Manual entry,Text,Examples: postgraduate school or faculty-wide
+Volume,3,Active Students,500,Manual entry,Number,Supervised or project students in scope
+Volume,4,Active Supervisors,60,Manual entry,Number,Supervisors in scope
+Volume,5,Proposal Cycles Per Year,400,Manual entry,Number,Annual proposal and approval volume
+Baseline,6,Current Proposal Turnaround Days,21,Manual entry,Number,Average today
+Baseline,7,Target Proposal Turnaround Days,10,Manual entry,Number,Target after rollout
+Baseline,8,Admin Hours Per Month,240,Manual entry,Number,Coordination hours today
+Baseline,9,Admin Cost Per Hour NGN,4500,Manual entry,Currency,Loaded cost assumption
+Baseline,10,Printing and Paper Cost Per Year NGN,1200000,Manual entry,Currency,Current annual cost
+Baseline,11,Archive Retrieval Cost Per Year NGN,600000,Manual entry,Currency,Current annual cost
+Baseline,12,Meeting Compliance Gap Cost Per Year NGN,1500000,Manual entry,Currency,Escalation and missed follow-up cost
+Benefits,13,Admin Hours Reduction Percent,35,Manual entry,Percent,Expected efficiency gain
+Benefits,14,Printing Cost Reduction Percent,80,Manual entry,Percent,Digital workflow effect
+Benefits,15,Archive Cost Reduction Percent,70,Manual entry,Percent,Searchable archive effect
+Benefits,16,Delay Cost Avoidance Per Year NGN,2500000,Manual entry,Currency,Value of faster approvals
+Commercial,17,Annual Subscription NGN,12000000,Manual entry,Currency,Use selected plan value
+Commercial,18,Implementation Fee NGN,4000000,Manual entry,Currency,One-time onboarding fee
+Commercial,19,Add-On Fee NGN,1500000,Manual entry,Currency,Optional module amount
+Outputs,20,Current Admin Cost Per Year NGN,,=Admin Hours Per Month*12*Admin Cost Per Hour NGN,Currency,Calculated output
+Outputs,21,Admin Savings Per Year NGN,,=Current Admin Cost Per Year NGN*Admin Hours Reduction Percent,Currency,Calculated output
+Outputs,22,Printing Savings Per Year NGN,,=Printing and Paper Cost Per Year NGN*Printing Cost Reduction Percent,Currency,Calculated output
+Outputs,23,Archive Savings Per Year NGN,,=Archive Retrieval Cost Per Year NGN*Archive Cost Reduction Percent,Currency,Calculated output
+Outputs,24,Total Quantified Benefit Per Year NGN,,=Admin Savings+Printing Savings+Archive Savings+Delay Cost Avoidance+Meeting Compliance Gap Cost,Currency,Calculated output
+Outputs,25,Total Year One Investment NGN,,=Annual Subscription NGN+Implementation Fee NGN+Add-On Fee NGN,Currency,Calculated output
+Outputs,26,Net Year One Value NGN,,=Total Quantified Benefit Per Year NGN-Total Year One Investment NGN,Currency,Calculated output
+Outputs,27,ROI Percent,,=Net Year One Value NGN/Total Year One Investment NGN,Percent,Calculated output
+Outputs,28,Payback Months,,=Total Year One Investment NGN/(Total Quantified Benefit Per Year NGN/12),Number,Calculated output
