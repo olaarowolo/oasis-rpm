@@ -8,6 +8,18 @@
     $adminEmail = $currentUser->email ?? 'admin@example.com';
   @endphp
 
+    @if (session('success'))
+      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+        {{ session('success') }}
+      </div>
+    @endif
+
+    @if (session('error'))
+      <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300">
+        {{ session('error') }}
+      </div>
+    @endif
+
     <section class="rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-br from-slate-950 via-academic-900 to-academic-800 overflow-hidden relative">
       <div class="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.55),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.35),_transparent_28%)]"></div>
       <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -76,19 +88,115 @@
             </div>
           </a>
 
-          <a href="{{ route('admin.users', ['role' => 'supervisor']) }}" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition group">
+          <a href="{{ route('admin.dashboard') }}#relationship-operations" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm hover:shadow-md transition group">
             <div class="flex items-start justify-between gap-3">
               <div>
-                <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Quick Filter</p>
-                <h3 class="mt-2 text-lg font-bold text-slate-900 dark:text-white">Supervisors</h3>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Jump straight to the supervisory roster.</p>
+                <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Workflow</p>
+                <h3 class="mt-2 text-lg font-bold text-slate-900 dark:text-white">Link Supervision</h3>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Assign or rebalance students directly from the admin dashboard.</p>
               </div>
               <div class="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 flex items-center justify-center group-hover:scale-105 transition">
-                <i class="fa-solid fa-chalkboard-user"></i>
+                <i class="fa-solid fa-link"></i>
               </div>
             </div>
           </a>
         </div>
+
+        <section class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <a href="{{ route('admin.users', ['queue' => 'unassigned_students']) }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Queue</p>
+            <p class="mt-2 text-3xl font-black text-blue-700 dark:text-blue-400">{{ $stats['unassigned_students'] ?? 0 }}</p>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Students still waiting for a supervisor link.</p>
+          </a>
+          <a href="{{ route('admin.users', ['queue' => 'inactive_supervisors', 'role' => 'supervisor']) }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Queue</p>
+            <p class="mt-2 text-3xl font-black text-amber-700 dark:text-amber-400">{{ $stats['inactive_supervisors'] ?? 0 }}</p>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Supervisors needing reactivation or replacement review.</p>
+          </a>
+          <a href="{{ route('admin.users', ['queue' => 'pending_invites']) }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Queue</p>
+            <p class="mt-2 text-3xl font-black text-violet-700 dark:text-violet-400">{{ $stats['pending_invites'] ?? 0 }}</p>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Invitations that still need recipient completion.</p>
+          </a>
+          <a href="{{ route('admin.users', ['queue' => 'suspended_students', 'role' => 'student']) }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
+            <p class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Queue</p>
+            <p class="mt-2 text-3xl font-black text-rose-700 dark:text-rose-400">{{ $stats['suspended_students'] ?? 0 }}</p>
+            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Students whose academic status requires follow-up.</p>
+          </a>
+        </section>
+
+        <section id="relationship-operations" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+          <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <h3 class="font-bold text-lg text-slate-900 dark:text-white">Supervision Link Desk</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Assign or rebalance supervisors inside the active university scope and notify both parties automatically.</p>
+            </div>
+            <a href="{{ route('admin.users', ['queue' => 'unassigned_students']) }}" class="text-sm font-semibold text-academic-700 dark:text-academic-300 hover:underline">Open intervention queue</a>
+          </div>
+          <div class="grid grid-cols-1 xl:grid-cols-[0.95fr_1.05fr] gap-0">
+            <div class="p-5 border-b xl:border-b-0 xl:border-r border-slate-200 dark:border-slate-700">
+              <form method="POST" action="{{ route('admin.relationships.assign') }}" class="space-y-4">
+                @csrf
+                <input type="hidden" name="scope_university_id" value="{{ $selectedUniversityId }}">
+                <div>
+                  <label for="dashboard-student-id" class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Student</label>
+                  <select id="dashboard-student-id" name="student_id" required class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm text-slate-900 dark:text-white">
+                    <option value="">Select student</option>
+                    @foreach($relationshipStudents as $student)
+                      <option value="{{ $student->id }}">{{ $student->full_name }}{{ $student->supervisor?->user?->name ? ' - Current: ' . $student->supervisor->user->name : ' - Unassigned' }}</option>
+                    @endforeach
+                  </select>
+                </div>
+                <div>
+                  <label for="dashboard-supervisor-id" class="mb-1.5 block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Supervisor</label>
+                  <select id="dashboard-supervisor-id" name="supervisor_id" required class="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-2.5 text-sm text-slate-900 dark:text-white">
+                    <option value="">Select supervisor</option>
+                    @foreach($assignmentSupervisors as $supervisor)
+                      <option value="{{ $supervisor->id }}">{{ $supervisor->user->name ?? 'Supervisor' }} - {{ $supervisor->department }} ({{ $supervisor->students_count }} students)</option>
+                    @endforeach
+                  </select>
+                </div>
+                <button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-academic-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-academic-800 transition">
+                  <i class="fa-solid fa-link"></i>
+                  Link and notify
+                </button>
+              </form>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-0">
+              <div class="p-5 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-700">
+                <h4 class="text-sm font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Unassigned Students</h4>
+                <div class="mt-4 space-y-3">
+                  @forelse($unassignedStudents as $student)
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                      <p class="font-semibold text-slate-900 dark:text-white">{{ $student->full_name }}</p>
+                      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $student->matric_number }} · {{ $student->degree_level }}</p>
+                    </div>
+                  @empty
+                    <p class="text-sm text-slate-500 dark:text-slate-400">No unassigned students in the current scope.</p>
+                  @endforelse
+                </div>
+              </div>
+              <div class="p-5">
+                <h4 class="text-sm font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Supervisor Capacity</h4>
+                <div class="mt-4 space-y-3">
+                  @forelse($supervisorCapacity as $supervisor)
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                      <div class="flex items-center justify-between gap-3">
+                        <div>
+                          <p class="font-semibold text-slate-900 dark:text-white">{{ $supervisor->user->name ?? 'Supervisor' }}</p>
+                          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $supervisor->department }}</p>
+                        </div>
+                        <span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ $supervisor->students_count }} students</span>
+                      </div>
+                    </div>
+                  @empty
+                    <p class="text-sm text-slate-500 dark:text-slate-400">No active supervisors found in the current scope.</p>
+                  @endforelse
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
           <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">

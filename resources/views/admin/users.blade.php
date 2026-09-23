@@ -6,6 +6,18 @@
   @php
     $activeUniversity = collect($universities)->firstWhere('id', (int) $selectedUniversityId);
   @endphp
+
+    @if (session('success'))
+      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+        {{ session('success') }}
+      </div>
+    @endif
+
+    @if (session('error'))
+      <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300">
+        {{ session('error') }}
+      </div>
+    @endif
     <section class="rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-br from-slate-950 via-academic-900 to-academic-800 relative overflow-hidden">
       <div class="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.55),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.35),_transparent_28%)]"></div>
       <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -45,8 +57,49 @@
       </article>
     </section>
 
+    <section class="flex flex-wrap gap-2">
+      <a href="{{ route('admin.users') }}" class="rounded-full px-3 py-1.5 text-xs font-semibold {{ empty($queue) ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50' }}">All Users</a>
+      <a href="{{ route('admin.users', ['queue' => 'unassigned_students']) }}" class="rounded-full px-3 py-1.5 text-xs font-semibold {{ $queue === 'unassigned_students' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50' }}">Unassigned Students</a>
+      <a href="{{ route('admin.users', ['queue' => 'inactive_supervisors', 'role' => 'supervisor']) }}" class="rounded-full px-3 py-1.5 text-xs font-semibold {{ $queue === 'inactive_supervisors' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50' }}">Inactive Supervisors</a>
+      <a href="{{ route('admin.users', ['queue' => 'suspended_students', 'role' => 'student']) }}" class="rounded-full px-3 py-1.5 text-xs font-semibold {{ $queue === 'suspended_students' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50' }}">Suspended Students</a>
+      <a href="{{ route('admin.users', ['queue' => 'pending_invites']) }}" class="rounded-full px-3 py-1.5 text-xs font-semibold {{ $queue === 'pending_invites' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50' }}">Pending Invites</a>
+    </section>
+
     <section class="grid grid-cols-1 xl:grid-cols-[0.8fr_1.2fr] gap-6">
       <div class="space-y-6">
+        <section id="relationship-operations" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-lg text-slate-900 dark:text-white">Relationship Operations</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Link or rebalance supervision assignments without leaving the admin workspace.</p>
+            </div>
+          </div>
+
+          <form method="POST" action="{{ route('admin.relationships.assign') }}" class="space-y-3">
+            @csrf
+            <input type="hidden" name="scope_university_id" value="{{ $selectedUniversityId }}">
+            <label class="space-y-1 text-sm">
+              <span class="font-semibold text-slate-700 dark:text-slate-300">Student</span>
+              <select name="student_id" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+                <option value="">Select student</option>
+                @foreach($relationshipStudents as $student)
+                  <option value="{{ $student->id }}">{{ $student->full_name }}{{ $student->supervisor?->user?->name ? ' - Current: ' . $student->supervisor->user->name : ' - Unassigned' }}</option>
+                @endforeach
+              </select>
+            </label>
+            <label class="space-y-1 text-sm">
+              <span class="font-semibold text-slate-700 dark:text-slate-300">Supervisor</span>
+              <select name="supervisor_id" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+                <option value="">Select supervisor</option>
+                @foreach($supervisors as $supervisor)
+                  <option value="{{ $supervisor->id }}">{{ $supervisor->user->name ?? 'Supervisor' }} - {{ $supervisor->department }}</option>
+                @endforeach
+              </select>
+            </label>
+            <button type="submit" class="w-full px-4 py-2.5 rounded-xl bg-academic-700 hover:bg-academic-800 text-white text-sm font-semibold">Link and notify</button>
+          </form>
+        </section>
+
         <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -161,6 +214,12 @@
                     </span>
                   </td>
                   <td class="px-5 py-4 text-right text-sm space-x-2 whitespace-nowrap">
+                    @if($user->role === 'student' && $user->student)
+                      <a href="{{ route('admin.users', array_filter(['university_id' => $selectedUniversityId, 'queue' => 'unassigned_students'])) }}#relationship-operations" class="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30">{{ $user->student->supervisor_id ? 'Reassign' : 'Link' }}</a>
+                    @endif
+                    @if($user->role === 'supervisor')
+                      <a href="{{ route('admin.users', array_filter(['university_id' => $selectedUniversityId, 'queue' => 'unassigned_students'])) }}#relationship-operations" class="px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">Review Queue</a>
+                    @endif
                     <button type="button" onclick='openEditModal(@json($user))' class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">Edit</button>
                     <button type="button" onclick="deleteUser({{ $user->id }})" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white">Delete</button>
                   </td>

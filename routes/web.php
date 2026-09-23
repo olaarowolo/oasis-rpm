@@ -6,6 +6,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\UserInvitationController;
+use App\Http\Controllers\Web\AdminDashboardWebController;
 use App\Http\Controllers\Web\AdminResourceWebController;
 use App\Http\Controllers\Web\AuditLogWebController;
 use App\Http\Controllers\Web\SuperAdminWebController;
@@ -137,73 +138,11 @@ Route::middleware(['app.auth', 'role:super_admin'])->prefix('/super-admin')->gro
 
 // ================= ADMIN ROUTES (University-level access) =================
 Route::middleware(['app.auth', 'role:admin,super_admin'])->prefix('/admin')->group(function () {
-    Route::get('/dashboard', function (Request $request) {
-        $selectedUniversityId = session('university_id');
-        $currentUser = User::with('university')->find(session('user_id'));
-
-        $userQuery = User::query();
-        $studentQuery = Student::query();
-        $supervisorQuery = Supervisor::query();
-
-        if ($selectedUniversityId) {
-            $userQuery->where('university_id', $selectedUniversityId);
-            $studentQuery->where('university_id', $selectedUniversityId);
-            $supervisorQuery->where('university_id', $selectedUniversityId);
-        }
-
-        $stats = [
-            'total_universities' => University::count(),
-            'active_users' => (clone $userQuery)->where('is_active', true)->count(),
-            'supervisors' => (clone $supervisorQuery)->where('is_active', true)->count(),
-            'students' => (clone $studentQuery)->whereIn('status', ['active', 'completed', 'graduated'])->count(),
-            'pending_approvals' => (clone $studentQuery)->where('status', 'suspended')->count() + (clone $supervisorQuery)->where('is_active', false)->count(),
-        ];
-
-        $recentUsers = (clone $userQuery)
-            ->with(['university', 'student', 'supervisor'])
-            ->orderByDesc('created_at')
-            ->limit(8)
-            ->get();
-
-        return view('admin-dashboard', compact('currentUser', 'stats', 'recentUsers', 'selectedUniversityId'));
-    })->name('admin.dashboard');
-
-    Route::get('/users', function (Request $request) {
-        $selectedUniversityId = $request->query('university_id', session('university_id'));
-        $selectedRole = $request->query('role');
-
-        $universities = University::orderBy('name')->get();
-        $userQuery = User::with(['university', 'student', 'supervisor'])->orderBy('name');
-
-        if ($selectedUniversityId) {
-            $userQuery->where('university_id', $selectedUniversityId);
-        }
-
-        if ($selectedRole) {
-            $userQuery->where('role', $selectedRole);
-        }
-
-        $users = $userQuery->get();
-
-        $stats = [
-            'total' => $users->count(),
-            'active' => $users->where('is_active', true)->count(),
-            'admins' => $users->whereIn('role', ['admin', 'super_admin'])->count(),
-            'supervisors' => $users->where('role', 'supervisor')->count(),
-            'students' => $users->where('role', 'student')->count(),
-        ];
-
-        $roles = [
-            'student' => 'Student',
-            'supervisor' => 'Supervisor',
-            'admin' => 'Admin',
-            'super_admin' => 'Super Admin',
-        ];
-
-        $supervisors = Supervisor::with('user')->orderBy('department')->get();
-
-        return view('admin.users', compact('users', 'universities', 'stats', 'roles', 'selectedUniversityId', 'selectedRole', 'supervisors'));
-    })->name('admin.users');
+    Route::controller(AdminDashboardWebController::class)->group(function () {
+        Route::get('/dashboard', 'dashboard')->name('admin.dashboard');
+        Route::get('/users', 'users')->name('admin.users');
+        Route::post('/relationships/assign', 'assignStudentSupervisor')->name('admin.relationships.assign');
+    });
 
     Route::get('/config', function (Request $request) {
         $selectedUniversityId = $request->query('university_id', session('university_id'));
