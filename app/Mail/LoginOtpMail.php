@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -26,7 +25,12 @@ class LoginOtpMail extends Mailable
     {
         return $this
             ->subject('Your sign-in verification code')
-            ->markdown('emails.login-otp', [
+            ->view('emails.login-otp', [
+                'otpCode' => $this->otpCode,
+                'role' => $this->role,
+                'name' => $this->name,
+            ])
+            ->text('emails.login-otp-plain', [
                 'otpCode' => $this->otpCode,
                 'role' => $this->role,
                 'name' => $this->name,

@@ -52,14 +52,6 @@ jobs:
 
           chmod -R u+rwX bootstrap/cache storage
 
-      - name: Install Composer dependencies
-        run: |
-          composer install \
-            --prefer-dist \
-            --no-dev \
-            --no-progress \
-            --optimize-autoloader
-
       # ---------------------------------------------------------
       # Deploy application
       # ---------------------------------------------------------

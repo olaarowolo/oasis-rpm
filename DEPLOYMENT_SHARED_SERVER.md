@@ -16,7 +16,7 @@ Fallback layout for hosts that force the document root to the project root:
 
 ## 2. Required server settings
 
-- PHP 8.2 or newer 
+- PHP 8.2 or newer
 - Apache `mod_rewrite` enabled
 - `storage/` and `bootstrap/cache/` must be writable by the web server user
 
