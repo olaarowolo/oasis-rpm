@@ -7,6 +7,7 @@ use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\UserInvitationController;
 use App\Http\Controllers\Web\AdminDashboardWebController;
+use App\Http\Controllers\Web\AdminRelationshipWebController;
 use App\Http\Controllers\Web\AdminResourceWebController;
 use App\Http\Controllers\Web\AuditLogWebController;
 use App\Http\Controllers\Web\SuperAdminWebController;
@@ -141,7 +142,10 @@ Route::middleware(['app.auth', 'role:admin,super_admin'])->prefix('/admin')->gro
     Route::controller(AdminDashboardWebController::class)->group(function () {
         Route::get('/dashboard', 'dashboard')->name('admin.dashboard');
         Route::get('/users', 'users')->name('admin.users');
-        Route::post('/relationships/assign', 'assignStudentSupervisor')->name('admin.relationships.assign');
+    });
+
+    Route::controller(AdminRelationshipWebController::class)->group(function () {
+        Route::post('/relationships/assign', 'assign')->name('admin.relationships.assign');
     });
 
     Route::get('/config', function (Request $request) {

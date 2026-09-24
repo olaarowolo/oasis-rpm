@@ -200,82 +200,6 @@ class AdminDashboardWebController extends BaseController
         ));
     }
 
-    public function assignStudentSupervisor(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'supervisor_id' => 'required|exists:supervisors,id',
-            'scope_university_id' => 'nullable|exists:universities,id',
-        ]);
-
-        $student = Student::query()
-            ->with(['user', 'university', 'supervisor.user'])
-            ->findOrFail($validated['student_id']);
-        $supervisor = Supervisor::query()
-            ->with(['user', 'university'])
-            ->findOrFail($validated['supervisor_id']);
-
-        $scopeUniversityId = (int) ($validated['scope_university_id'] ?? $this->resolveScopeUniversityId($request) ?? 0);
-
-        if ($scopeUniversityId > 0 && ((int) $student->university_id !== $scopeUniversityId || (int) $supervisor->university_id !== $scopeUniversityId)) {
-            return redirect()
-                ->back()
-                ->with('error', 'You can only manage supervision links within the active university scope.');
-        }
-
-        if ((int) $student->university_id !== (int) $supervisor->university_id) {
-            return redirect()
-                ->back()
-                ->with('error', 'Student and supervisor must belong to the same university before they can be linked.');
-        }
-
-        if (! $supervisor->is_active || ! $supervisor->user?->is_active) {
-            return redirect()
-                ->back()
-                ->with('error', 'Only active supervisors can receive new student links.');
-        }
-
-        $previousSupervisor = $student->supervisor;
-        if ($previousSupervisor && (int) $previousSupervisor->id === (int) $supervisor->id) {
-            return redirect()
-                ->back()
-                ->with('success', $student->full_name . ' is already linked to ' . ($supervisor->user?->name ?? 'the selected supervisor') . '.');
-        }
-
-        $oldValues = [
-            'student_id' => $student->id,
-            'student_name' => $student->full_name,
-            'previous_supervisor_id' => $previousSupervisor?->id,
-            'previous_supervisor_name' => $previousSupervisor?->user?->name,
-        ];
-
-        $student->update(['supervisor_id' => $supervisor->id]);
-        $student->load(['user', 'university', 'supervisor.user']);
-
-        $notificationStatus = $this->notifyRelationshipParties($student, $supervisor, $previousSupervisor);
-
-        $this->writeAuditLog(
-            $student->university,
-            'Student',
-            $student->id,
-            'updated',
-            $oldValues,
-            [
-                'student_id' => $student->id,
-                'student_name' => $student->full_name,
-                'supervisor_id' => $supervisor->id,
-                'supervisor_name' => $supervisor->user?->name,
-                'transition' => $previousSupervisor ? 'supervisor_reassigned' : 'supervisor_linked',
-                'supervisor_load_band' => $this->loadBand((int) $supervisor->students()->count()),
-                'notifications' => $notificationStatus,
-            ]
-        );
-
-        return redirect()
-            ->back()
-            ->with('success', 'Linked ' . $student->full_name . ' to ' . ($supervisor->user?->name ?? 'the selected supervisor') . ' and sent notifications to both parties.');
-    }
-
     protected function resolveScopeUniversityId(Request $request): ?int
     {
         $actingUser = $this->actingUser();
@@ -493,6 +417,13 @@ class AdminDashboardWebController extends BaseController
             ->values();
     }
 
+    protected function actingUser(): ?User
+    {
+        $userId = session('user_id');
+
+        return $userId ? User::find($userId) : null;
+    }
+
     protected function writeAuditLog(?University $university, string $modelType, int $modelId, string $action, ?array $oldValues, ?array $newValues): void
     {
         if (! $university) {
@@ -508,104 +439,5 @@ class AdminDashboardWebController extends BaseController
             $oldValues,
             $newValues
         );
-    }
-
-    protected function actingUser(): ?User
-    {
-        $userId = session('user_id');
-
-        return $userId ? User::find($userId) : null;
-    }
-
-    protected function notifyRelationshipParties(Student $student, Supervisor $supervisor, ?Supervisor $previousSupervisor = null): array
-    {
-        $student->loadMissing(['user', 'university', 'supervisor.user']);
-        $supervisor->loadMissing(['user', 'university']);
-
-        $studentEmail = $student->email ?: $student->user?->email;
-        $supervisorEmail = $supervisor->user?->email;
-        $universityCode = strtoupper((string) ($student->university?->code ?? 'LASU'));
-        $wasReassigned = $previousSupervisor && (int) $previousSupervisor->id !== (int) $supervisor->id;
-        $studentSubject = $wasReassigned
-            ? 'Your supervisor assignment has been updated'
-            : 'You have been linked to a supervisor';
-        $supervisorSubject = $wasReassigned
-            ? 'A student has been reassigned to you'
-            : 'A student has been linked to you';
-
-        $status = [
-            'student' => ['email' => $studentEmail, 'status' => $studentEmail ? 'pending' : 'skipped'],
-            'supervisor' => ['email' => $supervisorEmail, 'status' => $supervisorEmail ? 'pending' : 'skipped'],
-        ];
-
-        if ($studentEmail) {
-            try {
-                Mail::to($studentEmail)->send(new PortalEmail('supervision-linked', [
-                    'subject' => $studentSubject,
-                    'title' => 'Supervisor assignment updated',
-                    'recipientName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
-                    'introText' => $wasReassigned
-                        ? 'Your supervision relationship has been updated. You now have a new assigned supervisor in the portal.'
-                        : 'Your supervision relationship is now active in the portal.',
-                    'counterpartName' => $supervisor->user?->name ?? 'Supervisor',
-                    'counterpartRole' => 'Assigned supervisor',
-                    'counterpartMeta' => $supervisor->department ?: 'Supervisor profile',
-                    'relationshipNote' => $wasReassigned && $previousSupervisor?->user?->name
-                        ? 'Previous supervisor: ' . $previousSupervisor->user->name
-                        : 'You can now continue your research workflow with a mapped supervisor.',
-                    'ctaLabel' => 'Open student dashboard',
-                    'url' => url('/student/dashboard'),
-                    'studentName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
-                    'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
-                    'universityCode' => $universityCode,
-                ]));
-                $status['student']['status'] = 'sent';
-            } catch (\Throwable $exception) {
-                $status['student']['status'] = 'failed';
-                $status['student']['error'] = $exception->getMessage();
-                Log::warning('Failed to send student supervision assignment email.', [
-                    'student_id' => $student->id,
-                    'supervisor_id' => $supervisor->id,
-                    'email' => $studentEmail,
-                    'message' => $exception->getMessage(),
-                ]);
-            }
-        }
-
-        if ($supervisorEmail) {
-            try {
-                Mail::to($supervisorEmail)->send(new PortalEmail('supervision-linked', [
-                    'subject' => $supervisorSubject,
-                    'title' => 'Student supervision assignment updated',
-                    'recipientName' => $supervisor->user?->name ?? 'Supervisor',
-                    'introText' => $wasReassigned
-                        ? 'A student has been reassigned to you in the portal.'
-                        : 'A student has been linked to you in the portal.',
-                    'counterpartName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
-                    'counterpartRole' => 'Assigned student',
-                    'counterpartMeta' => $student->matric_number ?: ($student->degree_level ?: 'Student profile'),
-                    'relationshipNote' => $wasReassigned && $previousSupervisor?->user?->name
-                        ? 'This student was previously assigned to ' . $previousSupervisor->user->name . '.'
-                        : 'You can now continue supervision tasks with this student in the portal.',
-                    'ctaLabel' => 'Open supervisor dashboard',
-                    'url' => url('/supervisor/dashboard'),
-                    'studentName' => $student->full_name ?: ($student->user?->name ?? 'Student'),
-                    'supervisorName' => $supervisor->user?->name ?? 'Supervisor',
-                    'universityCode' => $universityCode,
-                ]));
-                $status['supervisor']['status'] = 'sent';
-            } catch (\Throwable $exception) {
-                $status['supervisor']['status'] = 'failed';
-                $status['supervisor']['error'] = $exception->getMessage();
-                Log::warning('Failed to send supervisor supervision assignment email.', [
-                    'student_id' => $student->id,
-                    'supervisor_id' => $supervisor->id,
-                    'email' => $supervisorEmail,
-                    'message' => $exception->getMessage(),
-                ]);
-            }
-        }
-
-        return $status;
     }
 }
