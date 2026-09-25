@@ -288,7 +288,7 @@
       aria-expanded="false" 
       aria-controls="public-header__sheet"
     >
-      <i class="fa-solid fa-bars" aria-hidden="true"></i>
+      <span aria-hidden="true"></span>
     </button>
 
   </div>
