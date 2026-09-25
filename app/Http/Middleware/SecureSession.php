@@ -14,13 +14,6 @@ class SecureSession
     public function handle(Request $request, Closure $next)
     {
         if ($request->hasSession() && $request->session()->isStarted()) {
-            $lastRegenerated = (int) $request->session()->get('_last_session_regenerate', 0);
-
-            if (time() - $lastRegenerated > 1800) {
-                $request->session()->regenerate(true);
-                $request->session()->put('_last_session_regenerate', time());
-            }
-
             if (!$request->session()->has('_user_agent')) {
                 $request->session()->put('_user_agent', $request->userAgent());
             }

@@ -42,12 +42,30 @@
     return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'ST';
   }
   async function apiGet(path) {
-    const res = await fetch(API + path, {
-      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      credentials: 'same-origin'
-    });
-    if (!res.ok) throw new Error('Request failed: ' + res.status);
-    return res.json();
+    const universityId = sessionStorage.getItem('university_id') || '';
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+    try {
+      const res = await fetch(API + path, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          ...(universityId ? { 'X-University-ID': universityId } : {})
+        },
+        credentials: 'same-origin',
+        signal: controller.signal
+      });
+      if (!res.ok) throw new Error('Request failed: ' + res.status);
+      return await res.json();
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        throw new Error('The dashboard request timed out. Please refresh and try again.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
   async function apiPost(path, body) {
     const res = await fetch(API + path, {
@@ -124,7 +142,6 @@
       navBtn.classList.add('bg-academic-50', 'text-academic-700', 'dark:bg-academic-900/40', 'dark:text-academic-100', 'font-semibold');
       navBtn.classList.remove('text-slate-600', 'dark:text-slate-300', 'font-medium');
     }
-    closeMobileNav({ restoreFocus: false });
   }
 
   function getInitialStudentTab() {

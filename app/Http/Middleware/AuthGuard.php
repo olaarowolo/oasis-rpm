@@ -49,9 +49,6 @@ class AuthGuard
         // Update session last activity
         $this->updateSessionActivity($request);
 
-        // Regenerate session periodically to prevent fixation attacks
-        $this->regenerateSessionIfNeeded($request);
-
         // Apply MFA if required
         if ($this->requiresMfa($request)) {
             if (!$this->verifyMfa($request)) {
@@ -147,21 +144,6 @@ class AuthGuard
     {
         $request->session()->put('last_activity', time());
         $request->session()->put('session_started', $request->session()->get('session_started') ?? time());
-    }
-
-    /**
-     * Regenerate session ID periodically to prevent session fixation
-     */
-    protected function regenerateSessionIfNeeded(Request $request): void
-    {
-        $sessionStarted = $request->session()->get('session_started');
-        $lastRegeneration = $request->session()->get('last_regeneration');
-        
-        // Regenerate every 30 minutes or if more than 1 hour since start
-        if (!$lastRegeneration || (time() - $lastRegeneration) > 1800 || (time() - $sessionStarted) > 3600) {
-            $request->session()->regenerate();
-            $request->session()->put('last_regeneration', time());
-        }
     }
 
     /**

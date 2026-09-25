@@ -668,12 +668,13 @@
       }
 
       try {
-        await apiRequest('/api/auth/student/verify-otp', {
+        const res = await apiRequest('/api/auth/student/verify-otp', {
           method: 'POST',
           body: { email: pendingStudentEmail, otp: otp }
         });
-        showCredentialsStep();
-        showToast('Verification successful.', 'success');
+        const d = (res && res.data) || {};
+        if (d.university_id) sessionStorage.setItem('university_id', d.university_id);
+        window.location.href = d.dashboard_url || '/student/dashboard';
       } catch (err) {
         setError('otp-verification-error', 'otp-verification-error-text', err && err.message ? err.message : 'Invalid verification code.');
       }

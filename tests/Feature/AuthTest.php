@@ -468,6 +468,12 @@ class AuthTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonPath('data.dashboard_url', '/student/dashboard');
 
+        $this->withSession(['_last_session_regenerate' => time() - 1801]);
+        $home = $this->get('/home');
+
+        $home->assertRedirect('/student/dashboard');
+        $this->get('/student/dashboard')->assertOk();
+
         $supervisorUniversity = University::create([
             'name' => 'Supervisor University',
             'code' => 'SUP',
@@ -1055,6 +1061,9 @@ class AuthTest extends TestCase
         $this->assertEquals($user->id, session('user_id'));
         $this->assertEquals($student->id, session('student_id'));
         $this->assertEquals('student', session('role'));
+
+        $this->get('/home')->assertRedirect('/student/dashboard');
+        $this->get('/student/dashboard')->assertOk();
     }
 
     public function test_student_recovery_rejects_suspended_student(): void
