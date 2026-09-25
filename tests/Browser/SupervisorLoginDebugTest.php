@@ -44,14 +44,14 @@ class SupervisorLoginDebugTest extends DuskTestCase
 
             // Try to select university
             $browser->click('#login-university-code-supervisor')
-                ->pause(300)
+                ->pause(1500)
                 ->type('#university-search-supervisor', 'LASU')
                 ->pause(500)
                 ->screenshot("03-university-search");
 
             // Click the LASU option
             $browser->script("
-                const options = document.querySelectorAll('#university-list-supervisor > div');
+                const options = document.querySelectorAll('#university-list-supervisor button');
                 console.log('Found options:', options.length);
                 const lasuOption = Array.from(options).find(el => el.textContent.includes('LASU'));
                 if (lasuOption) {
@@ -69,10 +69,16 @@ class SupervisorLoginDebugTest extends DuskTestCase
             $university = $browser->inputValue('#login-university-code-supervisor');
             echo "\nUniversity value: {$university}\n";
 
-            // Fill in the form
+            // Fill in the email (email step is visible by default)
             $browser->type('#login-supervisor-email', 'olaarowolo.ng@gmail.com')
                 ->pause(300)
-                ->type('#login-supervisor-pin', '2026')
+                ->screenshot("05-email-filled");
+
+            // Show credentials step (PIN/passphrase are in a hidden step)
+            $browser->script("showSupervisorCredentialsStep();");
+
+            // Fill in PIN and passphrase
+            $browser->type('#login-supervisor-pin', '2026')
                 ->pause(300)
                 ->type('#login-supervisor-passphrase', 'LASU-Arowolo-2026')
                 ->pause(300)
@@ -86,16 +92,13 @@ class SupervisorLoginDebugTest extends DuskTestCase
                 console.log('Form onsubmit:', form?.onsubmit);
             ");
 
-            // Submit form directly using JavaScript
+            // Submit form by calling the handler directly (same pattern as SupervisorSeparationTest)
             $browser->script("
-                const form = document.getElementById('gate-supervisor-login-form');
-                if (form) {
-                    form.submit();
-                    console.log('Form submitted via JS');
-                }
+                handleSupervisorLoginDirect({ preventDefault: function() {} });
+                console.log('handleSupervisorLoginDirect called directly');
             ");
             
-            $browser->pause(2000)
+            $browser->pause(3000)
                 ->screenshot("06-after-submit");
 
             // Check if there's an error message

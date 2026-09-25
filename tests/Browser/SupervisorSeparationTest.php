@@ -2,6 +2,7 @@
 
 namespace Tests\Browser;
 
+use Illuminate\Support\Facades\Cache;
 use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
@@ -12,12 +13,15 @@ class SupervisorSeparationTest extends DuskTestCase
      */
     public function test_supervisors_see_only_their_own_students(): void
     {
-        // Test NG Supervisor (has 20 students)
+        // Reset rate limit counters from previous test runs
+        Cache::flush();
+
+        // Test NG Supervisor (has 27 students)
         $this->loginSupervisorAndVerifyStudents(
             'olaarowolo.ng@gmail.com',
             '2026',
             'LASU-Arowolo-2026',
-            20,
+            27,
             'NG Supervisor'
         );
 
@@ -57,7 +61,7 @@ class SupervisorSeparationTest extends DuskTestCase
 
             // Click on university input to open dropdown
             $browser->click('#login-university-code-supervisor')
-                ->pause(1000)
+                ->pause(2000)
                 ->screenshot("03-{$label}-university-dropdown-opened");
 
             // Type LASU to filter
@@ -78,17 +82,20 @@ class SupervisorSeparationTest extends DuskTestCase
                 }
             ");
             
-            $browser->pause(500)
+            $browser->pause(1000)
                 ->screenshot("05-{$label}-university-selected");
 
             // Verify university was selected
             $selected = $browser->inputValue('#login-university-code-supervisor');
             echo "\n{$label}: Selected university: {$selected}\n";
 
-            // Fill in email
+            // Fill in email (email step is visible by default)
             $browser->type('#login-supervisor-email', $email)
                 ->pause(300)
                 ->screenshot("06-{$label}-email-filled");
+
+            // Show credentials step (PIN/passphrase are in a hidden step)
+            $browser->script("showSupervisorCredentialsStep();");
 
             // Fill in PIN
             $browser->type('#login-supervisor-pin', $pin)

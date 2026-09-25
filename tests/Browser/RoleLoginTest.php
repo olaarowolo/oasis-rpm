@@ -100,6 +100,7 @@ class RoleLoginTest extends DuskTestCase
         $loginResponse = Http::asForm()->post('http://localhost:8000/api/auth/login-admin', [
             'email' => 'admin@afriscribe.org',
             'password' => 'Admin@2026',
+            'university_code' => 'AFS',
         ]);
 
         $this->assertTrue($loginResponse->successful(), 'Admin login should request MFA challenge.');
@@ -121,27 +122,17 @@ class RoleLoginTest extends DuskTestCase
 
     protected function assertSuperAdminLoginFlow(): void
     {
-        $university = University::updateOrCreate(
-            ['code' => 'AFS'],
-            [
-                'name' => 'AfriScribe University',
-                'email' => 'info@afriscribe.edu',
-                'department' => 'Research Office',
-                'phone' => '08011111111',
-            ]
-        );
-
         User::updateOrCreate(
             ['email' => 'superadmin@afriscribe.org'],
             [
-                'university_id' => $university->id,
+                'university_id' => null,
                 'password' => Hash::make('SuperAdmin@2026'),
                 'name' => 'Platform Super Admin',
                 'role' => 'super_admin',
             ]
         );
 
-        $response = Http::asForm()->post('http://localhost:8000/api/auth/login-super-admin', [
+        $response = Http::asForm()->post('http://localhost:8000/api/auth/super-admin/login', [
             'email' => 'superadmin@afriscribe.org',
             'password' => 'SuperAdmin@2026',
         ]);
