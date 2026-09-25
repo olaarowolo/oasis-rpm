@@ -79,6 +79,11 @@
               <i class="fa-solid fa-paper-plane"></i> Send Verification Code
             </button>
           </form>
+          <div class="flex items-center justify-center">
+            <button type="button" onclick="showStudentRecoveryStep()" class="text-[11px] text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300">
+              Can't access your email?
+            </button>
+          </div>
         </div>
 
         <!-- Step 2: OTP verification -->
@@ -105,6 +110,70 @@
             </div>
             <button type="submit" class="w-full px-4 py-2.5 bg-academic-700 hover:bg-academic-800 text-white rounded-xl text-sm font-semibold shadow-md transition flex items-center justify-center gap-2">
               <i class="fa-solid fa-check text-amber-400"></i> Verify Code
+            </button>
+          </form>
+        </div>
+
+        <!-- Step 2b: Account recovery (matric + lastname + knowledge-based detail) -->
+        <div id="student-recovery-step" class="hidden space-y-3.5">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            No access to your email? Confirm your <strong class="text-slate-700 dark:text-slate-200">Matric Number</strong> and <strong class="text-slate-700 dark:text-slate-200">Surname</strong>, then verify a detail only you know. A sign-in code will be sent to the email on file.
+          </p>
+          <form onsubmit="handleStudentRecoveryStart(event)" class="space-y-3.5 text-xs" id="student-recovery-start-form">
+            <div>
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Matric Number</label>
+              <div class="relative">
+                <i class="fa-solid fa-id-card absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                <input id="recovery-matric" type="text" placeholder="Enter your matric number" autocomplete="off" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+              </div>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Surname (Lastname)</label>
+              <div class="relative">
+                <i class="fa-solid fa-user absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                <input id="recovery-lastname" type="text" placeholder="Enter your surname" autocomplete="off" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+              </div>
+            </div>
+            <div>
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">University Email</label>
+              <div class="relative">
+                <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                <input id="recovery-email" type="email" placeholder="name@university.edu" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+              </div>
+              <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                Enter the email we have on file (or a matric-based university email). A code will be sent here once your details are confirmed.
+              </p>
+            </div>
+            <div id="recovery-start-error" class="hidden text-[11px] text-rose-600 dark:text-rose-400 font-medium items-center gap-1.5 flex">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span id="recovery-start-error-text"></span>
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl text-sm font-bold shadow-md shadow-amber-500/20 hover:shadow-amber-400/30 transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-paper-plane"></i> Continue
+            </button>
+          </form>
+        </div>
+
+        <!-- Step 2c: Knowledge-based confirmation -->
+        <div id="student-recovery-challenge-step" class="hidden space-y-3.5">
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+            Confirm the following detail to receive a sign-in code on the email we have on file.
+          </p>
+          <form onsubmit="handleStudentRecoveryConfirm(event)" class="space-y-3.5 text-xs">
+            <div>
+              <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5" id="recovery-challenge-label">Detail</label>
+              <div class="relative">
+                <i class="fa-solid fa-shield-halved absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
+                <input id="recovery-challenge-value" type="text" placeholder="Enter the detail shown" autocomplete="off" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+              </div>
+              <p class="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">Hint: <span id="recovery-challenge-hint" class="text-slate-700 dark:text-slate-200 font-medium">—</span></p>
+            </div>
+            <div id="recovery-confirm-error" class="hidden text-[11px] text-rose-600 dark:text-rose-400 font-medium items-center gap-1.5 flex">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span id="recovery-confirm-error-text"></span>
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 bg-academic-700 hover:bg-academic-800 text-white rounded-xl text-sm font-semibold shadow-md transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-check text-amber-400"></i> Verify and Send Code
             </button>
           </form>
         </div>

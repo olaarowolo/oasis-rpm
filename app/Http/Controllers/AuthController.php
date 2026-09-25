@@ -577,6 +577,232 @@ class AuthController extends BaseController
     }
 
     /**
+     * Student account recovery (knowledge-based): step 1.
+     *
+     * Identifies a student by university_code + matric_number + lastname and asks
+     * for the email too. The email is reconciled against the stored email: a
+     * university-issued email typically embeds the matric number, so if the
+     * provided email embeds the matric and the stored email is missing/stale,
+     * the stored email is corrected (after KBA succeeds) and the OTP is sent there.
+     * On success, returns a single masked "confirmable" detail the student must
+     * confirm before a login OTP is sent. Responses are identical whether or not
+     * the student exists to prevent enumeration.
+     */
+    public function studentRecoveryStart(Request $request)
+    {
+        $validated = $request->validate([
+            'university_code' => 'required|string',
+            'matric_number' => 'required|string',
+            'lastname' => 'required|string',
+            'email' => 'required|email',
+        ]);
+
+        $genericMessage = 'If the provided details match an account, a verification code will be sent to the email on file';
+
+        $university = University::where('code', strtoupper($validated['university_code']))->first();
+        if (!$university) {
+            $this->logOtpLookupMiss('student_recovery_start', 'university_not_found', [
+                'university_code' => $validated['university_code'],
+            ]);
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
+        $student = Student::where([
+            ['university_id', '=', $university->id],
+            ['matric_number', '=', $validated['matric_number']],
+            ['lastname', '=', $validated['lastname']],
+        ])->whereIn('status', ['active', 'graduated'])
+          ->where('account_status', '!=', 'archived')
+          ->first();
+
+        if (!$student || !$student->user || $student->user->role !== 'student') {
+            $this->logOtpLookupMiss('student_recovery_start', 'student_not_found_or_not_recoverable', [
+                'matric_number' => $validated['matric_number'],
+                'has_student' => (bool) $student,
+            ]);
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
+        // Reconcile the email before doing any further work.
+        $providedEmail = trim($validated['email'] ?? '');
+        $targetEmail = $this->resolveRecoveryEmail($student, $providedEmail);
+
+        if ($targetEmail === '') {
+            $this->logOtpLookupMiss('student_recovery_start', 'no_usable_email', [
+                'student_id' => $student->id,
+                'provided_has_matric' => $this->emailContainsMatric($providedEmail, $student->matric_number),
+            ]);
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
+        $lockKey = 'student_recovery_lock:' . $university->id . ':' . $validated['matric_number'];
+        if (Cache::has($lockKey)) {
+            return $this->error('Too many attempts. Please try again in 15 minutes.', 429);
+        }
+
+        $challenge = $this->getStudentRecoveryChallenge($student);
+        if (!$challenge) {
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
+        $challengeId = Str::random(40);
+        $cacheKey = 'student_recovery:' . $challengeId;
+        Cache::put($cacheKey, [
+            'user_id' => $student->user->id,
+            'student_id' => $student->id,
+            'university_id' => $university->id,
+            'matric_number' => $student->matric_number,
+            'email' => $targetEmail,
+            'provided_email' => $providedEmail,
+            'name' => $student->full_name ?? $student->user->name,
+            'field' => $challenge['field'],
+            'expected' => $challenge['expected'],
+            'attempts' => 0,
+            'ip' => $request->ip(),
+        ], now()->addMinutes(10));
+
+        return $this->success([
+            'challenge_id' => $challengeId,
+            'field' => $challenge['field'],
+            'label' => $challenge['label'],
+            'hint' => $challenge['hint'],
+            'email_hint' => $this->maskEmail($targetEmail),
+        ], 'Confirm a detail to receive a verification code');
+    }
+
+    /**
+     * Student account recovery (knowledge-based): step 2.
+     *
+     * Verifies the student's confirmation of the challenge detail. On success, the
+     * stored email is reconciled against the matric-based email supplied at start
+     * (when the stored email is missing or stale), then a login OTP is dispatched
+     * to the resolved email. The student then completes the existing student OTP
+     * verification to be logged in.
+     */
+    public function studentRecoveryConfirm(Request $request)
+    {
+        $validated = $request->validate([
+            'challenge_id' => 'required|string',
+            'field' => 'required|string',
+            'value' => 'required|string',
+        ]);
+
+        $genericFail = 'The provided detail does not match our records';
+
+        $cacheKey = 'student_recovery:' . $validated['challenge_id'];
+        $challenge = Cache::get($cacheKey);
+
+        if (!$challenge) {
+            return $this->error('This verification session has expired. Please try again.', 419);
+        }
+
+        if (($challenge['ip'] ?? null) !== $request->ip()) {
+            Cache::forget($cacheKey);
+            return $this->error('This verification session is invalid.', 403);
+        }
+
+        if (($validated['field'] ?? null) !== ($challenge['field'] ?? null)) {
+            return $this->error($genericFail, 401);
+        }
+
+        $attempts = (int) ($challenge['attempts'] ?? 0) + 1;
+        $challenge['attempts'] = $attempts;
+
+        $match = hash_equals(
+            $this->normalizeChallengeValue($challenge['field'], (string) ($challenge['expected'] ?? '')),
+            $this->normalizeChallengeValue($challenge['field'], (string) $validated['value'])
+        );
+
+        if (!$match) {
+            if ($attempts >= 5) {
+                Cache::forget($cacheKey);
+                $lockKey = 'student_recovery_lock:' . $challenge['university_id'] . ':' . $challenge['matric_number'];
+                Cache::put($lockKey, true, now()->addMinutes(15));
+                Log::warning('Student account recovery locked after repeated failures', [
+                    'student_id' => $challenge['student_id'],
+                    'field' => $challenge['field'],
+                    'ip' => $request->ip(),
+                ]);
+                return $this->error($genericFail . '. Too many attempts; please try again in 15 minutes.', 429);
+            }
+            Cache::put($cacheKey, $challenge, now()->addMinutes(10));
+            return $this->error($genericFail, 401);
+        }
+
+        Cache::forget($cacheKey);
+
+        $user = User::find($challenge['user_id']);
+        if (!$user) {
+            return $this->error($genericFail, 401);
+        }
+
+        $student = Student::find($challenge['student_id']);
+        if (!$student) {
+            return $this->error($genericFail, 401);
+        }
+
+        $targetEmail = $this->resolveRecoveryEmail($student, (string) ($challenge['provided_email'] ?? ''));
+        if ($targetEmail === '') {
+            $targetEmail = (string) ($student->email ?? '');
+        }
+
+        // Reconcile a stale/missing stored email using the matric-based email the
+        // student supplied at start. Only applied after KBA success so an
+        // unverified attempt cannot mutate account data.
+        $emailUpdated = false;
+        if ($targetEmail !== '' && $targetEmail !== trim((string) $student->email)) {
+            try {
+                $this->reconcileStudentEmail($student, $user, $targetEmail);
+                $emailUpdated = true;
+            } catch (\Throwable $exception) {
+                Log::warning('Student recovery email reconciliation failed', [
+                    'student_id' => $student->id,
+                    'user_id' => $user->id,
+                    'email' => $targetEmail,
+                    'exception' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        $code = $this->generateSecureOtp();
+        $expiresAt = now()->addMinutes(5);
+
+        OtpToken::where('user_id', $user->id)->where('role', 'student')->delete();
+
+        OtpToken::create([
+            'user_id' => $user->id,
+            'role' => 'student',
+            'email' => $targetEmail,
+            'code' => $code,
+            'expires_at' => $expiresAt,
+        ]);
+
+        try {
+            $this->sendOtpMail($targetEmail, $code, 'student', $challenge['name'], $user->id);
+        } catch (\Throwable $exception) {
+            return $this->error('Unable to send verification code right now. Please try again later.', 500);
+        }
+
+        Log::info('Student account recovery succeeded; login OTP dispatched', [
+            'user_id' => $user->id,
+            'student_id' => $student->id,
+            'field' => $challenge['field'],
+            'email_updated' => $emailUpdated,
+            'email_hint' => $this->maskEmail($targetEmail),
+            'ip' => $request->ip(),
+        ]);
+
+        return $this->success([
+            'email' => $targetEmail,
+            'email_hint' => $this->maskEmail($targetEmail),
+        ], 'If your details match, a verification code has been sent to the email on file');
+    }
+
+    /**
      * Send an email-verification OTP to a supervisor before they enter credentials.
      * Mirrors the student pre-verification step. Does NOT log the user in.
      */
@@ -1174,5 +1400,191 @@ public function verifyAdminOtp(Request $request)
 
         $lockoutKey = "login_lockout:{$identifier}";
         Cache::forget($lockoutKey);
+    }
+
+    /**
+     * Build a single random knowledge-based challenge from the student's populated
+     * confirmable fields. Returns [field, label, hint, expected] or null.
+     */
+    private function getStudentRecoveryChallenge(Student $student): ?array
+    {
+        $fields = [];
+
+        $this->addRecoveryField($fields, 'phone', 'Phone number', $student->phone, function ($v) {
+            return $this->maskPhone($v);
+        });
+
+        $this->addRecoveryField($fields, 'full_name', 'Full name', $student->full_name, function ($v) {
+            return $this->maskName($v);
+        });
+
+        $this->addRecoveryField($fields, 'degree_level', 'Degree level', $student->degree_level, function ($v) {
+            return null;
+        });
+
+        $this->addRecoveryField($fields, 'faculty', 'Faculty', $student->faculty, function ($v) {
+            return $this->maskShort($v);
+        });
+
+        $this->addRecoveryField($fields, 'department', 'Department', $student->department, function ($v) {
+            return $this->maskShort($v);
+        });
+
+        $this->addRecoveryField($fields, 'programme', 'Programme', $student->programme, function ($v) {
+            return $this->maskShort($v);
+        });
+
+        // Supervisor-derived fields are intentionally excluded from the challenge
+        // set: students cannot reliably be expected to know their supervisor's
+        // exact department or name (title suffixes, formatting), which would cause
+        // false rejections. Only fields the student owns are offered.
+
+        if (empty($fields)) {
+            return null;
+        }
+
+        return collect($fields)->random();
+    }
+
+    private function addRecoveryField(array &$fields, string $field, string $label, ?string $value, callable $mask): void
+    {
+        if ($value === null || trim((string) $value) === '') {
+            return;
+        }
+
+        $fields[] = [
+            'field' => $field,
+            'label' => $label,
+            'hint' => $mask((string) $value),
+            'expected' => (string) $value,
+        ];
+    }
+
+    /**
+     * Normalise a challenge value for case-insensitive, whitespace-insensitive comparison.
+     * Phone numbers are reduced to digits so format differences don't cause failures.
+     */
+    private function normalizeChallengeValue(string $field, string $value): string
+    {
+        $value = trim($value);
+
+        if ($field === 'phone') {
+            return preg_replace('/\D/', '', $value);
+        }
+
+        return strtolower(preg_replace('/\s+/', ' ', $value));
+    }
+
+    private function maskEmail(string $email): string
+    {
+        $atPosition = strrpos($email, '@');
+        if ($atPosition === false) {
+            return $this->maskShort($email);
+        }
+
+        $local = substr($email, 0, $atPosition);
+        $domain = substr($email, $atPosition + 1);
+
+        $maskedLocal = strlen($local) > 2
+            ? substr($local, 0, 2) . str_repeat('*', max(0, strlen($local) - 2))
+            : str_repeat('*', strlen($local));
+
+        return $maskedLocal . '@' . $domain;
+    }
+
+    private function maskPhone(string $phone): string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+        if (strlen($digits) <= 4) {
+            return str_repeat('*', strlen($digits));
+        }
+
+        return str_repeat('*', strlen($digits) - 4) . substr($digits, -4);
+    }
+
+    private function maskName(string $name): string
+    {
+        $tokens = preg_split('/\s+/', trim($name)) ?: [];
+        $masked = array_map(function ($token) {
+            $length = strlen($token);
+            if ($length <= 2) {
+                return str_repeat('*', $length);
+            }
+            return substr($token, 0, 1) . str_repeat('*', $length - 2) . substr($token, -1);
+        }, $tokens);
+
+        return implode(' ', $masked);
+    }
+
+    private function maskShort(string $value): string
+    {
+        $length = strlen($value);
+        if ($length <= 2) {
+            return str_repeat('*', $length);
+        }
+
+        // First two characters only — do not disclose total length, which would
+        // over-narrow the candidate set without helping the legitimate student.
+        return substr($value, 0, 2) . '…';
+    }
+
+    /**
+     * Resolve the email a recovery OTP should be sent to, optionally reconciling
+     * a university-issued email that embeds the student's matric number.
+     *
+     * Many university templates issue emails of the form name+<matric>@domain.
+     * If the email the student provides embeds their matric and the stored email
+     * is missing or does not embed the matric, the provided email is treated as
+     * authoritative. Otherwise the stored email is used.
+     */
+    private function resolveRecoveryEmail(Student $student, string $providedEmail): string
+    {
+        $provided = trim($providedEmail);
+        $matric = (string) $student->matric_number;
+
+        if ($provided !== '' && $matric !== '' && $this->emailContainsMatric($provided, $matric)) {
+            $current = trim((string) ($student->email ?? ''));
+            if ($current === '' || !$this->emailContainsMatric($current, $matric)) {
+                return $provided;
+            }
+        }
+
+        return trim((string) ($student->email ?? ''));
+    }
+
+    /**
+     * True when the email's local part contains the matric as a whole token
+     * (not as a substring of a longer digit run, e.g. 2021001 vs 20210010).
+     */
+    private function emailContainsMatric(string $email, string $matric): bool
+    {
+        if ($matric === '') {
+            return false;
+        }
+
+        $local = strstr($email, '@', true) ?: '';
+        if ($local === '') {
+            $local = $email;
+        }
+
+        return preg_match('/(?<!\d)' . preg_quote($matric, '/') . '(?!\d)/', $local) === 1;
+    }
+
+    /**
+     * Apply the reconciled email to both the Student and its linked User record.
+     * The User update is guarded against uniqueness conflicts so a duplicate
+     * email elsewhere will not corrupt another account.
+     */
+    private function reconcileStudentEmail(Student $student, User $user, string $email): void
+    {
+        if ($student->email !== $email) {
+            $student->email = $email;
+            $student->save();
+        }
+
+        if ($user->email !== $email && !User::where('email', $email)->where('id', '!=', $user->id)->exists()) {
+            $user->email = $email;
+            $user->save();
+        }
     }
 }

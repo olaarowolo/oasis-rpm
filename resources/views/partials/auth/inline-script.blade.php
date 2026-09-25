@@ -17,6 +17,9 @@
     let adminOtpTimerInterval = null;
     let adminOtpTimeLeft = 30;
     let pendingAdminIsSuperAdmin = false;
+    let pendingRecoveryChallengeId = null;
+    let pendingRecoveryField = null;
+    let pendingRecoveryEmail = '';
 
     function normalizeUniversityCode(value) {
       return String(value || '').trim().toUpperCase();
@@ -486,10 +489,107 @@
       const emailStep = document.getElementById('student-email-step');
       const otpStep = document.getElementById('student-otp-step');
       const credentialsStep = document.getElementById('student-credentials-step');
+      if (emailStep) emailStep.classList.remove('hidden');
+      if (otpStep) otpStep.classList.add('hidden');
+      if (credentialsStep) credentialsStep.classList.add('hidden');
+      stopOtpTimer();
+    }
+
+    function showStudentRecoveryStep() {
+      const emailStep = document.getElementById('student-email-step');
+      const otpStep = document.getElementById('student-otp-step');
+      const recoveryStep = document.getElementById('student-recovery-step');
+      const challengeStep = document.getElementById('student-recovery-challenge-step');
+      const credentialsStep = document.getElementById('student-credentials-step');
       if (emailStep) emailStep.classList.add('hidden');
       if (otpStep) otpStep.classList.add('hidden');
-      if (credentialsStep) credentialsStep.classList.remove('hidden');
-      stopOtpTimer();
+      if (credentialsStep) credentialsStep.classList.add('hidden');
+      if (challengeStep) challengeStep.classList.add('hidden');
+      if (recoveryStep) recoveryStep.classList.remove('hidden');
+      pendingRecoveryChallengeId = null;
+      pendingRecoveryField = null;
+      pendingRecoveryEmail = '';
+    }
+
+    async function handleStudentRecoveryStart(event) {
+      event.preventDefault();
+      const universityCode = getSelectedUniversityCode('login-university-code-student', '');
+      const matric = String((document.getElementById('recovery-matric') || {}).value || '').trim();
+      const lastname = String((document.getElementById('recovery-lastname') || {}).value || '').trim();
+      const email = String((document.getElementById('recovery-email') || {}).value || '').trim().toLowerCase();
+      setError('recovery-start-error', 'recovery-start-error-text', '');
+
+      if (!universityCode || !matric || !lastname || !email) {
+        setError('recovery-start-error', 'recovery-start-error-text', 'Please enter your university code, matric number, surname, and email.');
+        return;
+      }
+
+      try {
+        const res = await apiRequest('/api/auth/student/recovery/start', {
+          method: 'POST',
+          body: {
+            university_code: universityCode,
+            matric_number: matric,
+            lastname: lastname,
+            email: email
+          }
+        });
+
+        const d = (res && res.data) || {};
+        if (!d || !d.challenge_id) {
+          setError('recovery-start-error', 'recovery-start-error-text', res && res.message ? res.message : 'No matching account found for those details.');
+          return;
+        }
+
+        pendingRecoveryChallengeId = d.challenge_id;
+        pendingRecoveryField = d.field;
+        pendingRecoveryEmail = d.email || '';
+
+        const labelEl = document.getElementById('recovery-challenge-label');
+        const hintEl = document.getElementById('recovery-challenge-hint');
+        if (labelEl) labelEl.innerText = d.label || 'Confirm a detail';
+        if (hintEl) hintEl.innerText = d.hint || '(no hint available)';
+
+        const recoveryStep = document.getElementById('student-recovery-step');
+        const challengeStep = document.getElementById('student-recovery-challenge-step');
+        if (recoveryStep) recoveryStep.classList.add('hidden');
+        if (challengeStep) challengeStep.classList.remove('hidden');
+      } catch (err) {
+        setError('recovery-start-error', 'recovery-start-error-text', err && err.message ? err.message : 'Could not start recovery.');
+      }
+    }
+
+    async function handleStudentRecoveryConfirm(event) {
+      event.preventDefault();
+      const value = String((document.getElementById('recovery-challenge-value') || {}).value || '').trim();
+      setError('recovery-confirm-error', 'recovery-confirm-error-text', '');
+
+      if (!pendingRecoveryChallengeId || !value) {
+        setError('recovery-confirm-error', 'recovery-confirm-error-text', 'Enter the detail to confirm.');
+        return;
+      }
+
+      try {
+        const res = await apiRequest('/api/auth/student/recovery/confirm', {
+          method: 'POST',
+          body: {
+            challenge_id: pendingRecoveryChallengeId,
+            field: pendingRecoveryField,
+            value: value
+          }
+        });
+
+        const d = (res && res.data) || {};
+        if (d && d.email) {
+          pendingStudentEmail = d.email;
+        }
+        stopOtpTimer();
+        showOtpStep();
+        startOtpTimer();
+        showToast('Verification code sent to your email. Please check your inbox.', 'success');
+      } catch (err) {
+        setError('recovery-confirm-error', 'recovery-confirm-error-text', err && err.message ? err.message : 'Could not verify that detail.');
+      }
     }
 
     function setError(boxId, textId, message) {

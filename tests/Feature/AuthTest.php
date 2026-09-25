@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Mail\LoginOtpMail;
 use App\Mail\PortalEmail;
 use App\Models\AuditLog;
+use App\Models\OtpToken;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\University;
@@ -838,5 +839,292 @@ class AuthTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('success', true)
             ->assertJsonPath('message', 'If an account matches this email, a verification code will be sent');
+    }
+
+    private function makeRecoveryStudent(array $overrides = []): array
+    {
+        $university = University::create([
+            'name' => 'Recovery University',
+            'code' => 'RCV',
+            'email' => 'info@rcv.edu',
+            'department' => 'Research Office',
+            'phone' => '08010000000',
+        ]);
+
+        $user = User::create([
+            'university_id' => $university->id,
+            'email' => $overrides['email'] ?? 'recovery.student@rcv.edu',
+            'password' => 'Student@2026',
+            'name' => $overrides['full_name'] ?? 'Recovery Student',
+            'role' => 'student',
+        ]);
+
+        $student = Student::create(array_merge([
+            'user_id' => $user->id,
+            'university_id' => $university->id,
+            'matric_number' => 'RCV-001',
+            'lastname' => 'Student',
+            'full_name' => 'Recovery Student',
+            'email' => 'recovery.student@rcv.edu',
+            'phone' => '08031234567',
+            'degree_level' => 'BSc',
+            'faculty' => 'Science',
+            'department' => 'Computer Science',
+            'programme' => 'Computer Science',
+            'current_stage' => 1,
+            'status' => 'active',
+            'account_status' => 'active',
+        ], $overrides));
+
+        return [$university, $user, $student];
+    }
+
+    private function recoveryExpectedValue(Student $student, string $field): string
+    {
+        switch ($field) {
+            case 'phone':
+                return (string) $student->phone;
+            case 'full_name':
+                return (string) $student->full_name;
+            case 'degree_level':
+                return (string) $student->degree_level;
+            case 'faculty':
+                return (string) $student->faculty;
+            case 'department':
+                return (string) $student->department;
+            case 'programme':
+                return (string) $student->programme;
+            case 'supervisor_name':
+            case 'supervisor_department':
+                return '';
+            default:
+                return '';
+        }
+    }
+
+    public function test_student_recovery_start_does_not_leak_account_existence(): void
+    {
+        $university = University::create([
+            'name' => 'Recovery University',
+            'code' => 'RCV',
+            'email' => 'info@rcv.edu',
+            'department' => 'Research Office',
+            'phone' => '08010000000',
+        ]);
+
+        $response = $this->postJson('/api/auth/student/recovery/start', [
+            'university_code' => 'RCV',
+            'matric_number' => 'GHOST-999',
+            'lastname' => 'Nobody',
+            'email' => 'nobody@rcv.edu',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data', null)
+            ->assertJsonPath('message', 'If the provided details match an account, a verification code will be sent to the email on file');
+    }
+
+    public function test_student_recovery_start_returns_masked_challenge_without_revealing_email(): void
+    {
+        [, , $student] = $this->makeRecoveryStudent();
+
+        $response = $this->postJson('/api/auth/student/recovery/start', [
+            'university_code' => 'RCV',
+            'matric_number' => 'RCV-001',
+            'lastname' => 'Student',
+            'email' => 'recovery.student@rcv.edu',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['data' => ['challenge_id', 'field', 'label', 'hint', 'email_hint']]);
+
+        $data = $response->json('data');
+        $this->assertNotNull($data['challenge_id']);
+        $this->assertContains($data['field'], ['phone', 'full_name', 'degree_level', 'faculty', 'department', 'programme']);
+
+        // The full email must never be revealed at the start step.
+        $this->assertArrayNotHasKey('email', $data);
+        $this->assertNotSame($student->email, $data['email_hint']);
+        $this->assertStringContainsString('*', $data['email_hint']);
+    }
+
+    public function test_student_recovery_confirm_with_valid_detail_sends_otp_to_onfile_email(): void
+    {
+        Mail::fake();
+
+        [, $user, $student] = $this->makeRecoveryStudent();
+
+        $start = $this->postJson('/api/auth/student/recovery/start', [
+            'university_code' => 'RCV',
+            'matric_number' => 'RCV-001',
+            'lastname' => 'Student',
+            'email' => 'recovery.student@rcv.edu',
+        ]);
+
+        $field = $start->json('data.field');
+        $expected = $this->recoveryExpectedValue($student, $field);
+
+        $confirm = $this->postJson('/api/auth/student/recovery/confirm', [
+            'challenge_id' => $start->json('data.challenge_id'),
+            'field' => $field,
+            'value' => $expected,
+        ]);
+
+        $confirm->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.email', $student->email);
+
+        Mail::assertSent(LoginOtpMail::class, function ($mail) use ($student) {
+            return $mail->hasTo($student->email) && $mail->role === 'Student';
+        });
+
+        $otp = OtpToken::where('user_id', $user->id)->where('role', 'student')->latest()->first();
+        $this->assertNotNull($otp);
+    }
+
+    public function test_student_recovery_confirm_with_invalid_detail_fails_and_rate_limits(): void
+    {
+        Mail::fake();
+
+        [, , $student] = $this->makeRecoveryStudent();
+
+            $start = $this->postJson('/api/auth/student/recovery/start', [
+            'university_code' => 'RCV',
+            'matric_number' => 'RCV-001',
+            'lastname' => 'Student',
+            'email' => 'recovery.student@rcv.edu',
+        ]);
+
+        $field = $start->json('data.field');
+
+        // Four failures return 401; the fifth triggers the 15-minute lockout lock.
+        for ($i = 0; $i < 4; $i++) {
+            $this->postJson('/api/auth/student/recovery/confirm', [
+                'challenge_id' => $start->json('data.challenge_id'),
+                'field' => $field,
+                'value' => 'definitely-not-correct',
+            ])->assertStatus(401);
+        }
+
+        $locked = $this->postJson('/api/auth/student/recovery/confirm', [
+            'challenge_id' => $start->json('data.challenge_id'),
+            'field' => $field,
+            'value' => 'definitely-not-correct',
+        ]);
+
+        $locked->assertStatus(429);
+    }
+
+    public function test_student_recovery_full_flow_logs_in_via_existing_otp_verify(): void
+    {
+        Mail::fake();
+
+        [, $user, $student] = $this->makeRecoveryStudent();
+
+        $start = $this->postJson('/api/auth/student/recovery/start', [
+            'university_code' => 'RCV',
+            'matric_number' => 'RCV-001',
+            'lastname' => 'Student',
+            'email' => 'recovery.student@rcv.edu',
+        ]);
+
+        $field = $start->json('data.field');
+        $confirm = $this->postJson('/api/auth/student/recovery/confirm', [
+            'challenge_id' => $start->json('data.challenge_id'),
+            'field' => $field,
+            'value' => $this->recoveryExpectedValue($student, $field),
+        ]);
+
+        $otp = OtpToken::where('user_id', $user->id)->where('role', 'student')->latest()->first();
+        $this->assertNotNull($otp);
+
+        $verify = $this->postJson('/api/auth/student/verify-otp', [
+            'email' => $student->email,
+            'otp' => $otp->code,
+        ]);
+
+        $verify->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.user_id', $user->id)
+            ->assertJsonPath('data.role', 'student')
+            ->assertJsonPath('data.dashboard_url', '/student/dashboard')
+            ->assertJsonPath('data.token', fn ($token) => is_string($token) && $token !== '');
+
+        $this->assertEquals($user->id, session('user_id'));
+        $this->assertEquals($student->id, session('student_id'));
+        $this->assertEquals('student', session('role'));
+    }
+
+    public function test_student_recovery_rejects_suspended_student(): void
+    {
+        [, , $student] = $this->makeRecoveryStudent(['status' => 'suspended']);
+
+        $response = $this->postJson('/api/auth/student/recovery/start', [
+            'university_code' => 'RCV',
+            'matric_number' => 'RCV-001',
+            'lastname' => 'Student',
+            'email' => 'recovery.student@rcv.edu',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data', null);
+
+        $this->assertNull(OtpToken::where('user_id', $student->user_id)->first());
+    }
+
+    public function test_student_recovery_reconciles_stale_email_via_matric_based_address(): void
+    {
+        Mail::fake();
+
+        // Stored email is a stale personal address that does NOT embed the matric.
+        [, $user, $student] = $this->makeRecoveryStudent([
+            'email' => 'stale.personal@gmail.com',
+        ]);
+        $user->email = 'stale.personal@gmail.com';
+        $user->save();
+
+        $reconciledEmail = 'student.RCV-001@rcv.edu';
+
+        $start = $this->postJson('/api/auth/student/recovery/start', [
+            'university_code' => 'RCV',
+            'matric_number' => 'RCV-001',
+            'lastname' => 'Student',
+            'email' => $reconciledEmail,
+        ]);
+
+        $start->assertOk()->assertJsonPath('success', true);
+        $this->assertNotNull($start->json('data.challenge_id'));
+
+        $field = $start->json('data.field');
+        $expected = $this->recoveryExpectedValue($student, $field);
+
+        $confirm = $this->postJson('/api/auth/student/recovery/confirm', [
+            'challenge_id' => $start->json('data.challenge_id'),
+            'field' => $field,
+            'value' => $expected,
+        ]);
+
+        $confirm->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.email', $reconciledEmail);
+
+        // The stale stored email must have been reconciled to the matric-based email.
+        $this->assertEquals($reconciledEmail, $student->fresh()->email);
+        $this->assertEquals($reconciledEmail, $user->fresh()->email);
+
+        // OTP must be dispatched only to the reconciled email, never the stale one.
+        Mail::assertSent(LoginOtpMail::class, function ($mail) use ($reconciledEmail) {
+            return $mail->hasTo($reconciledEmail) && $mail->role === 'Student';
+        });
+        Mail::assertNotSent(LoginOtpMail::class, function ($mail) {
+            return $mail->hasTo('stale.personal@gmail.com');
+        });
+
+        $otp = OtpToken::where('user_id', $user->id)->where('role', 'student')->latest()->first();
+        $this->assertNotNull($otp);
+        $this->assertEquals($reconciledEmail, $otp->email);
     }
 }

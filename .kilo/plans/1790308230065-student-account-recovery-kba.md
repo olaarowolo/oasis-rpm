@@ -79,9 +79,9 @@ Body: `challenge_id`, `field`, `value`.
 - On mismatch: if attempts ≥ 5 → lock key `student_recovery_lock:{matric}` TTL 15 min + clear
   challenge, return generic failure. Else update cache, return generic failure.
 - On success: clear challenge; delete existing student OTPs; generate OTP; create `OtpToken`
-  (role `student`, email = student email, `purpose` = `login_recovery` if column exists);
-  `sendOtpMail`; return `{challenge_id, email_hint}` (email masked, e.g. `o***@gmail.com`) +
-  generic message. Reuse the send path from `sendStudentOtp` (AuthController.php:473-487).
+  (role `student`, email = student email); `sendOtpMail`; return `email` (full, only to the
+  verified identity) + `email_hint` (masked) so the UI can route into the existing OTP step.
+  Reuse the send path from `sendStudentOtp` (AuthController.php:473-487).
 
 ### 3. (Existing, reused) `POST /api/auth/student/verify-otp`
 No change. The recovery OTP is a normal `student` role token on the same `user_id`, so
