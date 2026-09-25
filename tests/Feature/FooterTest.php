@@ -19,6 +19,19 @@ class FooterTest extends TestCase
             ->assertDontSee('Student research workspace', false);
     }
 
+    public function test_authenticated_visitor_gets_role_specific_footer_on_public_page(): void
+    {
+        $response = $this->withSession([
+            'user_id' => 1,
+            'role' => 'student',
+            'university_id' => 1,
+        ])->get('/');
+
+        $response->assertOk()
+            ->assertSee('Student research workspace', false)
+            ->assertDontSee('Public footer navigation', false);
+    }
+
     public function test_authenticated_footer_renders_role_specific_actions(): void
     {
         $html = view('components.layouts.footer', [

@@ -70,7 +70,7 @@
     {{ $slot }}
   </main>
 
-  <x-layouts.footer variant="mega-public" />
+  <x-layouts.footer :variant="session('user_id') && session('role') ? 'authenticated' : 'mega-public'" :role="session('role')" :scope="session('university_id') ? 'University scope' : 'Authenticated workspace'" />
   {{ $scripts ?? '' }}
 </body>
 </html>

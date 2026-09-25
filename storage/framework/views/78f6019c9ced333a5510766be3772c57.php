@@ -111,14 +111,14 @@
 
   <?php if (isset($component)) { $__componentOriginal2851f1e47c9108aacbab05e6d2ec4a68 = $component; } ?>
 <?php if (isset($attributes)) { $__attributesOriginal2851f1e47c9108aacbab05e6d2ec4a68 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.layouts.footer','data' => ['variant' => 'mega-public']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.layouts.footer','data' => ['variant' => session('user_id') && session('role') ? 'authenticated' : 'mega-public','role' => session('role'),'scope' => session('university_id') ? 'University scope' : 'Authenticated workspace']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
 <?php $component->withName('layouts.footer'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['variant' => 'mega-public']); ?>
+<?php $component->withAttributes(['variant' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(session('user_id') && session('role') ? 'authenticated' : 'mega-public'),'role' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(session('role')),'scope' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute(session('university_id') ? 'University scope' : 'Authenticated workspace')]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
 <?php if (isset($__attributesOriginal2851f1e47c9108aacbab05e6d2ec4a68)): ?>
