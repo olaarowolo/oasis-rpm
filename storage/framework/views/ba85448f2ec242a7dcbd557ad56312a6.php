@@ -46,6 +46,10 @@
                     <i class="fa-solid fa-user-plus"></i>
                     Add User
                 </a>
+                <a href="<?php echo e(route('super-admin.users.export', request()->query())); ?>" class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15 transition-colors">
+                    <i class="fa-solid fa-file-csv"></i>
+                    Export Users
+                </a>
                 <a href="<?php echo e(route('super-admin.users', ['status' => 'inactive'])); ?>" class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/15 transition-colors">
                     <i class="fa-solid fa-user-shield"></i>
                     Review Inactive Access
@@ -66,6 +70,30 @@
         <div class="rounded-xl border border-rose-200 bg-rose-50 dark:bg-rose-900/20 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
             <?php echo e(session('error')); ?>
 
+        </div>
+    <?php endif; ?>
+
+    <?php if(session('bulk_result')): ?>
+        <?php
+            $bulkResult = session('bulk_result');
+        ?>
+        <div class="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-200">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <p class="font-semibold">Bulk action result</p>
+                    <p class="mt-1 text-blue-700 dark:text-blue-300"><?php echo e($bulkResult['processed'] ?? 0); ?> changed, <?php echo e($bulkResult['skipped'] ?? 0); ?> skipped, <?php echo e(count($bulkResult['errors'] ?? [])); ?> errors.</p>
+                </div>
+                <?php if(!empty($bulkResult['errors'])): ?>
+                    <details class="w-full md:w-auto">
+                        <summary class="cursor-pointer font-semibold">Review skipped or failed items</summary>
+                        <ul class="mt-2 space-y-1 text-xs">
+                            <?php $__currentLoopData = $bulkResult['errors']; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $error): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <li>User <?php echo e($error['user_id'] ?? 'unknown'); ?>: <?php echo e($error['reason'] ?? 'Unable to process'); ?></li>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </ul>
+                    </details>
+                <?php endif; ?>
+            </div>
         </div>
     <?php endif; ?>
 
@@ -150,6 +178,22 @@
         </div>
     </form>
 
+    <div id="bulk-user-toolbar" class="hidden items-center justify-between gap-3 rounded-2xl border border-violet-200 bg-violet-50 p-4 shadow-sm dark:border-violet-900/40 dark:bg-violet-950/40">
+        <div>
+            <p class="text-sm font-bold text-slate-900 dark:text-white">Bulk identity actions</p>
+            <p class="mt-1 text-xs text-slate-600 dark:text-slate-400"><span id="bulk-user-count">0</span> users selected. Actions apply to the selected accounts only.</p>
+        </div>
+        <form method="POST" id="bulk-user-form">
+            <?php echo csrf_field(); ?>
+            <div class="flex flex-wrap justify-end gap-2">
+                <button type="submit" formaction="<?php echo e(route('super-admin.users.bulk-activate', request()->query())); ?>" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800">Activate</button>
+                <button type="submit" formaction="<?php echo e(route('super-admin.users.bulk-suspend', request()->query())); ?>" class="rounded-xl bg-amber-600 px-3 py-2 text-xs font-semibold text-white hover:bg-amber-700">Suspend</button>
+                <button type="submit" formaction="<?php echo e(route('super-admin.users.bulk-resend-invite', request()->query())); ?>" class="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">Resend Invite</button>
+                <button type="submit" formaction="<?php echo e(route('super-admin.users.export-selected', request()->query())); ?>" class="rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600">Export Selected</button>
+            </div>
+        </form>
+    </div>
+
     <!-- Users Table -->
     <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm overflow-hidden">
         <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-700">
@@ -160,6 +204,9 @@
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700 text-sm">
                 <thead class="bg-slate-50 dark:bg-slate-900/50">
                     <tr>
+                        <th class="w-12 px-5 py-3 text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-xs">
+                            <input type="checkbox" id="select-all-users" aria-label="Select all users on this page" class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500">
+                        </th>
                         <th class="px-5 py-3 text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-xs">Name</th>
                         <th class="px-5 py-3 text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-xs">Email</th>
                         <th class="px-5 py-3 text-left font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-xs">Role</th>
@@ -171,6 +218,9 @@
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700/60">
                     <?php $__empty_1 = true; $__currentLoopData = $users; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $user): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <td class="px-5 py-4">
+                                <input type="checkbox" name="user_ids[]" value="<?php echo e($user->id); ?>" data-user-id="<?php echo e($user->id); ?>" aria-label="Select <?php echo e($user->name); ?>" class="bulk-user-checkbox h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500">
+                            </td>
                             <td class="px-5 py-4 whitespace-nowrap font-medium text-slate-900 dark:text-white"><?php echo e($user->name); ?></td>
                             <td class="px-5 py-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
                                 <div><?php echo e($user->email); ?></div>
@@ -207,7 +257,10 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4 text-right">
-                                <div class="flex justify-end gap-3">
+                                <div class="flex justify-end gap-3 flex-wrap">
+                                    <?php if(in_array($user->role, ['student', 'supervisor'], true)): ?>
+                                        <a href="<?php echo e(route('super-admin.dashboard')); ?>#relationship-orchestrator" class="text-sm font-medium text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300">Link</a>
+                                    <?php endif; ?>
                                     <a href="<?php echo e(route('super-admin.users.edit', $user)); ?>" class="text-sm font-medium text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300">Edit</a>
                                     <?php if(!$user->is_active && is_null($user->email_verified_at)): ?>
                                         <form action="<?php echo e(route('super-admin.users.resend-invite', $user)); ?>" method="POST">
@@ -231,7 +284,7 @@
                         </tr>
                     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
-                            <td colspan="6" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
+                            <td colspan="7" class="px-5 py-12 text-center text-slate-500 dark:text-slate-400">
                                 <i class="fa-solid fa-users text-3xl text-slate-300 dark:text-slate-600 mb-2 block"></i>
                                 No users found matching your criteria.
                             </td>
@@ -249,5 +302,56 @@
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+    (function () {
+        var checkboxes = Array.prototype.slice.call(document.querySelectorAll('.bulk-user-checkbox'));
+        var selectAll = document.getElementById('select-all-users');
+        var toolbar = document.getElementById('bulk-user-toolbar');
+        var countLabel = document.getElementById('bulk-user-count');
+        var form = document.getElementById('bulk-user-form');
+
+        function syncBulkToolbar() {
+            var selected = checkboxes.filter(function (checkbox) { return checkbox.checked; });
+            var userIds = selected.map(function (checkbox) { return checkbox.value; });
+
+            form.querySelectorAll('input[name="user_ids[]"]').forEach(function (input) {
+                input.remove();
+            });
+
+            userIds.forEach(function (userId) {
+                var input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'user_ids[]';
+                input.value = userId;
+                form.appendChild(input);
+            });
+
+            toolbar.style.display = selected.length > 0 ? 'flex' : 'none';
+            toolbar.classList.toggle('hidden', selected.length === 0);
+            countLabel.textContent = String(selected.length);
+
+            if (selectAll) {
+                selectAll.checked = checkboxes.length > 0 && selected.length === checkboxes.length;
+                selectAll.indeterminate = selected.length > 0 && selected.length < checkboxes.length;
+            }
+        }
+
+        checkboxes.forEach(function (checkbox) {
+            checkbox.addEventListener('change', syncBulkToolbar);
+        });
+
+        if (selectAll) {
+            selectAll.addEventListener('change', function () {
+                checkboxes.forEach(function (checkbox) {
+                    checkbox.checked = selectAll.checked;
+                });
+                syncBulkToolbar();
+            });
+        }
+
+        syncBulkToolbar();
+    }());
+</script>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.super-admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/olasunkanmiarowolo/Documents/OAsis-RS/Archive/oasis-rpm/resources/views/super-admin/users.blade.php ENDPATH**/ ?>

@@ -142,4 +142,17 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Simulation Configuration
+    |--------------------------------------------------------------------------
+    | When enabled in local environment, all emails will be redirected to
+    | the specified simulation address instead of actual recipients.
+    |
+    */
+    'simulation' => [
+        'enabled' => env('MAIL_SIMULATION_ENABLED', false),
+        'address' => env('MAIL_SIMULATION_ADDRESS', 'olasunkanmiarowolo@gmail.com'),
+    ],
+
 ];

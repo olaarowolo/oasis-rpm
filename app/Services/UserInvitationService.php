@@ -5,11 +5,13 @@ namespace App\Services;
 use App\Mail\PortalEmail;
 use App\Models\Student;
 use App\Models\Supervisor;
+use App\Models\University;
 use App\Models\User;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -17,7 +19,9 @@ use RuntimeException;
 class UserInvitationService
 {
     private const CACHE_PREFIX = 'user_invitation:';
+
     private const USER_CACHE_PREFIX = 'user_invitation_user:';
+
     private const INVITE_TTL_SECONDS = 604800;
 
     public function createInvitedUser(array $attributes): array
@@ -64,9 +68,6 @@ class UserInvitationService
 
     public function resendInvitation(User $user): array
     {
-        if ($user->email_verified_at !== null || $user->is_active) {
-            throw new RuntimeException('Only pending invitations can be resent.');
-        }
 
         $pendingInvitation = $this->getInvitationForUser($user);
         $assignedSupervisorId = $pendingInvitation['supervisor_id']
@@ -98,7 +99,7 @@ class UserInvitationService
     {
         $invitation = Cache::get($this->cacheKey($token));
 
-        if (!$invitation) {
+        if (! $invitation) {
             return null;
         }
 
@@ -110,7 +111,7 @@ class UserInvitationService
 
         $user = User::find($invitation['user_id'] ?? null);
 
-        if (!$user || $user->email !== ($invitation['email'] ?? null)) {
+        if (! $user || $user->email !== ($invitation['email'] ?? null)) {
             Cache::forget($this->cacheKey($token));
 
             return null;
@@ -130,16 +131,24 @@ class UserInvitationService
             'phone' => 'nullable|string|max:255',
         ];
 
+        // Check if university has structured departments
+        $hasStructured = $this->hasStructuredDepartments($user->university_id);
+        $allowedDepartments = $hasStructured ? $this->getAllowedDepartments($user->university_id) : [];
+
+        $departmentRule = $hasStructured && $allowedDepartments
+            ? 'required|string|max:255|in:'.implode(',', $allowedDepartments)
+            : ($user->role === 'supervisor' ? 'required|string|max:255' : 'nullable|string|max:255');
+
         if (in_array($user->role, ['admin', 'super_admin'], true)) {
             return $rules + [
-                'department' => 'nullable|string|max:255',
+                'department' => $departmentRule,
                 'password' => 'required|string|min:12|confirmed|regex:/[A-Z]/|regex:/[a-z]/|regex:/[0-9]/|regex:/[!@#$%^&*(),.?":{}|<>]/',
             ];
         }
 
         if ($user->role === 'supervisor') {
             return $rules + [
-                'department' => 'required|string|max:255',
+                'department' => $departmentRule,
                 'supervisor_title' => 'required|string|max:255',
                 'research_areas' => 'nullable|string',
                 'booking_url' => 'nullable|url|max:2048',
@@ -160,11 +169,52 @@ class UserInvitationService
         return $rules;
     }
 
+    /**
+     * Check if a university has structured departments enabled.
+     */
+    private function hasStructuredDepartments(int $universityId): bool
+    {
+        $university = University::find($universityId);
+        if (! $university) {
+            return false;
+        }
+
+        return config("universities.presets.{$university->code}.has_structured_departments", false);
+    }
+
+    /**
+     * Get the list of allowed departments for a university.
+     */
+    private function getAllowedDepartments(int $universityId): array
+    {
+        $university = University::find($universityId);
+        if (! $university) {
+            return [];
+        }
+
+        $code = $university->code;
+        if ($code !== 'LASU') {
+            return [];
+        }
+
+        $config = config('lasu_departments', []);
+        $all = [];
+        foreach (['faculties', 'schools_and_directorates'] as $key) {
+            if (! empty($config[$key])) {
+                foreach ($config[$key] as $unit) {
+                    $all = array_merge($all, array_values($unit['departments'] ?? []));
+                }
+            }
+        }
+
+        return array_values(array_unique($all));
+    }
+
     public function completeInvitation(string $token, array $attributes): User
     {
         $payload = $this->getInvitation($token);
 
-        if (!$payload) {
+        if (! $payload) {
             throw new RuntimeException('Invitation link is invalid or has expired.');
         }
 
@@ -181,7 +231,7 @@ class UserInvitationService
                 'is_active' => true,
             ]);
 
-            if (!empty($attributes['password'])) {
+            if (! empty($attributes['password'])) {
                 $user->password = Hash::make($attributes['password']);
             }
 
@@ -246,9 +296,51 @@ class UserInvitationService
         ], $role, ucfirst(str_replace('_', ' ', $role)));
     }
 
+    /**
+     * Send a "credentials delivered" welcome email for a freshly created
+     * student (e.g. from CSV bulk import). Students sign in using their
+     * university code, matric number and surname, so the email conveys
+     * those details rather than a (unused) password.
+     *
+     * Reuses the PortalEmail mailer so all user-facing emails route through
+     * UserInvitationService. Failures are logged and swallowed so that a
+     * single undeliverable email never rolls back a bulk import.
+     */
+    public function sendStudentCredentials(Student $student, ?string $loginUrl = null): bool
+    {
+        $student->loadMissing(['university', 'supervisor.user']);
+
+        $universityCode = strtoupper((string) ($student->university?->code ?? config('universities.default', 'LASU')));
+        $universityConfig = config('universities.presets.'.$universityCode)
+            ?: config('universities.presets.'.config('universities.default', 'LASU'));
+
+        try {
+            Mail::to($student->email)->send(new PortalEmail('student-welcome', [
+                'universityCode' => $universityCode,
+                'universityName' => $student->university?->name ?? ($universityConfig['name'] ?? $universityCode),
+                'name' => $student->full_name,
+                'matric' => $student->matric_number,
+                'roleLabel' => 'Student',
+                'supervisorName' => optional($student->supervisor?->user)->name,
+                'loginUrl' => $loginUrl ?? url('/login'),
+                'loginHint' => sprintf('Sign in using your University code (%s), Matric number (%s) and surname.', $universityCode, $student->matric_number),
+            ]));
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send student welcome credentials email', [
+                'student_id' => $student->id,
+                'matric' => $student->matric_number,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     private function cacheKey(string $token): string
     {
-        return self::CACHE_PREFIX . $token;
+        return self::CACHE_PREFIX.$token;
     }
 
     private function issueInvitation(User $user, array $metadata = []): array
@@ -292,7 +384,7 @@ class UserInvitationService
     private function getInvitationForUser(User $user): array
     {
         $token = Cache::get($this->userCacheKey($user->id));
-        if (!is_string($token) || $token === '') {
+        if (! is_string($token) || $token === '') {
             return [];
         }
 
@@ -307,7 +399,7 @@ class UserInvitationService
             return null;
         }
 
-        if (!empty($attributes['supervisor_id'])) {
+        if (! empty($attributes['supervisor_id'])) {
             return (int) $attributes['supervisor_id'];
         }
 
@@ -321,6 +413,6 @@ class UserInvitationService
 
     private function userCacheKey(int $userId): string
     {
-        return self::USER_CACHE_PREFIX . $userId;
+        return self::USER_CACHE_PREFIX.$userId;
     }
 }

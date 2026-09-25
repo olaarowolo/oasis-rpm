@@ -10,6 +10,7 @@ use App\Http\Controllers\Web\AdminDashboardWebController;
 use App\Http\Controllers\Web\AdminRelationshipWebController;
 use App\Http\Controllers\Web\AdminResourceWebController;
 use App\Http\Controllers\Web\AuditLogWebController;
+use App\Http\Controllers\Web\PublicPageController;
 use App\Http\Controllers\Web\SuperAdminWebController;
 use App\Http\Controllers\Web\SupervisorMeetingWebController;
 use App\Models\Student;
@@ -35,6 +36,33 @@ use App\Models\User;
 // Public landing page
 Route::get('/', function () {
     return view('landing');
+})->name('landing');
+
+// Public marketing pages
+Route::controller(PublicPageController::class)->group(function () {
+    Route::get('/features', 'features')->name('public.features');
+    Route::get('/pricing', 'pricing')->name('public.pricing');
+    Route::get('/integrations', 'integrations')->name('public.integrations');
+    Route::get('/changelog', 'changelog')->name('public.changelog');
+    Route::get('/roadmap', 'roadmap')->name('public.roadmap');
+
+    Route::get('/solutions/supervisors', 'solutionsSupervisors')->name('public.solutions.supervisors');
+    Route::get('/solutions/students', 'solutionsStudents')->name('public.solutions.students');
+    Route::get('/solutions/administrators', 'solutionsAdministrators')->name('public.solutions.administrators');
+    Route::get('/solutions/institutions', 'solutionsInstitutions')->name('public.solutions.institutions');
+
+    Route::get('/docs', 'docs')->name('public.docs');
+    Route::get('/blog', 'blog')->name('public.blog');
+    Route::get('/webinars', 'webinars')->name('public.webinars');
+    Route::get('/case-studies', 'caseStudies')->name('public.case-studies');
+    Route::get('/api-reference', 'apiReference')->name('public.api-reference');
+
+    Route::get('/about', 'about')->name('public.about');
+    Route::get('/careers', 'careers')->name('public.careers');
+    Route::get('/press', 'press')->name('public.press');
+    Route::get('/contact', 'contact')->name('public.contact');
+    Route::get('/security', 'security')->name('public.security');
+    Route::get('/privacy', 'privacy')->name('public.privacy');
 });
 
 // Login page - redirects authenticated users to their dashboard
@@ -61,15 +89,21 @@ Route::prefix('api/auth')->group(function () {
     // Admin email verification (before credentials)
     Route::post('/admin/send-otp', [AuthController::class, 'sendAdminOtp'])->name('auth.admin.send-otp');
     Route::post('/admin/verify-otp', [AuthController::class, 'verifyAdminOtp'])->name('auth.admin.verify-otp');
-    // Admin login
+    // Admin login (NEW FLOW: requires university_code)
     Route::post('/admin/login', [AuthController::class, 'loginAdmin'])->name('auth.admin.login');
     Route::post('/admin/verify-mfa', [AuthController::class, 'verifyAdminMfa'])->name('auth.admin.verify-mfa');
-    // Super Admin login
-    Route::post('/super-admin/login', [AuthController::class, 'loginSuperAdmin'])->name('auth.super-admin.login');
+    // Super Admin (platform-level) - NEW
+    Route::prefix('super-admin')->group(function () {
+        Route::post('/send-otp', [AuthController::class, 'sendSuperAdminOtp'])->name('auth.super-admin.send-otp');
+        Route::post('/verify-otp', [AuthController::class, 'verifySuperAdminOtp'])->name('auth.super-admin.verify-otp');
+        Route::post('/login', [AuthController::class, 'loginSuperAdmin'])->name('auth.super-admin.login');
+    });
 });
 
 // ================= BACKWARD COMPATIBILITY - Direct API routes =================
 Route::post('/super-admin/login', [AuthController::class, 'loginSuperAdmin']);
+Route::post('/super-admin/send-otp', [AuthController::class, 'sendSuperAdminOtp']);
+Route::post('/super-admin/verify-otp', [AuthController::class, 'verifySuperAdminOtp']);
 Route::post('/admin/login', [AuthController::class, 'loginAdmin']);
 Route::post('/admin/verify-mfa', [AuthController::class, 'verifyAdminMfa']);
 Route::post('/supervisor/login', [AuthController::class, 'loginSupervisor']);
@@ -128,6 +162,11 @@ Route::middleware(['app.auth', 'role:super_admin'])->prefix('/super-admin')->gro
         Route::put('/users/{user}', 'updateUser')->name('super-admin.users.update');
         Route::post('/users/{user}/toggle-status', 'toggleUserStatus')->name('super-admin.users.toggle-status');
         Route::post('/users/{user}/resend-invite', 'resendUserInvitation')->name('super-admin.users.resend-invite');
+        Route::post('/users/bulk-activate', 'bulkActivateUsers')->name('super-admin.users.bulk-activate');
+        Route::post('/users/bulk-suspend', 'bulkSuspendUsers')->name('super-admin.users.bulk-suspend');
+        Route::post('/users/bulk-resend-invite', 'bulkResendInvitations')->name('super-admin.users.bulk-resend-invite');
+        Route::post('/users/export-selected', 'exportSelectedUsers')->name('super-admin.users.export-selected');
+        Route::get('/users/export', 'exportUsers')->name('super-admin.users.export');
         Route::post('/relationships/assign', 'assignStudentSupervisor')->name('super-admin.relationships.assign');
         Route::get('/config', 'config')->name('super-admin.config');
         Route::put('/config', 'updateConfig')->name('super-admin.config.update');
@@ -243,6 +282,8 @@ Route::middleware(['app.auth', 'role:supervisor'])->prefix('/supervisor')->group
     })->name('supervisor.students');
 
     Route::post('/students/create', [SupervisorController::class, 'createStudent'])->name('supervisor.students.create');
+    Route::get('/students/import/template', [SupervisorController::class, 'downloadTemplate'])->name('supervisor.students.import.template');
+    Route::post('/students/import', [SupervisorController::class, 'importCsv'])->name('supervisor.students.import');
     Route::get('/proposals', function () {
         $proposals = Proposal::where('university_id', session('university_id'))
             ->whereHas('student', function ($query) {

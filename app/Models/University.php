@@ -10,7 +10,8 @@ class University extends Model
     protected $fillable = [
         'name', 'code', 'email', 'department', 'phone', 'logo_url',
         'branding_color', 'ai_model_config', 'email_config',
-        'google_chat_webhook_url', 'is_active', 'archived_at', 'features_enabled'
+        'google_chat_webhook_url', 'is_active', 'archived_at', 'features_enabled',
+        'has_structured_departments',
     ];
 
     protected $casts = [
@@ -20,6 +21,11 @@ class University extends Model
         'archived_at' => 'datetime',
         'features_enabled' => 'array',
     ];
+
+    public function departments(): HasMany
+    {
+        return $this->hasMany(Department::class);
+    }
 
     public function users(): HasMany
     {
@@ -84,6 +90,7 @@ class University extends Model
     public function getConfig(string $key, mixed $default = null): mixed
     {
         $config = $this->systemConfigs()->where('config_key', $key)->first();
+
         return $config ? $config->getTypedValue() : $default;
     }
 

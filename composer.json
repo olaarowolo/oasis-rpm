@@ -20,6 +20,7 @@
         "guzzlehttp/guzzle": "^7.0"
     },
     "require-dev": {
+        "doctrine/dbal": "^3.10",
         "fakerphp/faker": "^1.9.1",
         "laravel/dusk": "*",
         "laravel/pint": "^1.0",

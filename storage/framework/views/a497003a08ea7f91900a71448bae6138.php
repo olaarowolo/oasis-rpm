@@ -1,62 +1,23 @@
-<!DOCTYPE html>
-<html lang="en" class="h-full bg-slate-50 text-slate-800">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manage Users | TheOAsis Research Supervision System</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="<?php echo e(asset('vendor/fontawesome/css/all.min.css')); ?>">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: { sans: ['Inter', 'sans-serif'] },
-          colors: {
-            academic: {
-              50: '#f0f4f8',
-              100: '#d9e2ec',
-              500: '#102a43',
-              600: '#0b69a3',
-              700: '#035388',
-              800: '#003e6b',
-              900: '#002744',
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.03); }
-    ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 4px; }
-  </style>
-</head>
-<body class="min-h-full font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+<?php $__env->startSection('title', 'Manage Users | TheOAsis Research Supervision System'); ?>
+
+<?php $__env->startSection('content'); ?>
   <?php
     $activeUniversity = collect($universities)->firstWhere('id', (int) $selectedUniversityId);
   ?>
 
-  <header class="sticky top-0 z-30 border-b border-slate-200/80 dark:border-slate-700 bg-white/90 dark:bg-slate-800/90 backdrop-blur">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-      <div class="min-w-0">
-        <p class="text-xs uppercase tracking-[0.3em] text-emerald-600 dark:text-emerald-400 font-semibold">User management</p>
-        <h1 class="font-bold text-lg text-slate-900 dark:text-white truncate">Manage platform users</h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <a href="<?php echo e(route('admin.dashboard')); ?>" class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-700/50 transition">Dashboard</a>
-        <button onclick="openCreateModal()" class="px-4 py-2 rounded-xl bg-academic-700 hover:bg-academic-800 text-white text-sm font-semibold shadow-sm transition">
-          <i class="fa-solid fa-user-plus mr-2"></i>Add user
-        </button>
-      </div>
-    </div>
-  </header>
+    <?php if(session('success')): ?>
+      <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+        <?php echo e(session('success')); ?>
 
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      </div>
+    <?php endif; ?>
+
+    <?php if(session('error')): ?>
+      <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300">
+        <?php echo e(session('error')); ?>
+
+      </div>
+    <?php endif; ?>
     <section class="rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-br from-slate-950 via-academic-900 to-academic-800 relative overflow-hidden">
       <div class="absolute inset-0 opacity-25 bg-[radial-gradient(circle_at_top_right,_rgba(245,158,11,0.55),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(56,189,248,0.35),_transparent_28%)]"></div>
       <div class="relative flex flex-col lg:flex-row lg:items-end justify-between gap-6">
@@ -96,8 +57,89 @@
       </article>
     </section>
 
+    <section class="flex flex-wrap gap-2">
+      <a href="<?php echo e(route('admin.users')); ?>" class="rounded-full px-3 py-1.5 text-xs font-semibold <?php echo e(empty($queue) ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50'); ?>">All Users</a>
+      <a href="<?php echo e(route('admin.users', ['queue' => 'unassigned_students'])); ?>" class="rounded-full px-3 py-1.5 text-xs font-semibold <?php echo e($queue === 'unassigned_students' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50'); ?>">Unassigned Students</a>
+      <a href="<?php echo e(route('admin.users', ['queue' => 'inactive_supervisors', 'role' => 'supervisor'])); ?>" class="rounded-full px-3 py-1.5 text-xs font-semibold <?php echo e($queue === 'inactive_supervisors' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50'); ?>">Inactive Supervisors</a>
+      <a href="<?php echo e(route('admin.users', ['queue' => 'suspended_students', 'role' => 'student'])); ?>" class="rounded-full px-3 py-1.5 text-xs font-semibold <?php echo e($queue === 'suspended_students' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50'); ?>">Suspended Students</a>
+      <a href="<?php echo e(route('admin.users', ['queue' => 'pending_invites'])); ?>" class="rounded-full px-3 py-1.5 text-xs font-semibold <?php echo e($queue === 'pending_invites' ? 'bg-academic-700 text-white' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700/50'); ?>">Pending Invites</a>
+    </section>
+
     <section class="grid grid-cols-1 xl:grid-cols-[0.8fr_1.2fr] gap-6">
       <div class="space-y-6">
+        <section id="relationship-operations" class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h3 class="font-bold text-lg text-slate-900 dark:text-white">Relationship Operations</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Link or rebalance supervision assignments without leaving the admin workspace.</p>
+            </div>
+          </div>
+
+          <form method="POST" action="<?php echo e(route('admin.relationships.assign')); ?>" class="space-y-3">
+            <?php echo csrf_field(); ?>
+            <input type="hidden" name="scope_university_id" value="<?php echo e($selectedUniversityId); ?>">
+            <label class="space-y-1 text-sm">
+              <span class="font-semibold text-slate-700 dark:text-slate-300">Student</span>
+              <select name="student_id" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+                <option value="">Select student</option>
+                <?php $__currentLoopData = $relationshipStudents; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $student): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($student->id); ?>" <?php if((int) optional($recommendationStudent)->id === (int) $student->id): echo 'selected'; endif; ?>><?php echo e($student->full_name); ?><?php echo e($student->supervisor?->user?->name ? ' - Current: ' . $student->supervisor->user->name : ' - Unassigned'); ?></option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+            </label>
+            <label class="space-y-1 text-sm">
+              <span class="font-semibold text-slate-700 dark:text-slate-300">Supervisor</span>
+              <select name="supervisor_id" required class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3 py-2.5 text-sm">
+                <option value="">Select supervisor</option>
+                <?php $__currentLoopData = $supervisors; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $supervisor): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                  <option value="<?php echo e($supervisor->id); ?>"><?php echo e($supervisor->user->name ?? 'Supervisor'); ?> - <?php echo e($supervisor->department); ?> (<?php echo e($supervisor->load_label); ?>)</option>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+              </select>
+            </label>
+            <div class="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300">
+              Recommended load is up to <?php echo e($loadPolicy['recommended_max']); ?> students. Above <?php echo e($loadPolicy['watch_max']); ?> students, supervisors are treated as high load and should be reviewed before assignment.
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 rounded-xl bg-academic-700 hover:bg-academic-800 text-white text-sm font-semibold">Link and notify</button>
+          </form>
+
+          <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Recommended Supervisors</h4>
+            <?php if($recommendationStudent): ?>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Recommendation focus: <?php echo e($recommendationStudent->full_name); ?> <?php if($recommendationStudent->research_topic): ?>&middot; <?php echo e($recommendationStudent->research_topic); ?> <?php else: ?> &middot; <?php echo e($recommendationStudent->degree_level); ?> stage <?php echo e($recommendationStudent->current_stage); ?> <?php endif; ?></p>
+            <?php endif; ?>
+            <?php $__empty_1 = true; $__currentLoopData = $recommendedSupervisors; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $supervisor): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="font-semibold text-slate-900 dark:text-white"><?php echo e($supervisor->user->name ?? 'Supervisor'); ?></p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400"><?php echo e($supervisor->department); ?></p>
+                    <p class="mt-1 text-xs <?php echo e($supervisor->load_band === 'recommended' ? 'text-emerald-600 dark:text-emerald-400' : ($supervisor->load_band === 'watch' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400')); ?>"><?php echo e($supervisor->recommendation_reason); ?></p>
+                  </div>
+                  <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold <?php echo e($supervisor->load_band === 'recommended' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' : ($supervisor->load_band === 'watch' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300')); ?>"><?php echo e($supervisor->students_count); ?> students</span>
+                </div>
+              </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+              <p class="text-sm text-slate-500 dark:text-slate-400">No active supervisors available in the current scope.</p>
+            <?php endif; ?>
+          </div>
+
+          <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-4">
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white">Recent Relationship Changes</h4>
+            <?php $__empty_1 = true; $__currentLoopData = $relationshipHistory; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $history): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+              <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+                <p class="font-semibold text-slate-900 dark:text-white"><?php echo e(data_get($history->new_values, 'student_name', 'Student')); ?> · <?php echo e(data_get($history->new_values, 'transition') === 'supervisor_reassigned' ? 'Reassigned' : 'Linked'); ?></p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Supervisor: <?php echo e(data_get($history->new_values, 'supervisor_name', 'Unknown')); ?> · Actor: <?php echo e($history->user?->name ?? 'System'); ?></p>
+                <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                  <span class="rounded-full px-2.5 py-1 <?php echo e(data_get($history->new_values, 'notifications.student.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'); ?>">Student email: <?php echo e(data_get($history->new_values, 'notifications.student.status', 'unknown')); ?></span>
+                  <span class="rounded-full px-2.5 py-1 <?php echo e(data_get($history->new_values, 'notifications.supervisor.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'); ?>">Supervisor email: <?php echo e(data_get($history->new_values, 'notifications.supervisor.status', 'unknown')); ?></span>
+                </div>
+              </div>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+              <p class="text-sm text-slate-500 dark:text-slate-400">No relationship changes recorded yet in this scope.</p>
+            <?php endif; ?>
+          </div>
+        </section>
+
         <section class="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -215,6 +257,12 @@
                     </span>
                   </td>
                   <td class="px-5 py-4 text-right text-sm space-x-2 whitespace-nowrap">
+                    <?php if($user->role === 'student' && $user->student): ?>
+                      <a href="<?php echo e(route('admin.users', array_filter(['university_id' => $selectedUniversityId, 'queue' => 'unassigned_students', 'student_id' => $user->student->id]))); ?>#relationship-operations" class="px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30"><?php echo e($user->student->supervisor_id ? 'Reassign' : 'Link'); ?></a>
+                    <?php endif; ?>
+                    <?php if($user->role === 'supervisor'): ?>
+                      <a href="<?php echo e(route('admin.users', array_filter(['university_id' => $selectedUniversityId, 'queue' => 'unassigned_students']))); ?>#relationship-operations" class="px-3 py-1.5 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:border-emerald-900/30 dark:bg-emerald-900/20 dark:text-emerald-300 dark:hover:bg-emerald-900/30">Review Queue</a>
+                    <?php endif; ?>
                     <button type="button" onclick='openEditModal(<?php echo json_encode($user, 15, 512) ?>)' class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">Edit</button>
                     <button type="button" onclick="deleteUser(<?php echo e($user->id); ?>)" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white">Delete</button>
                   </td>
@@ -229,7 +277,6 @@
         </div>
       </section>
     </section>
-  </main>
 
   <div id="user-modal" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm items-center justify-center p-4">
     <div class="w-full max-w-2xl rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden">
@@ -471,5 +518,5 @@
       });
     }
   </script>
-</body>
-</html><?php /**PATH /Users/olasunkanmiarowolo/Documents/OAsis-RS/Archive/oasis-rpm/resources/views/admin/users.blade.php ENDPATH**/ ?>
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('layouts.admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/olasunkanmiarowolo/Documents/OAsis-RS/Archive/oasis-rpm/resources/views/admin/users.blade.php ENDPATH**/ ?>

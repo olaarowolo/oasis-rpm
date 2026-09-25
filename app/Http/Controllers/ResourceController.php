@@ -201,6 +201,7 @@ class ResourceController extends BaseController
                 'resource_progress_id' => $progress->id,
                 'points_earned' => $validated['points_earned'],
                 'supervisor_comment' => $validated['comment'] ?? null,
+                'action_url' => route('student.resources'),
             ],
         ]);
 
@@ -251,6 +252,7 @@ class ResourceController extends BaseController
                 'resource_id' => $resource->id,
                 'resource_progress_id' => $progress->id,
                 'supervisor_comment' => $validated['comment'],
+                'action_url' => route('student.resources'),
             ],
         ]);
 

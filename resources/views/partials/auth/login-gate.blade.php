@@ -230,11 +230,9 @@
       </div>
 
       {{-- ============================================================ --}}
-      {{-- ADMIN TAB --}}
+      {{-- ADMIN TAB (Super Admin + Admin) --}}
       {{-- ============================================================ --}}
       <div id="gate-admin-box" class="hidden space-y-4">
-        <!-- Tenant / University selector -->
-        @include('partials.auth.university-selector', ['type' => 'admin'])
 
         <!-- Step 1: Email verification -->
         <div id="admin-email-step" class="space-y-3.5">
@@ -287,7 +285,15 @@
           </form>
         </div>
 
-        <!-- Step 3: Credentials -->
+        <!-- Step 3: University selector (shown only for regular admins, not super admins) -->
+        <div id="admin-university-step" class="hidden space-y-3.5">
+          @include('partials.auth.university-selector', ['type' => 'admin'])
+          <button type="button" onclick="showAdminCredentialsStep()" class="w-full px-4 py-2.5 bg-academic-700 hover:bg-academic-800 text-white rounded-xl text-sm font-semibold shadow-md transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-arrow-right"></i> Continue
+          </button>
+        </div>
+
+        <!-- Step 4: Credentials -->
         <div id="admin-credentials-step" class="hidden space-y-3.5">
           <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
             Enter your password to continue. Multi-factor verification may be required.

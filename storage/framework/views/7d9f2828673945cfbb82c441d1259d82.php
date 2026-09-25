@@ -28,7 +28,7 @@
 
         <div style="padding:24px;">
             <h2 style="margin:0 0 12px;color:<?php echo e($brandDark); ?>;font-size:18px;"><?php echo e($title ?? 'Notification'); ?></h2>
-            <p style="margin:0 0 14px;color:<?php echo e($ink); ?>;font-size:14px;line-height:1.6;"><?php echo e($message ?? 'This confirms the Research Supervision Portal can send email successfully.'); ?></p>
+            <p style="margin:0 0 14px;color:<?php echo e($ink); ?>;font-size:14px;line-height:1.6;"><?php echo e($bodyText ?? 'This confirms the Research Supervision Portal can send email successfully.'); ?></p>
         </div>
 
         <div style="padding:14px 24px;border-top:1px solid <?php echo e($line); ?>;color:<?php echo e($muted); ?>;font-size:11px;">

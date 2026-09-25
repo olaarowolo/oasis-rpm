@@ -23,7 +23,6 @@ return [
             'name' => 'Lagos State University',
             'code' => 'LASU',
             'email' => 'research@lasu.edu.ng',
-            'department' => 'Journalism and Media Studies',
             'phone' => '+234 (0)1 123-4567',
             'branding_color' => '#003366',
             'logo_url' => '/logos/lasu-logo.png',
@@ -42,6 +41,7 @@ return [
                 'analytics' => true,
                 'resource_tracking' => true,
             ],
+            'has_structured_departments' => true,
         ],
         'UI' => [
             'name' => 'University of Ibadan',

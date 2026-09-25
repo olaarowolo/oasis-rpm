@@ -114,7 +114,7 @@
         <?php endif; ?>
         
         <?php if(!$isLast): ?>
-          <span class="flex-shrink-0" aria-hidden="true"><?php echo e($separator); ?></span>
+          <span class="flex-shrink-0" aria-hidden="true"><?php echo $separator; ?></span>
         <?php endif; ?>
       </li>
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>

@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->environment('local') && config('mail.simulation.enabled', false)) {
+            Mail::alwaysTo(config('mail.simulation.address', 'olasunkanmiarowolo@gmail.com'));
+        }
+
         $resolveSupervisorSidebarData = function (): array {
             $profile = [
                 'bookingUrl' => null,

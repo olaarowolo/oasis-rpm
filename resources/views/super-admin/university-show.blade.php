@@ -98,10 +98,13 @@
                 </div>
 
                 <dl class="mt-6 space-y-4 text-sm">
-                    <div class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900/40">
-                        <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Department</dt>
-                        <dd class="mt-1 font-medium text-slate-900 dark:text-white">{{ $university->department }}</dd>
-                    </div>
+                <div class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900/40">
+                    <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Department</dt>
+                    <dd class="mt-1 font-medium text-slate-900 dark:text-white">{{ $university->department ?: 'Structured selection enabled' }}</dd>
+                    @if ($university->has_structured_departments)
+                        <p class="mt-1 text-xs text-emerald-600 dark:text-emerald-400">Structured faculty → department cascade active</p>
+                    @endif
+                </div>
                     <div class="rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-900/40">
                         <dt class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Phone</dt>
                         <dd class="mt-1 font-medium text-slate-900 dark:text-white">{{ $university->phone ?: 'Not set' }}</dd>

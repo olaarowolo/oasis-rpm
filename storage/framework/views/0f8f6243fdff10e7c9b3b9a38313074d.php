@@ -1,223 +1,14 @@
-<!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TheOAsis Research Supervision Portal | From Topic To Completion</title>
-  <meta name="description" content="A multi-tenant research supervision portal for universities. Track 12 research stages, streamline supervisor feedback, and improve student outcomes.">
-
-  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
-  <link rel="apple-touch-icon" href="/img/apple-icon.png">
-
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="<?php echo e(asset('vendor/fontawesome/css/all.min.css')); ?>">
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            display: ['Space Grotesk', 'Inter', 'sans-serif']
-          },
-          colors: {
-            academic: {
-              50: '#f0f4f8',
-              100: '#d9e2ec',
-              500: '#102a43',
-              600: '#0b69a3',
-              700: '#035388',
-              800: '#003e6b',
-              900: '#002744'
-            },
-            lasu: {
-              gold: '#f59e0b',
-              blue: '#002744'
-            }
-          },
-          boxShadow: {
-            glow: '0 0 0 1px rgba(245,158,11,.15), 0 20px 50px rgba(2,39,68,.20)'
-          }
-        }
-      }
-    }
-  </script>
-
-  <style>
-    .mesh-bg {
-      background:
-        radial-gradient(1200px 600px at 95% -10%, rgba(245, 158, 11, 0.35), rgba(245, 158, 11, 0) 60%),
-        radial-gradient(900px 500px at -20% 10%, rgba(11, 105, 163, 0.25), rgba(11, 105, 163, 0) 60%),
-        linear-gradient(170deg, #f8fafc 0%, #eff6ff 100%);
-    }
-
-    .nav-link {
-      position: relative;
-      transition: color .25s ease;
-    }
-
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      left: 0;
-      bottom: -6px;
-      width: 100%;
-      height: 2px;
-      background: linear-gradient(90deg, #0b69a3, #f59e0b);
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: transform .25s ease;
-    }
-
-    .nav-link:hover::after,
-    .nav-link:focus-visible::after {
-      transform: scaleX(1);
-    }
-
-    .btn-animate {
-      transition: transform .25s ease, box-shadow .25s ease, filter .25s ease;
-    }
-
-    .btn-animate:hover {
-      transform: translateY(-2px);
-      filter: saturate(1.05);
-    }
-
-    .elevate {
-      transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
-      will-change: transform;
-    }
-
-    .elevate:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 20px 38px rgba(2, 39, 68, 0.12);
-      border-color: #cbd5e1;
-    }
-
-    .section-reveal {
-      opacity: 0;
-      transform: translateY(24px);
-      transition: opacity .65s ease, transform .65s ease;
-    }
-
-    .section-reveal.in-view {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .float-orb {
-      position: absolute;
-      border-radius: 9999px;
-      filter: blur(1px);
-      animation: drift 10s ease-in-out infinite;
-      pointer-events: none;
-    }
-
-    .float-orb.delay {
-      animation-delay: 1.8s;
-    }
-
-    .reveal {
-      opacity: 0;
-      transform: translateY(12px);
-      animation: rise .5s ease forwards;
-    }
-
-    .reveal.delay-1 { animation-delay: .1s; }
-    .reveal.delay-2 { animation-delay: .2s; }
-    .reveal.delay-3 { animation-delay: .3s; }
-
-    @keyframes rise {
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes drift {
-      0%, 100% {
-        transform: translate(0, 0) scale(1);
-      }
-      50% {
-        transform: translate(10px, -14px) scale(1.05);
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      .reveal,
-      .section-reveal,
-      .section-reveal.in-view,
-      .float-orb,
-      .elevate,
-      .btn-animate,
-      .nav-link::after {
-        animation: none !important;
-        transition: none !important;
-        transform: none !important;
-        opacity: 1 !important;
-      }
-    }
-  </style>
-</head>
-<body class="font-sans text-slate-800 bg-slate-50">
-  <header class="sticky top-0 z-40 backdrop-blur bg-white/85 border-b border-slate-200/70">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <a href="/" class="flex items-center gap-3 min-w-0">
-        <span class="w-11 h-11 flex items-center justify-center shrink-0">
-          <img src="https://afriscribe.org/afriscribe/img/afriscribe_proofread-favicon.svg" alt="Afriscribe icon" class="h-9 w-9" loading="eager" decoding="async">
-        </span>
-        <div class="min-w-0">
-          <span class="font-display font-bold text-sm sm:text-base text-academic-900 truncate block">TheOAsis Research Portal</span>
-          
-        </div>
-      </a>
-
-      <div class="flex items-center gap-2">
-        <a href="/login" class="md:hidden btn-animate inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-lg bg-academic-800 text-white shadow-sm">
-          <i class="fa-solid fa-rocket text-[10px]"></i>
-          Login
-        </a>
-
-        <button id="mobile-menu-toggle" type="button" aria-expanded="false" aria-controls="mobile-menu" class="md:hidden w-10 h-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition">
-          <span class="sr-only">Toggle menu</span>
-          <i id="mobile-menu-icon" class="fa-solid fa-bars"></i>
-        </button>
-
-        <div class="hidden md:flex items-center gap-6">
-          <nav class="flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="#features" class="nav-link hover:text-academic-700">Features</a>
-            <a href="#roles" class="nav-link hover:text-academic-700">Roles</a>
-            <a href="#lifecycle" class="nav-link hover:text-academic-700">12 Stages</a>
-            <a href="#faq" class="nav-link hover:text-academic-700">FAQ</a>
-          </nav>
-
-          <div class="flex items-center gap-2">
-            <a href="/login" class="btn-animate px-3 py-2 text-sm font-semibold rounded-lg text-slate-700 hover:bg-slate-100 transition">Multi-tenant Login</a>
-            <a href="/login#request-demo" class="btn-animate px-3.5 py-2 text-sm font-semibold rounded-lg bg-academic-800 hover:bg-academic-900 text-white transition shadow-sm">Request Demo</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="mobile-menu" class="md:hidden hidden border-t border-slate-200/80 bg-white/95">
-      <nav class="px-4 py-4 flex flex-col gap-1.5 text-sm font-medium text-slate-700">
-        <a href="#features" class="mobile-menu-link rounded-lg px-3 py-2 hover:bg-slate-100">Features</a>
-        <a href="#roles" class="mobile-menu-link rounded-lg px-3 py-2 hover:bg-slate-100">Roles</a>
-        <a href="#lifecycle" class="mobile-menu-link rounded-lg px-3 py-2 hover:bg-slate-100">12 Stages</a>
-        <a href="#faq" class="mobile-menu-link rounded-lg px-3 py-2 hover:bg-slate-100">FAQ</a>
-
-        <div class="mt-3 grid grid-cols-2 gap-2">
-          <a href="/login" class="btn-animate inline-flex justify-center items-center rounded-lg px-3 py-2 font-semibold border border-slate-200 bg-white text-slate-700">Multi-tenant Login</a>
-          <a href="/login#request-demo" class="btn-animate inline-flex justify-center items-center rounded-lg px-3 py-2 font-semibold bg-academic-800 text-white">Request Demo</a>
-        </div>
-      </nav>
-    </div>
-  </header>
-
-  <section class="mesh-bg relative overflow-hidden section-reveal in-view">
+<?php if (isset($component)) { $__componentOriginal8c0e86a062c1c5bb6d0e151b7076f3fd = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal8c0e86a062c1c5bb6d0e151b7076f3fd = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.layouts.public','data' => ['title' => 'TheOAsis Research Supervision Portal | From Topic To Completion','description' => 'A multi-tenant research supervision portal for universities. Track 12 research stages, streamline supervisor feedback, and improve student outcomes.']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('layouts.public'); ?>
+<?php if ($component->shouldRender()): ?>
+<?php $__env->startComponent($component->resolveView(), $component->data()); ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
+<?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
+<?php endif; ?>
+<?php $component->withAttributes(['title' => 'TheOAsis Research Supervision Portal | From Topic To Completion','description' => 'A multi-tenant research supervision portal for universities. Track 12 research stages, streamline supervisor feedback, and improve student outcomes.']); ?>
+  <section id="hero-section" class="mesh-bg relative overflow-hidden section-reveal in-view">
     <span class="float-orb w-56 h-56 bg-amber-300/40 top-16 -right-20"></span>
     <span class="float-orb delay w-40 h-40 bg-sky-300/35 bottom-12 -left-12"></span>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-[calc(100vh-4rem)] min-h-[calc(100dvh-4rem)] py-10 sm:py-14 flex items-center">
@@ -231,7 +22,7 @@
           <div class="reveal delay-1 mt-4 inline-flex items-center gap-2 rounded-xl border border-academic-100 bg-white/85 backdrop-blur px-3 py-2 shadow-sm">
             <span class="text-[11px] sm:text-xs font-semibold uppercase tracking-wide text-academic-700">An Afriscribe Product</span>
             <span class="inline-flex items-center rounded-md bg-academic-900 px-2 py-1">
-              <img src="https://afriscribe.org/afriscribe/img/afriscribe-logo-main-logo-white.png" alt="Afriscribe" class="h-5 sm:h-6 w-auto" loading="lazy" decoding="async">
+              <img src="<?php echo e(asset('img/afriscribe-logo-white.png')); ?>" alt="Afriscribe" class="h-5 sm:h-6 w-auto" loading="lazy" decoding="async">
             </span>
           </div>
 
@@ -246,11 +37,11 @@
           </p>
 
           <div class="reveal delay-3 mt-7 flex flex-col sm:flex-row gap-3">
-            <a href="/login" class="btn-animate inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-academic-800 hover:bg-academic-900 text-white font-semibold shadow-glow transition">
+            <a href="<?php echo e(route('login')); ?>" class="btn-animate inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-academic-800 hover:bg-academic-900 text-white font-semibold shadow-glow transition">
               <i class="fa-solid fa-rocket"></i>
               Multi-tenant Login
             </a>
-            <a href="/login#request-demo" class="btn-animate inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition">
+            <a href="<?php echo e(route('login')); ?>#request-demo" class="btn-animate inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-semibold transition">
               <i class="fa-solid fa-calendar-check"></i>
               Request Demo
             </a>
@@ -349,18 +140,18 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <h2 class="font-display text-3xl sm:text-4xl font-bold text-academic-900">Built For Every Actor In The Research Journey</h2>
       <div class="mt-8 grid md:grid-cols-3 gap-4">
-        <div class="elevate rounded-2xl border border-slate-200 bg-white p-5">
+        <a href="<?php echo e(route('public.solutions.students')); ?>" class="elevate rounded-2xl border border-slate-200 bg-white p-5 no-underline">
           <h3 class="font-semibold text-academic-900">Students</h3>
           <p class="mt-2 text-sm text-slate-600">Submit proposals, log meetings, complete stage resources, and follow an explicit roadmap with less uncertainty.</p>
-        </div>
-        <div class="elevate rounded-2xl border border-slate-200 bg-white p-5">
+        </a>
+        <a href="<?php echo e(route('public.solutions.supervisors')); ?>" class="elevate rounded-2xl border border-slate-200 bg-white p-5 no-underline">
           <h3 class="font-semibold text-academic-900">Supervisors</h3>
           <p class="mt-2 text-sm text-slate-600">Review faster, provide structured feedback, track each supervisee's stage, and detect stagnation before it escalates.</p>
-        </div>
-        <div class="elevate rounded-2xl border border-slate-200 bg-white p-5">
+        </a>
+        <a href="<?php echo e(route('public.solutions.administrators')); ?>" class="elevate rounded-2xl border border-slate-200 bg-white p-5 no-underline">
           <h3 class="font-semibold text-academic-900">Admins</h3>
           <p class="mt-2 text-sm text-slate-600">Manage users, configure institutions, monitor audit logs, and maintain governance across departments.</p>
-        </div>
+        </a>
       </div>
     </div>
   </section>
@@ -411,68 +202,15 @@
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <h2 class="font-display text-3xl sm:text-4xl font-bold">Ready To Run A Better Supervision Cycle?</h2>
       <p class="mt-3 text-blue-100">Open the portal and start your pilot rollout for supervisors and students.</p>
-      <a href="/login" class="btn-animate mt-6 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-amber-400 text-slate-950 font-semibold hover:bg-amber-300 transition">
+      <a href="<?php echo e(route('login')); ?>" class="btn-animate mt-6 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-amber-400 text-slate-950 font-semibold hover:bg-amber-300 transition">
         <i class="fa-solid fa-right-to-bracket"></i>
         Go To Login
       </a>
     </div>
   </section>
 
-  <footer class="border-t border-slate-200 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-sm text-slate-500 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-      <p class="flex items-center gap-2 flex-wrap">
-        <span>TheOAsis Research Supervision Portal (UG And PG)</span>
-        <span class="inline-flex items-center gap-2 text-xs sm:text-sm">
-          <span>by</span>
-          <span class="inline-flex items-center rounded-md bg-academic-900 px-2 py-1 shadow-sm">
-            <img src="/img/logo.svg" alt="Afriscribe" class="h-5 sm:h-6 w-auto" loading="lazy" decoding="async">
-          </span>
-        </span>
-      </p>
-      <p>Designed for structured, measurable academic supervision.</p>
-    </div>
-  </footer>
-
   <script>
     (function () {
-      var menu = document.getElementById('mobile-menu');
-      var toggle = document.getElementById('mobile-menu-toggle');
-      var icon = document.getElementById('mobile-menu-icon');
-      var links = document.querySelectorAll('.mobile-menu-link');
-
-      function setMenuState(isOpen) {
-        if (!menu || !toggle || !icon) return;
-        menu.classList.toggle('hidden', !isOpen);
-        toggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-        icon.classList.toggle('fa-bars', !isOpen);
-        icon.classList.toggle('fa-xmark', isOpen);
-      }
-
-      if (toggle && menu && icon) {
-        toggle.addEventListener('click', function () {
-          var isOpen = toggle.getAttribute('aria-expanded') === 'true';
-          setMenuState(!isOpen);
-        });
-
-        links.forEach(function (link) {
-          link.addEventListener('click', function () {
-            setMenuState(false);
-          });
-        });
-
-        window.addEventListener('resize', function () {
-          if (window.innerWidth >= 768) {
-            setMenuState(false);
-          }
-        });
-
-        window.addEventListener('keydown', function (event) {
-          if (event.key === 'Escape') {
-            setMenuState(false);
-          }
-        });
-      }
-
       const sections = document.querySelectorAll('.section-reveal:not(.in-view)');
       if (!sections.length) return;
 
@@ -499,6 +237,13 @@
       });
     })();
   </script>
-</body>
-</html>
-<?php /**PATH /Users/olasunkanmiarowolo/Documents/OAsis-RS/Archive/oasis-rpm/resources/views/landing.blade.php ENDPATH**/ ?>
+ <?php echo $__env->renderComponent(); ?>
+<?php endif; ?>
+<?php if (isset($__attributesOriginal8c0e86a062c1c5bb6d0e151b7076f3fd)): ?>
+<?php $attributes = $__attributesOriginal8c0e86a062c1c5bb6d0e151b7076f3fd; ?>
+<?php unset($__attributesOriginal8c0e86a062c1c5bb6d0e151b7076f3fd); ?>
+<?php endif; ?>
+<?php if (isset($__componentOriginal8c0e86a062c1c5bb6d0e151b7076f3fd)): ?>
+<?php $component = $__componentOriginal8c0e86a062c1c5bb6d0e151b7076f3fd; ?>
+<?php unset($__componentOriginal8c0e86a062c1c5bb6d0e151b7076f3fd); ?>
+<?php endif; ?><?php /**PATH /Users/olasunkanmiarowolo/Documents/OAsis-RS/Archive/oasis-rpm/resources/views/landing.blade.php ENDPATH**/ ?>

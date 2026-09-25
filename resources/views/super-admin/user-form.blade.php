@@ -138,7 +138,14 @@
                     <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Department</label>
-                            <input type="text" name="department" value="{{ old('department', $user->department) }}" class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white">
+                            @include('partials.auth.department-cascade', [
+                                'dropdownType' => 'super-admin-user-form',
+                                'universityCode' => $user->university->code ?? '',
+                                'hasStructured' => $user->university && config("universities.presets.{$user->university->code}.has_structured_departments"),
+                                'selectedDepartment' => old('department', $user->department),
+                                'inputName' => 'department',
+                                'required' => false,
+                            ])
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Phone</label>
@@ -169,7 +176,14 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Supervisor Department</label>
-                        <input type="text" name="supervisor_department" value="{{ old('supervisor_department', $supervisorProfile->department ?? $user->department) }}" class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white">
+                        @include('partials.auth.department-cascade', [
+                            'dropdownType' => 'super-admin-supervisor-profile',
+                            'universityCode' => $user->university->code ?? '',
+                            'hasStructured' => $user->university && config("universities.presets.{$user->university->code}.has_structured_departments"),
+                            'selectedDepartment' => old('supervisor_department', $supervisorProfile->department ?? $user->department),
+                            'inputName' => 'supervisor_department',
+                            'required' => false,
+                        ])
                     </div>
                 </div>
 

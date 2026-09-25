@@ -11,6 +11,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AIAssistantController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\DepartmentController;
 use App\Http\Middleware\CheckUniversity;
 use App\Http\Middleware\EnsureStudentLogin;
 use App\Http\Middleware\EnsureSupervisorLogin;
@@ -34,6 +35,12 @@ Route::post('/demo/request', [NotificationController::class, 'submitDemoRequest'
 
 // Universities - Search and list (for search-select)
 Route::get('/universities/search', [AuthController::class, 'searchUniversities'])
+    ->middleware('throttle:20,1');
+
+// Departments - Structured department data for universities that support it
+Route::get('/departments', [DepartmentController::class, 'index'])
+    ->middleware('throttle:20,1');
+Route::get('/universities/{code}/departments', [DepartmentController::class, 'byUniversity'])
     ->middleware('throttle:20,1');
     
 // Rate limiting applied via Throttle middleware (Laravel built-in)
@@ -206,7 +213,9 @@ Route::middleware([CheckUniversity::class])->group(function () {
     Route::get('/ai-assistant/history', [AIAssistantController::class, 'getQueryHistory']);
 
     Route::post('/notifications/email/resend', [NotificationController::class, 'resendEmail']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
     Route::get('/notifications/unread', [NotificationController::class, 'getUnreadNotifications']);
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
 });
 

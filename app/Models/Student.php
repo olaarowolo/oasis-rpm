@@ -12,6 +12,7 @@ class Student extends Model
     protected $fillable = [
         'user_id', 'university_id', 'supervisor_id', 'matric_number', 'lastname', 'full_name',
         'email', 'degree_level', 'phone', 'research_topic', 'research_topic_approved_date',
+        'faculty', 'department', 'programme',
         'current_stage', 'progress_percentage', 'points_earned', 'status',
         'account_status', 'personal_drive_url', 'last_meeting_date',
         'graduated_at', 'archived_at'

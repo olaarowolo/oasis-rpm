@@ -1,0 +1,17 @@
+{
+  "resources/css/landing.css": {
+    "file": "assets/landing-d5592035.css",
+    "isEntry": true,
+    "src": "resources/css/landing.css"
+  },
+  "resources/js/header.js": {
+    "file": "assets/header-ab2badbc.js",
+    "isEntry": true,
+    "src": "resources/js/header.js"
+  },
+  "resources/js/public-header.js": {
+    "file": "assets/public-header-f1647c96.js",
+    "isEntry": true,
+    "src": "resources/js/public-header.js"
+  }
+}

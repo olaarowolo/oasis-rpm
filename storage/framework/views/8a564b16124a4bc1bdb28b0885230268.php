@@ -149,10 +149,13 @@
     }
   </style>
 
+  <?php echo app('Illuminate\Foundation\Vite')(['resources/js/header.js']); ?>
+
   <?php echo e($head ?? ''); ?>
 
 </head>
 <body class="h-full font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+  <?php echo $__env->make('partials.auth.inline-script', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?>
   <!-- Navigation Backdrop -->
   <div id="nav-backdrop" class="fixed inset-0 z-40 bg-slate-900/50 opacity-0 hidden" aria-hidden="true"></div>
 
@@ -183,25 +186,25 @@
     <!-- Header + Content + Footer Column -->
     <div class="flex min-h-screen min-w-0 flex-1 flex-col">
       <!-- Header -->
-      <?php if (isset($component)) { $__componentOriginalf99ccb69736aed055ce39f0d27dd5e50 = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginalf99ccb69736aed055ce39f0d27dd5e50 = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.super-admin.header','data' => ['currentUser' => $currentUser ?? null,'breadcrumbs' => $breadcrumbs]] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
-<?php $component->withName('super-admin.header'); ?>
+      <?php if (isset($component)) { $__componentOriginalc7d2b664754d5464fa04707952e92445 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginalc7d2b664754d5464fa04707952e92445 = $attributes; } ?>
+<?php $component = App\View\Components\AppHeader::resolve(['role' => 'super-admin','pageTitle' => $title,'currentUser' => $currentUser ?? null,'breadcrumbs' => $breadcrumbs] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('app-header'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
-<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
+<?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(App\View\Components\AppHeader::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes(['currentUser' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($currentUser ?? null),'breadcrumbs' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($breadcrumbs)]); ?>
+<?php $component->withAttributes([]); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
-<?php if (isset($__attributesOriginalf99ccb69736aed055ce39f0d27dd5e50)): ?>
-<?php $attributes = $__attributesOriginalf99ccb69736aed055ce39f0d27dd5e50; ?>
-<?php unset($__attributesOriginalf99ccb69736aed055ce39f0d27dd5e50); ?>
+<?php if (isset($__attributesOriginalc7d2b664754d5464fa04707952e92445)): ?>
+<?php $attributes = $__attributesOriginalc7d2b664754d5464fa04707952e92445; ?>
+<?php unset($__attributesOriginalc7d2b664754d5464fa04707952e92445); ?>
 <?php endif; ?>
-<?php if (isset($__componentOriginalf99ccb69736aed055ce39f0d27dd5e50)): ?>
-<?php $component = $__componentOriginalf99ccb69736aed055ce39f0d27dd5e50; ?>
-<?php unset($__componentOriginalf99ccb69736aed055ce39f0d27dd5e50); ?>
+<?php if (isset($__componentOriginalc7d2b664754d5464fa04707952e92445)): ?>
+<?php $component = $__componentOriginalc7d2b664754d5464fa04707952e92445; ?>
+<?php unset($__componentOriginalc7d2b664754d5464fa04707952e92445); ?>
 <?php endif; ?>
 
       <!-- Main Content -->
@@ -210,143 +213,27 @@
 
       </main>
 
-      <!-- Footer -->
-      <?php if (isset($component)) { $__componentOriginal06c0218c7d6d5c899160b5753eee362a = $component; } ?>
-<?php if (isset($attributes)) { $__attributesOriginal06c0218c7d6d5c899160b5753eee362a = $attributes; } ?>
-<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.super-admin.footer','data' => []] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
-<?php $component->withName('super-admin.footer'); ?>
+      <?php if (isset($component)) { $__componentOriginal2851f1e47c9108aacbab05e6d2ec4a68 = $component; } ?>
+<?php if (isset($attributes)) { $__attributesOriginal2851f1e47c9108aacbab05e6d2ec4a68 = $attributes; } ?>
+<?php $component = Illuminate\View\AnonymousComponent::resolve(['view' => 'components.layouts.footer','data' => ['variant' => 'authenticated','role' => 'super_admin','user' => $currentUser ?? null,'scope' => 'Platform-wide']] + (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag ? (array) $attributes->getIterator() : [])); ?>
+<?php $component->withName('layouts.footer'); ?>
 <?php if ($component->shouldRender()): ?>
 <?php $__env->startComponent($component->resolveView(), $component->data()); ?>
 <?php if (isset($attributes) && $attributes instanceof Illuminate\View\ComponentAttributeBag && $constructor = (new ReflectionClass(Illuminate\View\AnonymousComponent::class))->getConstructor()): ?>
 <?php $attributes = $attributes->except(collect($constructor->getParameters())->map->getName()->all()); ?>
 <?php endif; ?>
-<?php $component->withAttributes([]); ?>
+<?php $component->withAttributes(['variant' => 'authenticated','role' => 'super_admin','user' => \Illuminate\View\Compilers\BladeCompiler::sanitizeComponentAttribute($currentUser ?? null),'scope' => 'Platform-wide']); ?>
 <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>
-<?php if (isset($__attributesOriginal06c0218c7d6d5c899160b5753eee362a)): ?>
-<?php $attributes = $__attributesOriginal06c0218c7d6d5c899160b5753eee362a; ?>
-<?php unset($__attributesOriginal06c0218c7d6d5c899160b5753eee362a); ?>
+<?php if (isset($__attributesOriginal2851f1e47c9108aacbab05e6d2ec4a68)): ?>
+<?php $attributes = $__attributesOriginal2851f1e47c9108aacbab05e6d2ec4a68; ?>
+<?php unset($__attributesOriginal2851f1e47c9108aacbab05e6d2ec4a68); ?>
 <?php endif; ?>
-<?php if (isset($__componentOriginal06c0218c7d6d5c899160b5753eee362a)): ?>
-<?php $component = $__componentOriginal06c0218c7d6d5c899160b5753eee362a; ?>
-<?php unset($__componentOriginal06c0218c7d6d5c899160b5753eee362a); ?>
+<?php if (isset($__componentOriginal2851f1e47c9108aacbab05e6d2ec4a68)): ?>
+<?php $component = $__componentOriginal2851f1e47c9108aacbab05e6d2ec4a68; ?>
+<?php unset($__componentOriginal2851f1e47c9108aacbab05e6d2ec4a68); ?>
 <?php endif; ?>
     </div>
   </div>
-
-  <script>
-    (function () {
-      var sidebar = document.getElementById('super-admin-sidebar');
-      var backdrop = document.getElementById('nav-backdrop');
-      var toggles = Array.prototype.slice.call(document.querySelectorAll('[data-mobile-nav-toggle]'));
-      var backdropTimer = null;
-      var lastTrigger = null;
-
-      function setNavOpen(open, options) {
-        if (!sidebar || !backdrop) return;
-        var mobile = window.matchMedia('(max-width: 1023.98px)').matches;
-        if (!mobile && open) return;
-
-        sidebar.classList.toggle('drawer-open', open);
-        backdrop.classList.toggle('nav-backdrop-visible', open);
-        backdrop.classList.toggle('hidden', !open);
-        document.body.classList.toggle('nav-drawer-locked', open && mobile);
-        sidebar.setAttribute('aria-hidden', String(!open));
-        toggles.forEach(function (toggle) {
-          toggle.setAttribute('aria-expanded', String(open));
-          toggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
-        });
-
-        if (open) {
-          backdrop.removeAttribute('aria-hidden');
-          var focusable = sidebar.querySelector('a[href], button:not([disabled])');
-          window.setTimeout(function () {
-            if (focusable) focusable.focus();
-          }, 90);
-        } else {
-          backdrop.setAttribute('aria-hidden', 'true');
-          if (backdropTimer) window.clearTimeout(backdropTimer);
-          backdropTimer = window.setTimeout(function () {
-            if (!sidebar.classList.contains('drawer-open')) backdrop.classList.add('hidden');
-          }, 260);
-          if ((!options || options.restoreFocus !== false) && lastTrigger && document.contains(lastTrigger)) {
-            lastTrigger.focus();
-          }
-        }
-      }
-
-      window.openMobileNav = function () {
-        lastTrigger = document.activeElement && document.activeElement.hasAttribute('data-mobile-nav-toggle')
-          ? document.activeElement
-          : toggles[0] || null;
-        setNavOpen(true);
-      };
-      window.closeMobileNav = function (options) {
-        setNavOpen(false, options);
-      };
-      window.toggleMobileNav = function () {
-        setNavOpen(!sidebar.classList.contains('drawer-open'));
-      };
-
-      document.addEventListener('click', function (event) {
-        var toggle = event.target.closest ? event.target.closest('[data-mobile-nav-toggle]') : null;
-        if (toggle) {
-          event.preventDefault();
-          window.toggleMobileNav();
-          return;
-        }
-
-        var close = event.target.closest ? event.target.closest('[data-mobile-nav-close]') : null;
-        if (close) {
-          event.preventDefault();
-          window.closeMobileNav();
-          return;
-        }
-
-        var navLink = event.target.closest ? event.target.closest('.nav-link[href]') : null;
-        if (navLink && window.matchMedia('(max-width: 1023.98px)').matches) {
-          window.closeMobileNav({ restoreFocus: false });
-        }
-      });
-
-      document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && sidebar && sidebar.classList.contains('drawer-open')) {
-          window.closeMobileNav();
-        }
-      });
-
-      backdrop.addEventListener('click', function () {
-        window.closeMobileNav();
-      });
-
-      window.addEventListener('resize', function () {
-        if (window.matchMedia('(min-width: 1024px)').matches && sidebar) {
-          sidebar.classList.remove('drawer-open');
-          backdrop.classList.remove('nav-backdrop-visible', 'hidden');
-          document.body.classList.remove('nav-drawer-locked');
-          sidebar.setAttribute('aria-hidden', 'false');
-          toggles.forEach(function (toggle) {
-            toggle.setAttribute('aria-expanded', 'false');
-            toggle.setAttribute('aria-label', 'Open navigation menu');
-          });
-        }
-      });
-
-      function markCurrentNavigation() {
-        var currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
-        document.querySelectorAll('.nav-link[href]').forEach(function (link) {
-          var href = link.getAttribute('href');
-          if (!href || href === '#') return;
-          try {
-            var linkPath = new URL(href, window.location.origin).pathname.replace(/\/+$/, '') || '/';
-            if (linkPath === currentPath) {
-              link.setAttribute('aria-current', 'page');
-            }
-          } catch (error) {}
-        });
-      }
-      markCurrentNavigation();
-    }());
-  </script>
 </body>
 </html><?php /**PATH /Users/olasunkanmiarowolo/Documents/OAsis-RS/Archive/oasis-rpm/resources/views/components/layouts/super-admin.blade.php ENDPATH**/ ?>

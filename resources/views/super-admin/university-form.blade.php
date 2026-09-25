@@ -83,9 +83,29 @@
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Phone</label>
                     <input type="text" name="phone" value="{{ old('phone', $university->phone) }}" class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white">
                 </div>
+                @if (!config("universities.presets.{$university->code}.has_structured_departments"))
                 <div class="md:col-span-2">
                     <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Department</label>
-                    <input type="text" name="department" value="{{ old('department', $university->department) }}" required class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white">
+                    <input type="text" name="department" value="{{ old('department', $university->department) }}" class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white">
+                </div>
+                @else
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Department</label>
+                    <div class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-400">
+                        Departments are managed per user/supervisor via structured selection (Faculty → Department).
+                    </div>
+                    <input type="hidden" name="department" value="">
+                </div>
+                @endif
+
+                <div class="md:col-span-2">
+                    <label class="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-slate-300">
+                        <input type="checkbox" name="has_structured_departments" value="1"
+                            {{ old('has_structured_departments', $university->has_structured_departments ?? false) ? 'checked' : '' }}
+                            class="h-4 w-4 rounded border-slate-300 text-violet-600 focus:ring-violet-500">
+                        Enable structured department selection (Faculty → Department cascade)
+                    </label>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">When enabled, users select from official faculty/department lists rather than entering free text.</p>
                 </div>
             </div>
         </div>

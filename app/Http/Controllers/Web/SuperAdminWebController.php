@@ -11,6 +11,7 @@ use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\University;
 use App\Models\User;
+use App\Services\BulkUserActionService;
 use App\Services\UserInvitationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
@@ -22,14 +23,17 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\Response;
 
 class SuperAdminWebController extends BaseController
 {
     protected const LOAD_RECOMMENDED_MAX = 5;
     protected const LOAD_WATCH_MAX = 8;
 
-    public function __construct(private UserInvitationService $userInvitationService)
-    {
+    public function __construct(
+        private UserInvitationService $userInvitationService,
+        private BulkUserActionService $bulkUserActionService
+    ) {
     }
 
     public function dashboard(Request $request): View
@@ -832,43 +836,8 @@ class SuperAdminWebController extends BaseController
 
     public function users(): View
     {
-        $filters = [
-            'search' => trim((string) request('search', '')),
-            'role' => (string) request('role', ''),
-            'university_id' => (string) request('university_id', ''),
-            'status' => (string) request('status', ''),
-        ];
-
-        $usersQuery = User::with(['university', 'student.supervisor.user', 'supervisor.students'])
-            ->orderBy('name')
-            ->orderBy('email');
-
-        if ($filters['search'] !== '') {
-            $search = $filters['search'];
-            $usersQuery->where(function ($query) use ($search) {
-                $query
-                    ->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%');
-            });
-        }
-
-        if ($filters['role'] !== '') {
-            $usersQuery->where('role', $filters['role']);
-        }
-
-        if ($filters['university_id'] !== '') {
-            $usersQuery->where('university_id', $filters['university_id']);
-        }
-
-        if ($filters['status'] === 'active') {
-            $usersQuery->where('is_active', true);
-        }
-
-        if ($filters['status'] === 'inactive') {
-            $usersQuery->where('is_active', false);
-        }
-
-        $users = $usersQuery->paginate(20)->withQueryString();
+        $filters = $this->userFilters(request());
+        $users = $this->buildUserQuery(request())->paginate(20)->withQueryString();
         $universities = University::orderBy('name')->get(['id', 'name']);
         $summary = [
             'total' => User::count(),
@@ -1178,6 +1147,222 @@ class SuperAdminWebController extends BaseController
         return redirect()
             ->route('super-admin.users', request()->query())
             ->with('success', 'Invitation resent successfully.');
+    }
+
+    public function bulkActivateUsers(Request $request): RedirectResponse
+    {
+        $result = $this->bulkUserActionService->activate(
+            $this->validatedBulkUserIds($request),
+            $this->actingUser()
+        );
+
+        return $this->redirectAfterBulkAction($request, $result, 'accounts', 'activated');
+    }
+
+    public function bulkSuspendUsers(Request $request): RedirectResponse
+    {
+        $result = $this->bulkUserActionService->suspend(
+            $this->validatedBulkUserIds($request),
+            $this->actingUser()
+        );
+
+        return $this->redirectAfterBulkAction($request, $result, 'accounts', 'suspended');
+    }
+
+    public function bulkResendInvitations(Request $request): RedirectResponse
+    {
+        $result = $this->bulkUserActionService->resendInvitations(
+            $this->validatedBulkUserIds($request),
+            $this->actingUser()
+        );
+
+        return $this->redirectAfterBulkAction($request, $result, 'invitations', 'resent');
+    }
+
+    public function exportUsers(Request $request): Response
+    {
+        $users = $this->buildUserQuery($request)->get();
+        $filename = 'users-export-' . now()->format('Ymd-His') . '.csv';
+        $this->writeExportAudit($users->count(), [
+            'selection' => 'filtered',
+            'filters' => $this->userFilters($request),
+        ]);
+
+        return $this->streamUserExport($users, $filename);
+    }
+
+    public function exportSelectedUsers(Request $request): Response
+    {
+        $userIds = $this->validatedBulkUserIds($request);
+        $users = User::with(['university', 'student', 'supervisor'])
+            ->whereKey($userIds)
+            ->orderBy('name')
+            ->orderBy('email')
+            ->get();
+        $filename = 'selected-users-export-' . now()->format('Ymd-His') . '.csv';
+        $this->writeExportAudit($users->count(), [
+            'selection' => 'selected',
+            'user_ids' => $userIds,
+        ]);
+
+        return $this->streamUserExport($users, $filename);
+    }
+
+    private function validatedBulkUserIds(Request $request): array
+    {
+        $validated = $request->validate([
+            'user_ids' => [
+                'required',
+                'array',
+                'min:1',
+                'max:' . BulkUserActionService::MAX_BATCH_SIZE,
+            ],
+            'user_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                'between:1,2147483647',
+                'exists:users,id',
+            ],
+        ]);
+
+        return array_map('intval', $validated['user_ids']);
+    }
+
+    private function redirectAfterBulkAction(Request $request, array $result, string $noun, string $verb): RedirectResponse
+    {
+        $processed = (int) $result['processed'];
+        $skipped = (int) $result['skipped'];
+        $errorCount = count($result['errors']);
+        $message = ucfirst($noun) . ' ' . $verb . ': ' . $processed . ' changed, ' . $skipped . ' skipped.';
+
+        if ($errorCount > 0) {
+            $message .= ' ' . $errorCount . ' could not be processed.';
+        }
+
+        $flashType = $processed > 0 ? 'success' : 'error';
+        if ($processed === 0 && $errorCount === 0) {
+            $message = 'No accounts were changed.';
+        }
+
+        return redirect()
+            ->route('super-admin.users', $request->query())
+            ->with($flashType, $message)
+            ->with('bulk_result', $result);
+    }
+
+    private function generateUserExportCsv($users): string
+    {
+        $output = fopen('php://temp', 'r+');
+        fputcsv($output, [
+            'User ID',
+            'Name',
+            'Email',
+            'Role',
+            'University',
+            'University Code',
+            'Status',
+            'Email Verified',
+            'Created At',
+            'Updated At',
+        ]);
+
+        foreach ($users as $user) {
+            fputcsv($output, [
+                $user->id,
+                $user->name,
+                $user->email,
+                $user->role,
+                $user->university?->name,
+                $user->university?->code,
+                $user->is_active ? 'Active' : ($user->email_verified_at === null ? 'Pending invite' : 'Suspended'),
+                $user->email_verified_at?->toDateTimeString() ?? '',
+                $user->created_at?->toDateTimeString() ?? '',
+                $user->updated_at?->toDateTimeString() ?? '',
+            ]);
+        }
+
+        rewind($output);
+        $csv = stream_get_contents($output);
+        fclose($output);
+        return $csv;
+    }
+
+    private function streamUserExport($users, string $filename): \Symfony\Component\HttpFoundation\Response
+    {
+        $csv = $this->generateUserExportCsv($users);
+
+        return response($csv)
+            ->header('Content-Type', 'text/csv; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    }
+
+    private function writeExportAudit(int $count, array $selection): void
+    {
+        $university = $this->actingUser()?->university ?: University::orderBy('id')->first();
+
+        if (!$university) {
+            return;
+        }
+
+        AuditLog::logAction(
+            $university,
+            $this->actingUser(),
+            'User',
+            0,
+            'exported',
+            null,
+            [
+                'transition' => 'bulk_export',
+                'count' => $count,
+                'selection' => $selection,
+            ]
+        );
+    }
+
+    private function userFilters(Request $request): array
+    {
+        return [
+            'search' => trim((string) $request->query('search', '')),
+            'role' => (string) $request->query('role', ''),
+            'university_id' => (string) $request->query('university_id', ''),
+            'status' => (string) $request->query('status', ''),
+        ];
+    }
+
+    private function buildUserQuery(Request $request)
+    {
+        $filters = $this->userFilters($request);
+        $query = User::with(['university', 'student.supervisor.user', 'supervisor.students'])
+            ->orderBy('name')
+            ->orderBy('email');
+
+        if ($filters['search'] !== '') {
+            $search = $filters['search'];
+            $query->where(function ($query) use ($search) {
+                $query
+                    ->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($filters['role'] !== '') {
+            $query->where('role', $filters['role']);
+        }
+
+        if ($filters['university_id'] !== '') {
+            $query->where('university_id', $filters['university_id']);
+        }
+
+        if ($filters['status'] === 'active') {
+            $query->where('is_active', true);
+        }
+
+        if ($filters['status'] === 'inactive') {
+            $query->where('is_active', false);
+        }
+
+        return $query;
     }
 
     public function config(): View

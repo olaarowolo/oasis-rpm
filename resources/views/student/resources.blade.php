@@ -4,7 +4,7 @@
     @include('partials.dashboards.student-styles')
   </x-slot:head>
 
-  @include('partials.dashboards.student-header')
+  <x-app-header role="student" page-title="Learning Resources" />
 
   <div class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col md:flex-row gap-4 sm:gap-6">
 

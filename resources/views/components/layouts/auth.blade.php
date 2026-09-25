@@ -41,7 +41,9 @@
 
   {{ $head ?? '' }}
 </head>
-<body class="h-full font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
+<body class="h-full font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col">
   {{ $slot }}
+
+  <x-layouts.footer variant="auth" />
 </body>
 </html>

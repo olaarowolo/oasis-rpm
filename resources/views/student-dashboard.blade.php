@@ -4,7 +4,7 @@
     @include('partials.dashboards.student-styles')
   </x-slot:head>
 
-  @include('partials.dashboards.student-header')
+  <x-app-header role="student" page-title="Student Portal" />
 
 
   <!-- ================= MAIN LAYOUT (sidebar + content) ================= -->

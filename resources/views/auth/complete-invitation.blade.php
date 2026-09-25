@@ -28,6 +28,7 @@
     </script>
 </head>
 <body class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(14,116,144,0.18),_transparent_35%),linear-gradient(180deg,_#f8fafc_0%,_#e2e8f0_100%)] font-sans text-slate-900">
+    @include('partials.auth.inline-script')
     <div class="mx-auto flex min-h-screen w-full max-w-6xl items-center justify-center px-4 py-10 sm:px-6 lg:px-8">
         <div class="grid w-full overflow-hidden rounded-[2rem] border border-white/70 bg-white/90 shadow-2xl backdrop-blur xl:grid-cols-[0.95fr_1.05fr]">
             <section class="bg-slate-950 px-8 py-10 text-white sm:px-10 lg:px-12">
@@ -86,7 +87,14 @@
                         @if (in_array($user->role, ['admin', 'super_admin'], true))
                             <div class="sm:col-span-2">
                                 <label class="block text-sm font-medium text-slate-700">Department</label>
-                                <input type="text" name="department" value="{{ old('department', $user->department) }}" class="mt-1.5 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-sm focus:border-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-200">
+                                @include('partials.auth.department-cascade', [
+                                    'dropdownType' => 'complete-invitation-admin',
+                                    'universityCode' => $user->university->code ?? '',
+                                    'hasStructured' => $user->university && config("universities.presets.{$user->university->code}.has_structured_departments"),
+                                    'selectedDepartment' => old('department', $user->department),
+                                    'inputName' => 'department',
+                                    'required' => false,
+                                ])
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700">Password</label>
@@ -105,7 +113,14 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700">Department</label>
-                                <input type="text" name="department" value="{{ old('department', $user->department) }}" required class="mt-1.5 w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm shadow-sm focus:border-cyan-600 focus:outline-none focus:ring-2 focus:ring-cyan-200">
+                                @include('partials.auth.department-cascade', [
+                                    'dropdownType' => 'complete-invitation-supervisor',
+                                    'universityCode' => $user->university->code ?? '',
+                                    'hasStructured' => $user->university && config("universities.presets.{$user->university->code}.has_structured_departments"),
+                                    'selectedDepartment' => old('department', $user->department),
+                                    'inputName' => 'department',
+                                    'required' => true,
+                                ])
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700">PIN</label>

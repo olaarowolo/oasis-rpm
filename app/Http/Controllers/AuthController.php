@@ -175,17 +175,166 @@ class AuthController extends BaseController
     }
 
     /**
-     * Login admin with timing-safe responses
+     * Login super admin with timing-safe responses (platform-level, no university)
      */
-    public function loginAdmin(Request $request)
+    public function loginSuperAdmin(Request $request)
     {
         $validated = $request->validate([
             'email' => 'required|email',
             'password' => 'required|string',
         ]);
 
+        $user = User::where([
+            ['email', '=', $validated['email']],
+            ['role', '=', 'super_admin'],
+        ])->first();
+
+        // Use hash_equals for timing-safe password check
+        if (!$user || !$user->is_active || !Hash::check($validated['password'], $user->password)) {
+            $this->recordFailedLoginAttempt($request, $validated['email']);
+            $this->simulateSlowOperation();
+            return $this->error('Invalid credentials', 401);
+        }
+
+        // Clear failed attempts on successful login
+        $this->clearFailedLoginAttempts($request, $validated['email']);
+
+        // Regenerate session ID to prevent session fixation
+        $request->session()->regenerate();
+
+        session([
+            'user_id' => $user->id,
+            'role' => 'super_admin',
+            'last_activity' => time(),
+            'session_started' => time(),
+        ]);
+
+        return $this->success([
+            'user_id' => $user->id,
+            'name' => $user->name,
+            'role' => 'super_admin',
+            'university_id' => null,
+            'dashboard_url' => $this->getDashboardUrl('super_admin'),
+            'token' => $this->generateSecureToken($user->id),
+        ], 'Super Admin login successful');
+    }
+
+    /**
+     * Send OTP to super admin email (platform-level, no university)
+     */
+    public function sendSuperAdminOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $genericMessage = 'If an account matches this email, a verification code will be sent';
+
         $user = User::where('email', $validated['email'])
-            ->whereIn('role', ['admin', 'super_admin'])
+            ->where('role', 'super_admin')
+            ->first();
+
+        if (!$user) {
+            $this->logOtpLookupMiss('super_admin_precheck', 'user_not_found', [
+                'email' => $validated['email'],
+            ]);
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
+        // Generate a cryptographically secure OTP
+        $code = $this->generateSecureOtp();
+        $expiresAt = now()->addMinutes(5);
+
+        // Remove any existing verification OTPs for this user/role
+        OtpToken::where('user_id', $user->id)->where('role', 'super_admin')->delete();
+
+        $otp = OtpToken::create([
+            'user_id' => $user->id,
+            'role' => 'super_admin',
+            'email' => $validated['email'],
+            'code' => $code,
+            'expires_at' => $expiresAt,
+        ]);
+
+        try {
+            $this->sendOtpMail($validated['email'], $code, $user->role, $user->name, $user->id);
+        } catch (\Throwable $exception) {
+            return $this->error('Unable to send verification code right now. Please try again later.', 500);
+        }
+
+        return $this->success([
+            'email' => $validated['email'],
+            'expires_at' => $otp->expires_at->toISOString(),
+        ], 'Verification code sent to your email');
+    }
+
+    /**
+     * Verify the super admin email OTP. On success the credentials step is revealed.
+     * Does NOT log the user in.
+     */
+    public function verifySuperAdminOtp(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6',
+        ]);
+
+        $user = User::where('email', $validated['email'])
+            ->where('role', 'super_admin')
+            ->first();
+
+        if (!$user) {
+            $this->simulateSlowOperation();
+            return $this->error('Verification code is invalid or has expired', 401);
+        }
+
+        $otp = OtpToken::where('user_id', $user->id)
+            ->where('role', 'super_admin')
+            ->whereIn('email', [$validated['email'], $user->email])
+            ->whereNull('used_at')
+            ->latest()
+            ->first();
+
+        if (!$otp || $otp->expires_at->isPast()) {
+            return $this->error('Verification code has expired or is invalid', 401);
+        }
+
+        // Timing-safe comparison
+        if (!hash_equals((string) $otp->code, (string) $validated['otp'])) {
+            return $this->error('Invalid verification code', 401);
+        }
+
+        $otp->used_at = now();
+        $otp->save();
+
+        return $this->success([
+            'email' => $validated['email'],
+            'verified' => true,
+            'is_super_admin' => true,
+        ], 'OTP verified successfully');
+    }
+
+    /**
+     * Login admin with timing-safe responses (NEW FLOW: university selection after OTP)
+     */
+    public function loginAdmin(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+            'university_code' => 'required|string',
+        ]);
+
+        $university = University::where('code', strtoupper($validated['university_code']))->first();
+        if (!$university) {
+            $this->simulateSlowOperation();
+            return $this->error('Invalid university', 401);
+        }
+
+        $user = User::where('email', $validated['email'])
+            ->where('role', 'admin')
+            ->where('university_id', $university->id)
             ->first();
 
         // Use hash_equals for timing-safe password check
@@ -202,9 +351,9 @@ class AuthController extends BaseController
         $request->session()->regenerate();
 
         session([
-            'university_id' => $user->university_id,
+            'university_id' => $university->id,
             'user_id' => $user->id,
-            'role' => $user->role,
+            'role' => 'admin',
             'last_activity' => time(),
             'session_started' => time(),
         ]);
@@ -214,9 +363,9 @@ class AuthController extends BaseController
             'challenge_id' => $this->createAdminMfaChallenge($request, $user),
             'user_id' => $user->id,
             'name' => $user->name,
-            'role' => $user->role,
-            'university_id' => $user->university_id,
-            'dashboard_url' => $this->getDashboardUrl($user->role),
+            'role' => 'admin',
+            'university_id' => $university->id,
+            'dashboard_url' => $this->getDashboardUrl('admin'),
             'mfa_expires_in' => self::ADMIN_MFA_TTL,
         ], 'Admin credentials verified. MFA required');
     }
@@ -282,52 +431,6 @@ class AuthController extends BaseController
             'dashboard_url' => $this->getDashboardUrl($user->role),
             'token' => $this->generateSecureToken($user->id),
         ], 'MFA verified successfully');
-    }
-
-    /**
-     * Login super admin with timing-safe responses
-     */
-    public function loginSuperAdmin(Request $request)
-    {
-        $validated = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
-
-        $user = User::where([
-            ['email', '=', $validated['email']],
-            ['role', '=', 'super_admin'],
-        ])->first();
-
-        // Use hash_equals for timing-safe password check
-        if (!$user || !$user->is_active || !Hash::check($validated['password'], $user->password)) {
-            $this->recordFailedLoginAttempt($request, $validated['email']);
-            $this->simulateSlowOperation();
-            return $this->error('Invalid credentials', 401);
-        }
-
-        // Clear failed attempts on successful login
-        $this->clearFailedLoginAttempts($request, $validated['email']);
-
-        // Regenerate session ID to prevent session fixation
-        $request->session()->regenerate();
-
-        session([
-            'university_id' => $user->university_id,
-            'user_id' => $user->id,
-            'role' => 'super_admin',
-            'last_activity' => time(),
-            'session_started' => time(),
-        ]);
-
-        return $this->success([
-            'user_id' => $user->id,
-            'name' => $user->name,
-            'role' => 'super_admin',
-            'university_id' => $user->university_id,
-            'dashboard_url' => $this->getDashboardUrl('super_admin'),
-            'token' => $this->generateSecureToken($user->id),
-        ], 'Super Admin login successful');
     }
 
     /**
@@ -504,14 +607,15 @@ class AuthController extends BaseController
      * Verify the admin/super_admin email OTP. On success the credentials step is revealed.
      * Does NOT log the user in.
      */
-    public function verifyAdminOtp(Request $request)
+public function verifyAdminOtp(Request $request)
     {
         return $this->verifyRoleVerificationOtp($request, 'admin');
     }
 
     /**
      * Shared helper: send an email-verification OTP for a given login role.
-     * Always returns a generic message to avoid account enumeration.
+     * On success the OTP is consumed but the user is NOT logged in; the
+     * credential step (loginSupervisor / loginAdmin / loginSuperAdmin) still runs afterwards.
      */
     private function sendRoleVerificationOtp(Request $request, string $role)
     {
@@ -521,7 +625,8 @@ class AuthController extends BaseController
 
         $genericMessage = 'If an account matches this email, a verification code will be sent';
 
-        // For "admin" the entered email may belong to an admin or super_admin.
+        // For "admin" the entered email may belong to an admin OR super_admin
+        // (super admins use the same admin tab but skip university selection).
         $allowedRoles = $role === 'admin' ? ['admin', 'super_admin'] : [$role];
 
         $user = User::where('email', $validated['email'])
@@ -542,11 +647,11 @@ class AuthController extends BaseController
         $expiresAt = now()->addMinutes(5);
 
         // Remove any existing verification OTPs for this user/role
-        OtpToken::where('user_id', $user->id)->where('role', $role)->delete();
+        OtpToken::where('user_id', $user->id)->where('role', $user->role)->delete();
 
         $otp = OtpToken::create([
             'user_id' => $user->id,
-            'role' => $role,
+            'role' => $user->role,
             'email' => $validated['email'],
             'code' => $code,
             'expires_at' => $expiresAt,
@@ -576,6 +681,8 @@ class AuthController extends BaseController
             'otp' => 'required|string|size:6',
         ]);
 
+        // For "admin" the entered email may belong to an admin OR super_admin
+        // (super admins use the same admin tab but skip university selection).
         $allowedRoles = $role === 'admin' ? ['admin', 'super_admin'] : [$role];
 
         $user = User::where('email', $validated['email'])
@@ -588,7 +695,7 @@ class AuthController extends BaseController
         }
 
         $otp = OtpToken::where('user_id', $user->id)
-            ->where('role', $role)
+            ->where('role', $user->role)
             ->whereIn('email', [$validated['email'], $user->email])
             ->whereNull('used_at')
             ->latest()
@@ -609,6 +716,7 @@ class AuthController extends BaseController
         return $this->success([
             'email' => $validated['email'],
             'verified' => true,
+            'is_super_admin' => $user->role === 'super_admin',
         ], 'OTP verified successfully');
     }
 

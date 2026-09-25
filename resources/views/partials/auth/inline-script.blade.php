@@ -3,6 +3,7 @@
     const IS_LARAVEL_MODE = !IS_DEPLOYED && typeof window !== 'undefined' && /^https?:$/.test(window.location.protocol);
 
     let universitiesCache = null;
+    let departmentsCache = null;
     let selectedUniversityCode = null;
     let pendingStudentEmail = '';
     let otpTimerInterval = null;
@@ -15,6 +16,7 @@
     let pendingAdminEmail = '';
     let adminOtpTimerInterval = null;
     let adminOtpTimeLeft = 30;
+    let pendingAdminIsSuperAdmin = false;
 
     function normalizeUniversityCode(value) {
       return String(value || '').trim().toUpperCase();
@@ -183,6 +185,245 @@
       selectedUniversityCode = normalizedCode;
       const dropdown = document.getElementById('university-dropdown-' + dropdownType);
       if (dropdown) dropdown.classList.add('hidden');
+
+      // Trigger department cascade for structured universities
+      if (dropdownType !== 'demo') {
+        initDepartmentCascade(dropdownType, normalizedCode);
+      }
+    }
+
+    // ================= DEPARTMENT CASCADE HELPERS =================
+
+    async function loadDepartments(universityCode) {
+      if (departmentsCache && departmentsCache.university_code === universityCode) {
+        return departmentsCache;
+      }
+      try {
+        const response = await apiRequest('/api/departments?university_code=' + encodeURIComponent(universityCode));
+        departmentsCache = (response.data && response.data) || null;
+      } catch (error) {
+        departmentsCache = null;
+      }
+      return departmentsCache;
+    }
+
+    function getDepartmentContainer(dropdownType) {
+      return document.getElementById('department-cascade-' + dropdownType);
+    }
+
+    function getFacultySelect(dropdownType) {
+      return document.getElementById('department-faculty-' + dropdownType);
+    }
+
+    function getDepartmentSelect(dropdownType) {
+      return document.getElementById('department-department-' + dropdownType);
+    }
+
+    function getDepartmentHiddenInput(dropdownType) {
+      return document.getElementById('department-hidden-' + dropdownType);
+    }
+
+    async function initDepartmentCascade(dropdownType, universityCode) {
+      const container = getDepartmentContainer(dropdownType);
+      if (!container) return;
+
+      // Check if this university has structured departments
+      const hasStructured = container.dataset.hasStructured === 'true';
+      if (!hasStructured) {
+        // Show the free-text input (already in the DOM)
+        const freeTextInput = container.querySelector('.department-free-text');
+        if (freeTextInput) freeTextInput.classList.remove('hidden');
+        return;
+      }
+
+      // Hide free-text input, show cascade
+      const freeTextInput = container.querySelector('.department-free-text');
+      if (freeTextInput) freeTextInput.classList.add('hidden');
+
+      const cascadeWrapper = container.querySelector('.department-cascade-wrapper');
+      if (cascadeWrapper) cascadeWrapper.classList.remove('hidden');
+
+      // Load departments if not cached
+      const data = await loadDepartments(universityCode);
+      if (!data) {
+        showToast('Could not load department data for ' + universityCode, 'error');
+        if (freeTextInput) freeTextInput.classList.remove('hidden');
+        if (cascadeWrapper) cascadeWrapper.classList.add('hidden');
+        return;
+      }
+
+      // Populate faculty/school select
+      populateFacultySelect(dropdownType, data);
+
+      // Show faculty select, hide department select initially
+      const facultySelect = getFacultySelect(dropdownType);
+      const departmentSelect = getDepartmentSelect(dropdownType);
+      if (facultySelect) facultySelect.classList.remove('hidden');
+      if (departmentSelect) departmentSelect.classList.add('hidden');
+    }
+
+    function populateFacultySelect(dropdownType, data) {
+      const facultySelect = getFacultySelect(dropdownType);
+      if (!facultySelect) return;
+
+      // Preserve current selection
+      const currentValue = facultySelect.value;
+
+      facultySelect.innerHTML = '<option value="">Select faculty or school</option>';
+
+       // Add faculties
+       if (data.faculties) {
+         const facultyGroup = document.createElement('optgroup');
+         facultyGroup.label = 'Faculties';
+         Object.keys(data.faculties).sort().forEach(function (faculty) {
+           const option = document.createElement('option');
+           option.value = faculty;
+           option.textContent = (data.faculties_labels && data.faculties_labels[faculty]) || 'Faculty of ' + faculty;
+           facultyGroup.appendChild(option);
+         });
+         facultySelect.appendChild(facultyGroup);
+       }
+
+       // Add schools
+       if (data.schools) {
+         const schoolGroup = document.createElement('optgroup');
+         schoolGroup.label = 'Schools & Directorates';
+         Object.keys(data.schools).sort().forEach(function (school) {
+           const option = document.createElement('option');
+           option.value = school;
+           option.textContent = (data.schools_labels && data.schools_labels[school]) || school;
+           schoolGroup.appendChild(option);
+         });
+         facultySelect.appendChild(schoolGroup);
+       }
+
+      // Add colleges
+      if (data.colleges && Object.keys(data.colleges).length > 0) {
+        const collegeGroup = document.createElement('optgroup');
+        collegeGroup.label = 'Colleges';
+        Object.keys(data.colleges).sort().forEach(function (college) {
+          const option = document.createElement('option');
+          option.value = college;
+          option.textContent = college;
+          collegeGroup.appendChild(option);
+        });
+        facultySelect.appendChild(collegeGroup);
+      }
+
+      // Add directorates
+      if (data.directorates && Object.keys(data.directorates).length > 0) {
+        const directorateGroup = document.createElement('optgroup');
+        directorateGroup.label = 'Directorates';
+        Object.keys(data.directorates).sort().forEach(function (directorate) {
+          const option = document.createElement('option');
+          option.value = directorate;
+          option.textContent = directorate;
+          directorateGroup.appendChild(option);
+        });
+        facultySelect.appendChild(directorateGroup);
+      }
+
+      // Restore selection if valid
+      if (currentValue && facultySelect.querySelector('option[value="' + currentValue + '"]')) {
+        facultySelect.value = currentValue;
+        // Trigger department population
+        onFacultyChange(dropdownType);
+      }
+    }
+
+    function onFacultyChange(dropdownType) {
+      const facultySelect = getFacultySelect(dropdownType);
+      const departmentSelect = getDepartmentSelect(dropdownType);
+      const hiddenInput = getDepartmentHiddenInput(dropdownType);
+
+      if (!facultySelect || !departmentSelect || !departmentsCache) return;
+
+      const selectedFaculty = facultySelect.value;
+      departmentSelect.innerHTML = '<option value="">Select department</option>';
+      departmentSelect.classList.add('hidden');
+
+      if (!selectedFaculty) {
+        if (hiddenInput) hiddenInput.value = '';
+        return;
+      }
+
+      // Find departments for the selected faculty/school
+      let departments = [];
+      if (departmentsCache.faculties && departmentsCache.faculties[selectedFaculty]) {
+        departments = departmentsCache.faculties[selectedFaculty];
+      } else if (departmentsCache.schools && departmentsCache.schools[selectedFaculty]) {
+        departments = departmentsCache.schools[selectedFaculty];
+      } else if (departmentsCache.colleges && departmentsCache.colleges[selectedFaculty]) {
+        departments = departmentsCache.colleges[selectedFaculty];
+      } else if (departmentsCache.directorates && departmentsCache.directorates[selectedFaculty]) {
+        departments = departmentsCache.directorates[selectedFaculty];
+      }
+
+      if (departments.length === 0) {
+        if (hiddenInput) hiddenInput.value = '';
+        return;
+      }
+
+      departments.sort().forEach(function (dept) {
+        const option = document.createElement('option');
+        option.value = dept;
+        option.textContent = dept;
+        departmentSelect.appendChild(option);
+      });
+
+      departmentSelect.classList.remove('hidden');
+      if (hiddenInput) hiddenInput.value = '';
+    }
+
+    function onDepartmentChange(dropdownType) {
+      const departmentSelect = getDepartmentSelect(dropdownType);
+      const hiddenInput = getDepartmentHiddenInput(dropdownType);
+
+      if (!departmentSelect || !hiddenInput) return;
+
+      const selectedDept = departmentSelect.value;
+      hiddenInput.value = selectedDept;
+    }
+
+    function filterFaculties(dropdownType) {
+      const searchInput = document.getElementById('faculty-search-' + dropdownType);
+      const facultySelect = getFacultySelect(dropdownType);
+      if (!searchInput || !facultySelect) return;
+
+      const query = (searchInput.value || '').trim().toLowerCase();
+      if (!query) {
+        // Show all options
+        Array.prototype.forEach.call(facultySelect.options, function (option) {
+          if (option.value) option.style.display = '';
+        });
+        return;
+      }
+
+      Array.prototype.forEach.call(facultySelect.options, function (option) {
+        if (!option.value) return;
+        const text = option.textContent.toLowerCase();
+        option.style.display = text.includes(query) ? '' : 'none';
+      });
+    }
+
+    function filterDepartments(dropdownType) {
+      const searchInput = document.getElementById('department-search-' + dropdownType);
+      const departmentSelect = getDepartmentSelect(dropdownType);
+      if (!searchInput || !departmentSelect) return;
+
+      const query = (searchInput.value || '').trim().toLowerCase();
+      if (!query) {
+        Array.prototype.forEach.call(departmentSelect.options, function (option) {
+          if (option.value) option.style.display = '';
+        });
+        return;
+      }
+
+      Array.prototype.forEach.call(departmentSelect.options, function (option) {
+        if (!option.value) return;
+        const text = option.textContent.toLowerCase();
+        option.style.display = text.includes(query) ? '' : 'none';
+      });
     }
 
     function switchLoginTab(tab) {
@@ -532,9 +773,11 @@
     function showAdminEmailStep() {
       const emailStep = document.getElementById('admin-email-step');
       const otpStep = document.getElementById('admin-otp-step');
+      const universityStep = document.getElementById('admin-university-step');
       const credentialsStep = document.getElementById('admin-credentials-step');
       if (emailStep) emailStep.classList.remove('hidden');
       if (otpStep) otpStep.classList.add('hidden');
+      if (universityStep) universityStep.classList.add('hidden');
       if (credentialsStep) credentialsStep.classList.add('hidden');
       stopAdminOtpTimer();
     }
@@ -542,18 +785,34 @@
     function showAdminOtpStep() {
       const emailStep = document.getElementById('admin-email-step');
       const otpStep = document.getElementById('admin-otp-step');
+      const universityStep = document.getElementById('admin-university-step');
       const credentialsStep = document.getElementById('admin-credentials-step');
       if (emailStep) emailStep.classList.add('hidden');
       if (otpStep) otpStep.classList.remove('hidden');
+      if (universityStep) universityStep.classList.add('hidden');
       if (credentialsStep) credentialsStep.classList.add('hidden');
+    }
+
+    function showAdminUniversityStep() {
+      const emailStep = document.getElementById('admin-email-step');
+      const otpStep = document.getElementById('admin-otp-step');
+      const universityStep = document.getElementById('admin-university-step');
+      const credentialsStep = document.getElementById('admin-credentials-step');
+      if (emailStep) emailStep.classList.add('hidden');
+      if (otpStep) otpStep.classList.add('hidden');
+      if (universityStep) universityStep.classList.remove('hidden');
+      if (credentialsStep) credentialsStep.classList.add('hidden');
+      stopAdminOtpTimer();
     }
 
     function showAdminCredentialsStep() {
       const emailStep = document.getElementById('admin-email-step');
       const otpStep = document.getElementById('admin-otp-step');
+      const universityStep = document.getElementById('admin-university-step');
       const credentialsStep = document.getElementById('admin-credentials-step');
       if (emailStep) emailStep.classList.add('hidden');
       if (otpStep) otpStep.classList.add('hidden');
+      if (universityStep) universityStep.classList.add('hidden');
       if (credentialsStep) credentialsStep.classList.remove('hidden');
       stopAdminOtpTimer();
     }
@@ -621,11 +880,20 @@
       }
 
       try {
-        await apiRequest('/api/auth/admin/verify-otp', {
+        const res = await apiRequest('/api/auth/admin/verify-otp', {
           method: 'POST',
           body: { email: pendingAdminEmail, otp: otp }
         });
-        showAdminCredentialsStep();
+        const data = (res && res.data) || {};
+        // Check if user is super_admin (no university selector needed)
+        const isSuperAdmin = data.is_super_admin === true;
+        if (isSuperAdmin) {
+          pendingAdminIsSuperAdmin = true;
+          showAdminCredentialsStep();
+        } else {
+          pendingAdminIsSuperAdmin = false;
+          showAdminUniversityStep();
+        }
         showToast('Verification successful.', 'success');
       } catch (err) {
         setError('admin-otp-error', 'admin-otp-error-text', err && err.message ? err.message : 'Invalid verification code.');
@@ -657,10 +925,18 @@
         return;
       }
 
+      // For regular admins, include university_id from selector
+      const universityInput = document.getElementById('login-university-code-admin');
+      const universityId = universityInput ? normalizeUniversityCode(universityInput.value || '') : '';
+      const body = { email: email, password: password };
+      if (!pendingAdminIsSuperAdmin && universityId) {
+        body.university_id = universityId;
+      }
+
       try {
         const res = await apiRequest('/api/auth/login-admin', {
           method: 'POST',
-          body: { email: email, password: password }
+          body: body
         });
         const d = (res && res.data) || {};
 

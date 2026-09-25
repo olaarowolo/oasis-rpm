@@ -67,6 +67,7 @@ class AuthTest extends TestCase
         $loginResponse = $this->postJson('/api/auth/login-admin', [
             'email' => 'admin-mfa@afriscribe.org',
             'password' => 'Admin@2026',
+            'university_code' => 'AFS',
         ]);
 
         $loginResponse->assertOk()

@@ -149,6 +149,151 @@
         <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
     </div>
 
+    <div id="relationship-orchestrator" class="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900">Supervision Link Center</h2>
+                    <p class="mt-1 text-sm text-slate-500">Assign or reassign students to supervisors from one platform control point. Student and supervisor email notifications are sent automatically when the link changes.</p>
+                </div>
+                <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Live linking</span>
+            </div>
+
+            <div class="space-y-5 p-5">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Students</p>
+                        <p class="mt-2 text-3xl font-black text-slate-900"><?php echo e($assignmentSummary['students']); ?></p>
+                    </div>
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Unassigned</p>
+                        <p class="mt-2 text-3xl font-black text-amber-700"><?php echo e($assignmentSummary['unassigned_students']); ?></p>
+                    </div>
+                    <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Active Supervisors</p>
+                        <p class="mt-2 text-3xl font-black text-emerald-700"><?php echo e($assignmentSummary['active_supervisors']); ?></p>
+                    </div>
+                    <div class="rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-700">Average Load</p>
+                        <p class="mt-2 text-3xl font-black text-blue-700"><?php echo e($assignmentSummary['avg_load']); ?></p>
+                    </div>
+                </div>
+
+                <form action="<?php echo e(route('super-admin.relationships.assign')); ?>" method="POST" class="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-5 xl:grid-cols-[1fr_1fr_auto] xl:items-end">
+                    <?php echo csrf_field(); ?>
+                    <div>
+                        <label for="relationship-student-id" class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Student</label>
+                        <select id="relationship-student-id" name="student_id" required class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+                            <option value="">Select student</option>
+                            <?php $__currentLoopData = $relationshipStudents; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $student): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($student->id); ?>" data-university-id="<?php echo e($student->university_id); ?>" <?php if((int) optional($recommendationStudent)->id === (int) $student->id): echo 'selected'; endif; ?>>
+                                    <?php echo e($student->full_name ?: $student->user?->name ?: 'Student'); ?>
+
+                                    <?php if($student->matric_number): ?>
+                                        · <?php echo e($student->matric_number); ?>
+
+                                    <?php endif; ?>
+                                    · <?php echo e($student->university->code ?? 'UNI'); ?>
+
+                                    · <?php echo e($student->supervisor?->user?->name ? 'Current: ' . $student->supervisor->user->name : 'Unassigned'); ?>
+
+                                </option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="relationship-supervisor-id" class="block text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Supervisor</label>
+                        <select id="relationship-supervisor-id" name="supervisor_id" required class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20">
+                            <option value="">Select supervisor</option>
+                            <?php $__currentLoopData = $assignmentSupervisors; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $supervisor): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($supervisor->id); ?>" data-university-id="<?php echo e($supervisor->university_id); ?>">
+                                    <?php echo e($supervisor->user?->name ?? 'Supervisor'); ?> · <?php echo e($supervisor->university->code ?? 'UNI'); ?> · <?php echo e($supervisor->students_count); ?> students · <?php echo e($supervisor->load_label); ?>
+
+                                </option>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </select>
+                    </div>
+                    <div class="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-700 xl:col-span-2">
+                        Recommended load is up to <?php echo e($loadPolicy['recommended_max']); ?> students. Above <?php echo e($loadPolicy['watch_max']); ?> students, supervisors are flagged as high load for manual review.
+                    </div>
+                    <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white hover:bg-violet-700">
+                        <i class="fa-solid fa-link"></i>
+                        Link and notify
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-5 py-4">
+                    <h2 class="text-lg font-bold text-slate-900">Unassigned Students</h2>
+                    <p class="mt-1 text-sm text-slate-500">Students currently waiting for a supervisor relationship.</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    <?php $__empty_1 = true; $__currentLoopData = $unassignedStudents; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $student): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <div class="px-5 py-4">
+                            <p class="font-semibold text-slate-900"><?php echo e($student->full_name ?: $student->user?->name ?: 'Student'); ?></p>
+                            <p class="mt-1 text-sm text-slate-500"><?php echo e($student->university->name ?? 'No university'); ?> <?php if($student->matric_number): ?> · <?php echo e($student->matric_number); ?> <?php endif; ?></p>
+                            <a href="<?php echo e(route('super-admin.dashboard', ['student_id' => $student->id])); ?>#relationship-orchestrator" class="mt-3 inline-flex text-xs font-semibold text-violet-600 hover:underline">Focus recommendations</a>
+                        </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <div class="px-5 py-8 text-sm text-slate-500">Every active student currently has a linked supervisor.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-5 py-4">
+                    <h2 class="text-lg font-bold text-slate-900">Recommended Supervisors</h2>
+                    <p class="mt-1 text-sm text-slate-500">Ranked by current active load so the next assignment goes to the strongest capacity candidate first.</p>
+                    <?php if($recommendationStudent): ?>
+                        <p class="mt-2 text-xs text-slate-400">Recommendation focus: <?php echo e($recommendationStudent->full_name ?: $recommendationStudent->user?->name ?: 'Student'); ?> <?php if($recommendationStudent->research_topic): ?>· <?php echo e($recommendationStudent->research_topic); ?> <?php else: ?> · <?php echo e($recommendationStudent->degree_level); ?> stage <?php echo e($recommendationStudent->current_stage); ?> <?php endif; ?></p>
+                    <?php endif; ?>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    <?php $__currentLoopData = $recommendedSupervisors; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $supervisor): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <div class="flex items-center justify-between gap-4 px-5 py-4">
+                            <div>
+                                <p class="font-semibold text-slate-900"><?php echo e($supervisor->user?->name ?? 'Supervisor'); ?></p>
+                                <p class="mt-1 text-sm text-slate-500"><?php echo e($supervisor->university->name ?? 'No university'); ?> · <?php echo e($supervisor->department ?: 'Department pending'); ?></p>
+                                <p class="mt-1 text-xs <?php echo e($supervisor->load_band === 'recommended' ? 'text-emerald-600' : ($supervisor->load_band === 'watch' ? 'text-amber-600' : 'text-rose-600')); ?>"><?php echo e($supervisor->recommendation_reason); ?></p>
+                            </div>
+                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold <?php echo e($supervisor->load_band === 'recommended' ? 'bg-emerald-100 text-emerald-700' : ($supervisor->load_band === 'watch' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-700')); ?>"><?php echo e($supervisor->students_count); ?> students</span>
+                        </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <div class="border-b border-slate-200 px-5 py-4">
+                    <h2 class="text-lg font-bold text-slate-900">Recent Relationship Changes</h2>
+                    <p class="mt-1 text-sm text-slate-500">Latest links and reassignments with notification delivery visibility.</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    <?php $__empty_1 = true; $__currentLoopData = $relationshipHistory; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $history): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <div class="px-5 py-4">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-semibold text-slate-900"><?php echo e(data_get($history->new_values, 'student_name', 'Student')); ?> · <?php echo e(data_get($history->new_values, 'transition') === 'supervisor_reassigned' ? 'Reassigned' : 'Linked'); ?></p>
+                                    <p class="mt-1 text-sm text-slate-500">Supervisor: <?php echo e(data_get($history->new_values, 'supervisor_name', 'Unknown')); ?> · <?php echo e($history->university?->name ?? 'No university'); ?></p>
+                                    <p class="mt-1 text-xs text-slate-400">Actor: <?php echo e($history->user?->name ?? 'System'); ?></p>
+                                </div>
+                                <span class="text-xs text-slate-400"><?php echo e(optional($history->created_at)->diffForHumans()); ?></span>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                <span class="rounded-full px-2.5 py-1 <?php echo e(data_get($history->new_values, 'notifications.student.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'); ?>">Student email: <?php echo e(data_get($history->new_values, 'notifications.student.status', 'unknown')); ?></span>
+                                <span class="rounded-full px-2.5 py-1 <?php echo e(data_get($history->new_values, 'notifications.supervisor.status') === 'sent' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'); ?>">Supervisor email: <?php echo e(data_get($history->new_values, 'notifications.supervisor.status', 'unknown')); ?></span>
+                            </div>
+                        </div>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
+                        <div class="px-5 py-8 text-sm text-slate-500">No relationship changes recorded yet.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Command Model -->
     <div class="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
         <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -609,5 +754,38 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        var studentSelect = document.getElementById('relationship-student-id');
+        var supervisorSelect = document.getElementById('relationship-supervisor-id');
+
+        function syncSupervisorAssignmentOptions() {
+            if (!studentSelect || !supervisorSelect) return;
+
+            var selectedStudent = studentSelect.options[studentSelect.selectedIndex];
+            var universityId = selectedStudent ? selectedStudent.dataset.universityId : '';
+
+            Array.prototype.forEach.call(supervisorSelect.options, function (option) {
+                if (!option.value) {
+                    option.hidden = false;
+                    return;
+                }
+
+                var matches = !universityId || option.dataset.universityId === universityId;
+                option.hidden = !matches;
+
+                if (!matches && option.selected) {
+                    supervisorSelect.value = '';
+                }
+            });
+        }
+
+        if (studentSelect) {
+            studentSelect.addEventListener('change', syncSupervisorAssignmentOptions);
+            syncSupervisorAssignmentOptions();
+        }
+    })();
+</script>
 <?php $__env->stopSection(); ?>
 <?php echo $__env->make('layouts.super-admin', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH /Users/olasunkanmiarowolo/Documents/OAsis-RS/Archive/oasis-rpm/resources/views/super-admin/dashboard.blade.php ENDPATH**/ ?>

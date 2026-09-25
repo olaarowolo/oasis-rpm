@@ -124,6 +124,8 @@
     }
   </style>
 
+  @vite(['resources/js/header.js'])
+
   {{ $head ?? '' }}
 </head>
 <body class="h-full flex flex-col font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100">
@@ -131,127 +133,6 @@
 
   <div id="nav-backdrop" class="fixed inset-0 z-40 bg-slate-900/50 opacity-0" aria-hidden="true"></div>
 
-  <script>
-    (function () {
-      var sidebar = document.getElementById('app-sidebar');
-      var backdrop = document.getElementById('nav-backdrop');
-      var toggles = Array.prototype.slice.call(document.querySelectorAll('[data-mobile-nav-toggle]'));
-      var backdropTimer = null;
-      var lastTrigger = null;
-
-      if (sidebar) {
-        sidebar.setAttribute('aria-hidden', String(window.matchMedia('(max-width: 767.98px)').matches));
-      }
-
-      function setNavOpen(open, options) {
-        if (!sidebar || !backdrop) return;
-        var mobile = window.matchMedia('(max-width: 767.98px)').matches;
-        if (!mobile && open) return;
-
-        sidebar.classList.toggle('drawer-open', open);
-        backdrop.classList.toggle('nav-backdrop-visible', open);
-        document.body.classList.toggle('nav-drawer-locked', open && mobile);
-        sidebar.setAttribute('aria-hidden', String(!open));
-        toggles.forEach(function (toggle) {
-          toggle.setAttribute('aria-expanded', String(open));
-          toggle.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
-        });
-
-        if (open) {
-          if (backdropTimer) window.clearTimeout(backdropTimer);
-          backdrop.classList.remove('hidden');
-          backdrop.removeAttribute('aria-hidden');
-          var focusable = sidebar.querySelector('a[href], button:not([disabled])');
-          window.setTimeout(function () {
-            if (focusable) focusable.focus();
-          }, 90);
-        } else {
-          backdrop.setAttribute('aria-hidden', 'true');
-          if (backdropTimer) window.clearTimeout(backdropTimer);
-          backdropTimer = window.setTimeout(function () {
-            if (!sidebar.classList.contains('drawer-open')) backdrop.classList.add('hidden');
-          }, 260);
-          if ((!options || options.restoreFocus !== false) && lastTrigger && document.contains(lastTrigger)) {
-            lastTrigger.focus();
-          }
-        }
-      }
-
-      window.openMobileNav = function () {
-        lastTrigger = document.activeElement && document.activeElement.hasAttribute('data-mobile-nav-toggle')
-          ? document.activeElement
-          : toggles[0] || null;
-        setNavOpen(true);
-      };
-      window.closeMobileNav = function (options) {
-        setNavOpen(false, options);
-      };
-      window.toggleMobileNav = function () {
-        if (!sidebar) return;
-        setNavOpen(!sidebar.classList.contains('drawer-open'));
-      };
-
-      document.addEventListener('click', function (event) {
-        var toggle = event.target.closest ? event.target.closest('[data-mobile-nav-toggle]') : null;
-        if (toggle) {
-          event.preventDefault();
-          window.toggleMobileNav();
-          return;
-        }
-
-        var close = event.target.closest ? event.target.closest('[data-mobile-nav-close]') : null;
-        if (close) {
-          event.preventDefault();
-          window.closeMobileNav();
-          return;
-        }
-
-        var navAction = event.target.closest ? event.target.closest('.nav-btn') : null;
-        if (navAction && window.matchMedia('(max-width: 767.98px)').matches) {
-          window.closeMobileNav({ restoreFocus: false });
-        }
-      });
-
-      document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && sidebar && sidebar.classList.contains('drawer-open')) {
-          window.closeMobileNav();
-        }
-      });
-
-      if (backdrop) {
-        backdrop.addEventListener('click', function () {
-          window.closeMobileNav();
-        });
-      }
-
-      window.addEventListener('resize', function () {
-        if (window.matchMedia('(min-width: 768px)').matches && sidebar) {
-          sidebar.classList.remove('drawer-open');
-          backdrop.classList.remove('nav-backdrop-visible', 'hidden');
-          document.body.classList.remove('nav-drawer-locked');
-          sidebar.setAttribute('aria-hidden', 'false');
-          toggles.forEach(function (toggle) {
-            toggle.setAttribute('aria-expanded', 'false');
-            toggle.setAttribute('aria-label', 'Open navigation menu');
-          });
-        }
-      });
-
-      function markCurrentNavigation() {
-        var currentPath = window.location.pathname.replace(/\/+$/, '') || '/';
-        document.querySelectorAll('.nav-btn[href]').forEach(function (link) {
-          var href = link.getAttribute('href');
-          if (!href || href === '#') return;
-          try {
-            var linkPath = new URL(href, window.location.origin).pathname.replace(/\/+$/, '') || '/';
-            if (linkPath === currentPath) {
-              link.setAttribute('aria-current', 'page');
-            }
-          } catch (error) {}
-        });
-      }
-      markCurrentNavigation();
-    }());
-  </script>
+  <x-layouts.footer variant="authenticated" :role="session('role')" :user="auth()->user()" :scope="session('university_id') ? 'University scope' : 'Authenticated workspace'" />
 </body>
 </html>

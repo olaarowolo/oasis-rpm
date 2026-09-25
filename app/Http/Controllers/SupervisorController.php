@@ -4,12 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Mail\PortalEmail;
 use App\Models\ArchiveSubmission;
-use App\Models\Supervisor;
-use App\Models\Student;
 use App\Models\StageHistory;
-use App\Models\User;
+use App\Models\Student;
+use App\Models\Supervisor;
+use App\Services\StudentBulkImportService;
+use App\Services\StudentOnboardingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class SupervisorController extends BaseController
 {
@@ -24,66 +26,104 @@ class SupervisorController extends BaseController
             'phone' => 'sometimes|string|max:20|nullable',
         ]);
 
-        // Get the supervisor's university
         $supervisor = Supervisor::find(session('supervisor_id'));
-        if (!$supervisor) {
+        if (! $supervisor) {
             return $this->error('Supervisor not found', 404);
         }
 
-        // Create user for the student
-        $user = User::create([
-            'university_id' => $supervisor->university_id,
-            'email' => $validated['email'],
-            'name' => $validated['full_name'],
-            'role' => 'student',
-            'password' => bcrypt('student' . time()), // Temporary password
-        ]);
+        $temporaryPassword = Str::random(48);
 
-        // Create student record
-        $student = Student::create([
-            'user_id' => $user->id,
+        $result = app(StudentOnboardingService::class)->create(array_merge($validated, [
             'university_id' => $supervisor->university_id,
             'supervisor_id' => $supervisor->id,
-            'matric_number' => $validated['matric_number'],
-            'lastname' => $validated['lastname'],
-            'full_name' => $validated['full_name'],
-            'email' => $validated['email'],
-            'degree_level' => $validated['degree_level'] ?? 'BSc',
-            'phone' => $validated['phone'] ?? null,
-            'research_topic' => null,
-            'current_stage' => 1,
-            'progress_percentage' => 0,
-            'points_earned' => 0,
-            'status' => 'active',
-            'account_status' => 'active',
-            'personal_drive_url' => null,
-        ]);
-
-        // Create initial stage history
-        StageHistory::create([
-            'university_id' => $supervisor->university_id,
-            'student_id' => $student->id,
-            'stage_number' => 1,
-            'stage_name' => config('research.stages')[0]['name'] ?? 'Topic / Subject / Interest Area',
-            'action' => 'created',
-            'note' => 'Student onboarded by supervisor',
-        ]);
-
-        // Create initial archive submission
-        ArchiveSubmission::create([
-            'university_id' => $supervisor->university_id,
-            'student_id' => $student->id,
-            'degree_level' => $student->degree_level ?: 'BSc',
-            'project_type' => 'project',
-            'submission_status' => ArchiveSubmission::STATUS_DRAFT,
-            'visibility' => 'institution_only',
-        ]);
+            'temporary_password' => $temporaryPassword,
+        ]));
 
         return $this->success([
-            'student' => $student->load('user'),
-            'user_id' => $user->id,
-            'temporary_password' => 'student' . time(),
+            'student' => $result->student->load('user'),
+            'user_id' => $result->user->id,
+            'temporary_password' => $temporaryPassword,
         ], 'Student onboarded successfully');
+    }
+
+    /**
+     * Download a CSV template pre-populated with one sample row per LASU
+     * faculty/school so users can map columns and see expected values.
+     */
+    public function downloadTemplate(Request $request)
+    {
+        $header = 'full_name,lastname,matric_number,email,degree_level,phone,supervisor_email,faculty,department,programme,research_topic';
+        $rows = $this->templateSampleRows();
+        $content = $header."\r\n".implode("\r\n", $rows);
+
+        return response($content)
+            ->header('Content-Type', 'text/csv; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="student_bulk_import_template.csv"')
+            ->header('Pragma', 'no-cache')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate');
+    }
+
+    /**
+     * Bulk-import students from an uploaded CSV, assigning each to a
+     * supervisor / faculty / department / programme.
+     */
+    public function importCsv(Request $request)
+    {
+        $supervisor = Supervisor::find(session('supervisor_id'));
+        if (! $supervisor) {
+            return $this->error('Supervisor not found', 404);
+        }
+
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120',
+        ]);
+
+        $universityCode = $supervisor->university?->code ?? config('universities.default');
+
+        $result = app(StudentBulkImportService::class)->import([
+            'university_id' => $supervisor->university_id,
+            'university_code' => $universityCode,
+            'default_supervisor_id' => $supervisor->id,
+        ], $request->file('csv_file'));
+
+        $payload = [
+            'total' => $result->total,
+            'created' => $result->created,
+            'skipped' => $result->skipped,
+            'duplicates' => $result->duplicates,
+            'errors' => $result->errors,
+        ];
+
+        if ($request->expectsJson()) {
+            return $this->success($payload, 'CSV import complete');
+        }
+
+        return redirect()
+            ->route('supervisor.students')
+            ->with('import_result', $payload)
+            ->with('status', sprintf('Imported %d student(s): %d created, %d skipped.', $result->total, $result->created, $result->skipped));
+    }
+
+    /**
+     * Build one sample CSV row per LASU faculty/school.
+     */
+    protected function templateSampleRows(): array
+    {
+        $config = config('lasu_departments.faculties', []) + config('lasu_departments.schools', []);
+        $rows = [];
+        $i = 1;
+
+        foreach ($config as $faculty => $departments) {
+            $department = is_array($departments) && count($departments) > 0 ? reset($departments) : 'General';
+            $degree = ($i % 2 === 0) ? 'MSc' : 'BSc';
+            $rows[] = sprintf(
+                'Student %s,Lastname,MAT/%04d,%s@universe.edu,%s,080300%04d,,%s,%s,%s %s,',
+                $i, $i, strtolower($faculty), $degree, $i, $faculty, $department, $degree, strtolower(preg_replace('/\s+/', '', $department))
+            );
+            $i++;
+        }
+
+        return $rows;
     }
 
     public function dashboard(Request $request)
@@ -108,7 +148,7 @@ class SupervisorController extends BaseController
     {
         $supervisor = Supervisor::with(['user', 'university'])->find(session('supervisor_id'));
 
-        if (!$supervisor) {
+        if (! $supervisor) {
             return $this->error('Supervisor not found', 404);
         }
 
@@ -149,7 +189,7 @@ class SupervisorController extends BaseController
         ])->with('proposals', 'meetingLogs', 'resourceProgress', 'stageHistory')
             ->first();
 
-        if (!$student) {
+        if (! $student) {
             return $this->error('Student not found', 404);
         }
 
@@ -160,12 +200,12 @@ class SupervisorController extends BaseController
     {
         $maxStage = count(config('research.stages', []));
         $validated = $request->validate([
-            'stage' => 'required|integer|min:1|max:' . $maxStage,
+            'stage' => 'required|integer|min:1|max:'.$maxStage,
             'note' => 'sometimes|string|nullable',
         ]);
 
         $student = Student::find($id);
-        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
+        if (! $student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -193,7 +233,7 @@ class SupervisorController extends BaseController
                 'studentName' => $student->full_name,
                 'stage' => $validated['stage'],
                 'total' => $maxStage,
-                'stageName' => config('research.stages')[$validated['stage'] - 1]['name'] ?? 'Stage ' . $validated['stage'],
+                'stageName' => config('research.stages')[$validated['stage'] - 1]['name'] ?? 'Stage '.$validated['stage'],
                 'note' => $validated['note'] ?: 'Your research stage has been updated by your supervisor.',
                 'url' => route('student.dashboard'),
             ]);
@@ -211,12 +251,12 @@ class SupervisorController extends BaseController
             'account_status' => 'sometimes|in:active,inactive,archived',
         ]);
 
-        if (!isset($validated['status']) && !isset($validated['account_status'])) {
+        if (! isset($validated['status']) && ! isset($validated['account_status'])) {
             return $this->error('Provide status or account_status', 422);
         }
 
         $student = Student::find($id);
-        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
+        if (! $student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -235,7 +275,7 @@ class SupervisorController extends BaseController
         $validated = $request->validate(['student_id' => 'required|integer']);
 
         $student = Student::find($validated['student_id']);
-        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
+        if (! $student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -268,7 +308,7 @@ class SupervisorController extends BaseController
             'studentName' => $student->full_name,
             'stage' => $newStage,
             'total' => $maxStage,
-            'stageName' => config('research.stages')[$newStage - 1]['name'] ?? 'Stage ' . $newStage,
+            'stageName' => config('research.stages')[$newStage - 1]['name'] ?? 'Stage '.$newStage,
             'note' => 'Congratulations! You have advanced to the next stage of your research journey.',
             'url' => route('student.dashboard'),
         ]);
@@ -286,7 +326,7 @@ class SupervisorController extends BaseController
         ]);
 
         $student = Student::find($validated['student_id']);
-        if (!$student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
+        if (! $student || $student->university_id != session('university_id') || $student->supervisor_id != session('supervisor_id')) {
             return $this->error('Student not found', 404);
         }
 
@@ -328,7 +368,7 @@ class SupervisorController extends BaseController
             ->with('student', 'reviewer')
             ->find($id);
 
-        if (!$archive) {
+        if (! $archive) {
             return $this->error('Archive submission not found', 404);
         }
 
@@ -347,7 +387,7 @@ class SupervisorController extends BaseController
                 $query->where('supervisor_id', session('supervisor_id'));
             })
             ->find($id);
-        if (!$archive) {
+        if (! $archive) {
             return $this->error('Archive submission not found', 404);
         }
 
@@ -385,7 +425,7 @@ class SupervisorController extends BaseController
                 $query->where('supervisor_id', session('supervisor_id'));
             })
             ->find($id);
-        if (!$archive) {
+        if (! $archive) {
             return $this->error('Archive submission not found', 404);
         }
 

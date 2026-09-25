@@ -5,10 +5,44 @@ namespace App\Http\Controllers;
 use App\Mail\PortalEmail;
 use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class NotificationController extends BaseController
 {
+    public function index(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $this->error('User not authenticated', 401);
+        }
+
+        $limit = max(1, min((int) $request->integer('limit', 12), 25));
+        $notifications = Notification::where('user_id', $user->id)
+            ->orderByDesc('created_at')
+            ->take($limit)
+            ->get();
+
+        $unreadCount = Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
+        return $this->success([
+            'unread_count' => $unreadCount,
+            'items' => $notifications->map(function (Notification $notification) {
+                return [
+                    'id' => $notification->id,
+                    'type' => $notification->type,
+                    'title' => $notification->title,
+                    'message' => $notification->message,
+                    'time' => optional($notification->created_at)->diffForHumans(),
+                    'read' => $notification->is_read,
+                    'action_url' => data_get($notification->metadata, 'action_url'),
+                ];
+            })->values(),
+        ]);
+    }
+
     public function submitDemoRequest(Request $request)
     {
         $validated = $request->validate([
@@ -58,7 +92,7 @@ class NotificationController extends BaseController
 
             return $this->success(null, 'Demo request submitted successfully. We will contact you shortly.');
         } catch (\Throwable $e) {
-            \Log::error('Demo request email failed: ' . $e->getMessage(), [
+            Log::error('Demo request email failed: ' . $e->getMessage(), [
                 'request' => $validated,
                 'error' => $e->getMessage(),
             ]);
@@ -91,6 +125,25 @@ class NotificationController extends BaseController
             ->get();
 
         return $this->success($notifications);
+    }
+
+    public function markAllAsRead(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return $this->error('User not authenticated', 401);
+        }
+
+        Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+        return $this->success([
+            'unread_count' => 0,
+        ], 'Notifications marked as read');
     }
 
     public function markAsRead(Request $request, $id)

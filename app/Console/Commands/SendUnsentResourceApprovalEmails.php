@@ -53,6 +53,7 @@ class SendUnsentResourceApprovalEmails extends Command
                     'resource_id' => $progress->resource->id,
                     'resource_progress_id' => $progress->id,
                     'points_earned' => $progress->points_earned,
+                    'action_url' => route('student.resources'),
                 ],
             ]);
 

@@ -41,14 +41,26 @@ class SecureSession
      */
     protected function addSecurityHeaders($response): void
     {
-        $response->header('X-Frame-Options', 'DENY');
-        $response->header('X-Content-Type-Options', 'nosniff');
-        $response->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        if (method_exists($response, 'header')) {
+            $response->header('X-Frame-Options', 'DENY');
+            $response->header('X-Content-Type-Options', 'nosniff');
+            $response->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+            $csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+            $response->header('Content-Security-Policy', $csp);
+            $response->header('Referrer-Policy', 'strict-origin-when-cross-origin');
+            $response->header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        }
 
-        $csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
-        $response->header('Content-Security-Policy', $csp);
-        $response->header('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $response->header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        if (method_exists($response, 'headers')) {
+            $headers = $response->headers;
+            $headers->set('X-Frame-Options', 'DENY');
+            $headers->set('X-Content-Type-Options', 'nosniff');
+            $headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+            $csp = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+            $headers->set('Content-Security-Policy', $csp);
+            $headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+            $headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+        }
     }
 
     /**

@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
 
@@ -12,6 +11,7 @@ class PortalEmail extends Mailable
     use Queueable, SerializesModels;
 
     public string $viewName;
+
     public array $data;
 
     public function __construct(string $viewName, array $data = [])
@@ -26,22 +26,22 @@ class PortalEmail extends Mailable
 
         return $this
             ->subject($payload['subject'])
-            ->view('emails.portal.' . $this->viewName, $payload['data']);
+            ->view('emails.portal.'.$this->viewName, $payload['data']);
     }
 
     public function renderHtml(): string
     {
         $payload = $this->resolveViewPayload();
 
-        return view('emails.portal.' . $this->viewName, $payload['data'])->render();
+        return view('emails.portal.'.$this->viewName, $payload['data'])->render();
     }
 
     protected function resolveViewPayload(): array
     {
         $defaultUniversityCode = strtoupper((string) (config('universities.default', 'LASU')));
         $universityCode = strtoupper((string) ($this->data['universityCode'] ?? $defaultUniversityCode));
-        $universityConfig = config('universities.presets.' . $universityCode)
-            ?: config('universities.presets.' . $defaultUniversityCode);
+        $universityConfig = config('universities.presets.'.$universityCode)
+            ?: config('universities.presets.'.$defaultUniversityCode);
 
         $context = [
             'universityCode' => $universityCode,
@@ -61,14 +61,14 @@ class PortalEmail extends Mailable
 
         $viewMap = [
             'test' => [
-                'subject' => $universityCode . ' Portal — test email',
+                'subject' => $universityCode.' Portal — test email',
                 'data' => [
                     'title' => 'Test email',
                     'bodyText' => 'This confirms the Research Supervision Portal can send email successfully.',
                 ],
             ],
             'demo-request' => [
-                'subject' => 'Demo Request - ' . $universityCode . ' Research Supervision Portal',
+                'subject' => 'Demo Request - '.$universityCode.' Research Supervision Portal',
                 'data' => [
                     'title' => 'Demo Request',
                     'message' => 'You have received a new demo request.',
@@ -83,7 +83,7 @@ class PortalEmail extends Mailable
                 ],
             ],
             'account-invite' => [
-                'subject' => 'Complete your account setup for ' . ($this->data['universityName'] ?? $universityCode),
+                'subject' => 'Complete your account setup for '.($this->data['universityName'] ?? $universityCode),
                 'data' => [
                     'title' => 'Complete your account setup',
                     'name' => $this->data['name'] ?? 'User',
@@ -92,8 +92,21 @@ class PortalEmail extends Mailable
                     'expiresAt' => $this->data['expiresAt'] ?? '',
                 ],
             ],
+            'student-welcome' => [
+                'subject' => 'Welcome to the '.($this->data['universityName'] ?? $universityCode).' Research Supervision Portal',
+                'data' => [
+                    'title' => 'Welcome to the Research Supervision Portal',
+                    'name' => $this->data['name'] ?? 'Student',
+                    'roleLabel' => $this->data['roleLabel'] ?? 'Student',
+                    'matric' => $this->data['matric'] ?? '',
+                    'universityCode' => $universityCode,
+                    'supervisorName' => $this->data['supervisorName'] ?? null,
+                    'loginUrl' => $this->data['loginUrl'] ?? '',
+                    'loginHint' => $this->data['loginHint'] ?? '',
+                ],
+            ],
             'topic-submitted' => [
-                'subject' => 'New topic proposal from ' . ($this->data['studentName'] ?? 'a student'),
+                'subject' => 'New topic proposal from '.($this->data['studentName'] ?? 'a student'),
                 'data' => [
                     'title' => 'New topic proposal',
                     'studentName' => $this->data['studentName'] ?? 'Student',
@@ -138,7 +151,7 @@ class PortalEmail extends Mailable
                 ],
             ],
             'meeting-status' => [
-                'subject' => 'Meeting log ' . ($this->data['meetingNumber'] ?? '') . ' — ' . ($this->data['status'] ?? 'PENDING'),
+                'subject' => 'Meeting log '.($this->data['meetingNumber'] ?? '').' — '.($this->data['status'] ?? 'PENDING'),
                 'data' => [
                     'title' => 'Meeting log update',
                     'studentName' => $this->data['studentName'] ?? 'Student',
@@ -151,7 +164,7 @@ class PortalEmail extends Mailable
                 ],
             ],
             'stage-advanced' => [
-                'subject' => 'Research stage updated: ' . ($this->data['stageName'] ?? ''),
+                'subject' => 'Research stage updated: '.($this->data['stageName'] ?? ''),
                 'data' => [
                     'title' => 'Research stage updated',
                     'studentName' => $this->data['studentName'] ?? 'Student',
@@ -163,7 +176,7 @@ class PortalEmail extends Mailable
                 ],
             ],
             'digest' => [
-                'subject' => 'Daily supervision digest — ' . ($this->data['pendingProposals'] ?? 0) . ' proposal(s), ' . ($this->data['pendingLogs'] ?? 0) . ' log(s) pending' . (($this->data['pendingResources'] ?? 0) > 0 ? ', ' . ($this->data['pendingResources'] ?? 0) . ' resource(s) awaiting review' : ''),
+                'subject' => 'Daily supervision digest — '.($this->data['pendingProposals'] ?? 0).' proposal(s), '.($this->data['pendingLogs'] ?? 0).' log(s) pending'.(($this->data['pendingResources'] ?? 0) > 0 ? ', '.($this->data['pendingResources'] ?? 0).' resource(s) awaiting review' : ''),
                 'data' => [
                     'title' => 'Daily supervision digest',
                     'pendingProposals' => $this->data['pendingProposals'] ?? 0,
@@ -174,7 +187,7 @@ class PortalEmail extends Mailable
                 ],
             ],
             'resource-submitted' => [
-                'subject' => 'Resource completion submitted by ' . ($this->data['studentName'] ?? 'a student'),
+                'subject' => 'Resource completion submitted by '.($this->data['studentName'] ?? 'a student'),
                 'data' => [
                     'title' => 'Resource completion submitted',
                     'studentName' => $this->data['studentName'] ?? 'Student',
@@ -224,7 +237,7 @@ class PortalEmail extends Mailable
         ];
 
         $view = $viewMap[$this->viewName] ?? [
-            'subject' => $universityCode . ' Portal notification',
+            'subject' => $universityCode.' Portal notification',
             'data' => ['title' => 'Notification', 'message' => $this->data['message'] ?? 'You have a new notification.'],
         ];
 

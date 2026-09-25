@@ -4,6 +4,34 @@
 
 This document describes what the `admin` and `super_admin` roles can do in the application today, based on the current web route and controller surface. It also proposes a pragmatic plan to improve the current state without inventing capabilities that are not yet present.
 
+## Recent Authentication Flow Update (September 2026)
+
+### Unified Admin Login Flow
+
+The login gate (`resources/views/partials/auth/login-gate.blade.php` and `resources/views/partials/auth/inline-script.blade.php`) has been updated to unify the **Admin** and **Super Admin** login experience into a single **Admin tab**:
+
+**Previous Flow:**
+- Separate "Super Admin" tab (4th tab alongside Student, Supervisor, Admin)
+- Super Admin had no university selector at any step
+- Admin had university selector at the very beginning (before email)
+
+**Current Flow (Unified Admin Tab):**
+1. **Email verification** — Enter email, send OTP (same for both roles)
+2. **OTP verification** — Enter 6-digit code
+3. **API response** returns `is_super_admin` flag
+4. **If Super Admin** → Skip university selector, proceed directly to **Password + MFA**
+5. **If Regular Admin** → Show **University Selector** step → Then **Password + MFA**
+
+**Benefits:**
+- Single entry point for all admin-capable users
+- University selector only appears when actually needed (regular admin)
+- Super admins bypass tenant selection entirely (platform-wide access)
+- Cleaner UX — no fourth tab, fewer initial decisions
+
+**Files Modified:**
+- `resources/views/partials/auth/login-gate.blade.php` — removed university selector from initial view, added conditional university step, removed "Super Admin" tab
+- `resources/views/partials/auth/inline-script.blade.php` — added role detection logic, new `showAdminUniversityStep()` function, conditional university_id in login payload
+
 ## Current-State Flow
 
 ```mermaid
@@ -177,12 +205,10 @@ flowchart TD
 
 1. Add an admin-side supervision operations panel.
    Outcome: university admins can assign, rebalance, and review student-supervisor links without needing super-admin intervention for normal academic operations.
-
 2. Add queue-first dashboard modules for both roles.
    Outcome: dashboards become action boards, not just reporting pages.
    Admin priorities: pending inactive accounts, students without supervisors, suspended students, stale resources.
    Super-admin priorities: suspended tenants, inactive privileged users, pending invitations, failed jobs, universities with weak setup completeness.
-
 3. Add row-level “next best action” shortcuts.
    Outcome: users can act directly from lists without opening edit screens for routine operations.
 
@@ -190,13 +216,10 @@ flowchart TD
 
 1. Add supervisor load policies.
    Outcome: assignment flow can warn on overload, under-allocation, or unusual concentration.
-
 2. Add assignment recommendations.
    Outcome: when a student is selected, the system can rank eligible supervisors by university, department, active status, and current load.
-
 3. Add relationship history.
    Outcome: operators can see when a student was linked, reassigned, and by whom, without reconstructing it from general audit logs.
-
 4. Add notification delivery visibility.
    Outcome: super admin can confirm whether relationship emails were queued, sent, or failed.
 
@@ -204,13 +227,10 @@ flowchart TD
 
 1. Add bulk user actions.
    Outcome: activate, suspend, resend invite, and export operations scale across tenants.
-
 2. Add tenant readiness scoring.
    Outcome: each university gets a visible readiness score based on branding, contacts, active admins, active supervisors, resources, and config completeness.
-
 3. Add stronger sensitive-action guardrails.
    Outcome: destructive or high-risk operations require explicit confirmation, reason capture, and richer audit metadata.
-
 4. Add privileged-access review workflows.
    Outcome: inactive or stale admin-level accounts are surfaced for periodic certification instead of passive review.
 
@@ -218,10 +238,8 @@ flowchart TD
 
 1. Turn system status into an operational console.
    Outcome: failed jobs, mail status, cache issues, and database problems become actionable from one place.
-
 2. Add tenant recovery playbooks.
    Outcome: super admin can restore a suspended or archived tenant through a guided sequence with dependency checks and communication prompts.
-
 3. Add audit intelligence views.
    Outcome: filter by actor, target university, object type, risk class, and sensitive transitions such as role elevation or reassignment.
 
@@ -229,12 +247,12 @@ flowchart TD
 
 ### Delivery Tracks
 
-| Track | Focus | Primary Owner | Supporting Owners | Success Signal |
-| --- | --- | --- | --- | --- |
-| `Track A` | Admin operational workflow uplift | Product + Full-stack | QA, Academic Ops | Admin can resolve common supervision tasks without super-admin escalation |
-| `Track B` | Supervision intelligence | Full-stack + Data/Product | QA, Academic Ops | Linking becomes guided, load-aware, and traceable |
-| `Track C` | Tenant and identity governance | Platform Admin + Full-stack | Security, QA | Tenant and privileged-user control becomes safer and faster |
-| `Track D` | Monitoring and recovery | Platform Engineering | QA, Support Ops | Runtime issues become visible and actionable from one console |
+| Track       | Focus                             | Primary Owner               | Supporting Owners | Success Signal                                                            |
+| ----------- | --------------------------------- | --------------------------- | ----------------- | ------------------------------------------------------------------------- |
+| `Track A` | Admin operational workflow uplift | Product + Full-stack        | QA, Academic Ops  | Admin can resolve common supervision tasks without super-admin escalation |
+| `Track B` | Supervision intelligence          | Full-stack + Data/Product   | QA, Academic Ops  | Linking becomes guided, load-aware, and traceable                         |
+| `Track C` | Tenant and identity governance    | Platform Admin + Full-stack | Security, QA      | Tenant and privileged-user control becomes safer and faster               |
+| `Track D` | Monitoring and recovery           | Platform Engineering        | QA, Support Ops   | Runtime issues become visible and actionable from one console             |
 
 ### Timeline View
 
@@ -272,74 +290,71 @@ gantt
 - Target window: `Late September to Mid October 2026`
 - Primary owner: `Product + Full-stack`
 - Scope:
-   - admin-side supervision assignment panel
-   - queue-first admin dashboard modules
-   - quick intervention shortcuts on user rows
+  - admin-side supervision assignment panel
+  - queue-first admin dashboard modules
+  - quick intervention shortcuts on user rows
 - Expected effect:
-   - faster university-level operations
-   - less super-admin dependence for routine academic workflow management
+  - faster university-level operations
+  - less super-admin dependence for routine academic workflow management
 
 #### Milestone 2: Improve assignment quality and traceability
 
 - Target window: `Mid October to Late October 2026`
 - Primary owner: `Full-stack + Product`
 - Scope:
-   - supervisor load warnings
-   - recommendation logic for assignment
-   - relationship history
-   - notification delivery visibility
+  - supervisor load warnings
+  - recommendation logic for assignment
+  - relationship history
+  - notification delivery visibility
 - Expected effect:
-   - better assignment decisions
-   - stronger operational confidence that relationship updates and notices landed
+  - better assignment decisions
+  - stronger operational confidence that relationship updates and notices landed
 
 #### Milestone 3: Strengthen governance and control surfaces
 
 - Target window: `Late October to Early November 2026`
 - Primary owner: `Platform Admin + Full-stack`
 - Scope:
-   - bulk identity actions
-   - tenant readiness scoring
-   - destructive-action safeguards
-   - privileged access review cues
+  - bulk identity actions
+  - tenant readiness scoring
+  - destructive-action safeguards
+  - privileged access review cues
 - Expected effect:
-   - safer platform administration
-   - easier oversight of weak tenants and risky accounts
+  - safer platform administration
+  - easier oversight of weak tenants and risky accounts
 
 #### Milestone 4: Turn visibility into recovery operations
 
 - Target window: `Mid November to Early December 2026`
 - Primary owner: `Platform Engineering`
 - Scope:
-   - incident-oriented system status console
-   - guided tenant recovery playbooks
-   - richer audit investigation views
+  - incident-oriented system status console
+  - guided tenant recovery playbooks
+  - richer audit investigation views
 - Expected effect:
-   - shorter issue-resolution loops
-   - better recovery from tenant and runtime incidents
+  - shorter issue-resolution loops
+  - better recovery from tenant and runtime incidents
 
 ### Ownership Model
 
-| Work Area | Decision Owner | Delivery Owner | Review Stakeholders |
-| --- | --- | --- | --- |
-| Admin supervision workflow | Product | Full-stack | Academic Ops, QA |
-| Supervisor recommendation and load policy | Product + Academic Ops | Full-stack | QA |
-| Tenant lifecycle governance | Platform Admin | Full-stack | Security, QA |
-| System status and recovery console | Platform Engineering | Full-stack | Support Ops, QA |
-| Audit intelligence and sensitive-action review | Security + Platform Admin | Full-stack | QA |
+| Work Area                                      | Decision Owner            | Delivery Owner | Review Stakeholders |
+| ---------------------------------------------- | ------------------------- | -------------- | ------------------- |
+| Admin supervision workflow                     | Product                   | Full-stack     | Academic Ops, QA    |
+| Supervisor recommendation and load policy      | Product + Academic Ops    | Full-stack     | QA                  |
+| Tenant lifecycle governance                    | Platform Admin            | Full-stack     | Security, QA        |
+| System status and recovery console             | Platform Engineering      | Full-stack     | Support Ops, QA     |
+| Audit intelligence and sensitive-action review | Security + Platform Admin | Full-stack     | QA                  |
 
 ### Suggested Execution Order
 
 1. Deliver the admin-side supervision workflow first.
-    Reason: it removes the largest day-to-day escalation bottleneck.
-
+   Reason: it removes the largest day-to-day escalation bottleneck.
 2. Add assignment intelligence immediately after the workflow exists.
-    Reason: quality guidance matters most once linking becomes a frequent admin task.
-
+   Reason: quality guidance matters most once linking becomes a frequent admin task.
 3. Harden governance before expanding automation further.
-    Reason: bulk actions and readiness scoring should arrive with stronger controls.
-
+   Reason: bulk actions and readiness scoring should arrive with stronger controls.
 4. Finish with monitoring and recovery operations.
-    Reason: these features become much more useful after the operational surfaces they monitor are stabilized.
+   Reason: these features become much more useful after the operational surfaces they monitor are stabilized.
 
 ## Phase 1 Implementation Checklist
 
@@ -364,8 +379,8 @@ This checklist translates `Milestone 1` into a delivery-ready engineering slice.
 
 - [ ] Move admin dashboard and user list closures out of `routes/web.php` into a dedicated web controller.
 - [ ] Create or extend an admin controller layer, preferably something like:
-   - `App\Http\Controllers\Web\AdminDashboardWebController`
-   - `App\Http\Controllers\Web\AdminRelationshipWebController`
+  - `App\Http\Controllers\Web\AdminDashboardWebController`
+  - `App\Http\Controllers\Web\AdminRelationshipWebController`
 - [ ] Reuse the same validation and guardrail rules already proven in `SuperAdminWebController::assignStudentSupervisor()`.
 - [ ] Keep assignment restricted to the admin's current university scope.
 - [ ] Enforce same-university mapping between student and supervisor.
@@ -385,10 +400,10 @@ This checklist translates `Milestone 1` into a delivery-ready engineering slice.
 
 - [ ] Add a supervision operations panel to `resources/views/admin-dashboard.blade.php`.
 - [ ] Include:
-   - unassigned students queue
-   - supervisor capacity summary
-   - assignment form
-   - direct link to the admin user directory filtered for intervention
+  - unassigned students queue
+  - supervisor capacity summary
+  - assignment form
+  - direct link to the admin user directory filtered for intervention
 - [ ] Add row-level `Link` or `Reassign` actions in `resources/views/admin/users.blade.php`.
 - [ ] Reuse the shared admin shell in `resources/views/layouts/admin.blade.php` and `resources/views/admin/partials/sidebar.blade.php` so the new actions remain visually consistent.
 
@@ -397,20 +412,20 @@ This checklist translates `Milestone 1` into a delivery-ready engineering slice.
 #### Dashboard Data
 
 - [ ] Expand the admin dashboard dataset to include:
-   - unassigned students count
-   - inactive supervisors count
-   - suspended students count
-   - pending invitation count for the university
-   - recent supervision changes
+  - unassigned students count
+  - inactive supervisors count
+  - suspended students count
+  - pending invitation count for the university
+  - recent supervision changes
 - [ ] Add one compact queue summary section and one action-oriented detail section.
 
 #### Dashboard UX
 
 - [ ] Convert the current admin dashboard from a metrics-only layout into a command surface.
 - [ ] Add at least three high-value quick actions:
-   - assign supervisor
-   - review inactive accounts
-   - manage resources
+  - assign supervisor
+  - review inactive accounts
+  - manage resources
 - [ ] Add queue cards that deep-link into filtered admin pages.
 
 ### Workstream C: User Directory Intervention Shortcuts
@@ -425,10 +440,10 @@ This checklist translates `Milestone 1` into a delivery-ready engineering slice.
 #### Filter Improvements
 
 - [ ] Add opinionated filter presets for:
-   - unassigned students
-   - inactive supervisors
-   - suspended students
-   - pending invites
+  - unassigned students
+  - inactive supervisors
+  - suspended students
+  - pending invites
 - [ ] Preserve query string state after interventions so admins return to the same queue context.
 
 ### Workstream D: Reuse Existing Notification and Email Surface
@@ -444,12 +459,12 @@ This checklist translates `Milestone 1` into a delivery-ready engineering slice.
 #### Audit Coverage
 
 - [ ] Ensure every admin-driven assignment or reassignment records:
-   - actor
-   - university
-   - student
-   - old supervisor
-   - new supervisor
-   - transition type
+  - actor
+  - university
+  - student
+  - old supervisor
+  - new supervisor
+  - transition type
 - [ ] Ensure the admin audit log screen can surface these events with current filters.
 
 #### Safety Checks
@@ -513,13 +528,10 @@ This checklist translates `Milestone 1` into a delivery-ready engineering slice.
 
 1. Build the admin-side supervision assignment and rebalance flow.
    Reason: the current relationship orchestration exists only at super-admin level, but assignment is an everyday university operation.
-
 2. Add queue-based dashboards for both roles.
    Reason: the current dashboards expose data well, but the next operational bottleneck is prioritization and action routing.
-
 3. Add supervisor recommendation logic and visible capacity warnings.
    Reason: the new linking capability is valuable, but it will produce better outcomes when assignment quality is guided instead of manual.
-
 4. Add notification delivery status and relationship history.
    Reason: once linking becomes operationally important, admins need proof that the assignment and communications actually landed.
 
