@@ -23,7 +23,9 @@
 
     <!-- Trust Signal -->
     <div class="public-header__trust hidden lg:inline-flex" aria-hidden="true">
-      <i class="fa-solid fa-circle-check public-header__trust-icon"></i>
+      <svg class="public-header__trust-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+                    <path d="M2.5 5L4.5 7L7.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
       <span>Built for UG and PG research</span>
     </div>
 
@@ -42,7 +44,9 @@
             aria-controls="dropdown-product"
           >
             Product
-            <i class="fa-solid fa-chevron-down public-header__nav-chevron" aria-hidden="true"></i>
+            <svg class="public-header__nav-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
           </button>
           <div 
             id="dropdown-product" 
@@ -60,7 +64,9 @@
                 aria-controls="dropdown-product-features"
               >
                 Features
-                <i class="fa-solid fa-chevron-down public-header__dropdown-chevron" aria-hidden="true"></i>
+                <svg class="public-header__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
               <ul id="dropdown-product-features" class="public-header__dropdown-list public-header__dropdown-list--open" role="menu">
                 <li role="none"><a href="{{ route('public.features') }}" class="public-header__dropdown-item" role="menuitem">Features</a></li>
@@ -84,7 +90,9 @@
             aria-controls="dropdown-solutions"
           >
             Solutions
-            <i class="fa-solid fa-chevron-down public-header__nav-chevron" aria-hidden="true"></i>
+            <svg class="public-header__nav-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
           </button>
           <div 
             id="dropdown-solutions" 
@@ -102,7 +110,9 @@
                 aria-controls="dropdown-solutions-roles"
               >
                 By Role
-                <i class="fa-solid fa-chevron-down public-header__dropdown-chevron" aria-hidden="true"></i>
+                <svg class="public-header__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
               <ul id="dropdown-solutions-roles" class="public-header__dropdown-list public-header__dropdown-list--open" role="menu">
                 <li role="none"><a href="{{ route('public.solutions.supervisors') }}" class="public-header__dropdown-item" role="menuitem">For Supervisors</a></li>
@@ -119,7 +129,9 @@
                 aria-controls="dropdown-solutions-institutions"
               >
                 By Institution
-                <i class="fa-solid fa-chevron-down public-header__dropdown-chevron" aria-hidden="true"></i>
+                <svg class="public-header__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
               <ul id="dropdown-solutions-institutions" class="public-header__dropdown-list public-header__dropdown-list--open" role="menu">
                 <li role="none"><a href="{{ route('public.solutions.institutions') }}" class="public-header__dropdown-item" role="menuitem">By Institution Type</a></li>
@@ -139,7 +151,9 @@
             aria-controls="dropdown-resources"
           >
             Resources
-            <i class="fa-solid fa-chevron-down public-header__nav-chevron" aria-hidden="true"></i>
+            <svg class="public-header__nav-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
           </button>
           <div 
             id="dropdown-resources" 
@@ -157,7 +171,9 @@
                 aria-controls="dropdown-resources-learn"
               >
                 Learn
-                <i class="fa-solid fa-chevron-down public-header__dropdown-chevron" aria-hidden="true"></i>
+                <svg class="public-header__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
               <ul id="dropdown-resources-learn" class="public-header__dropdown-list public-header__dropdown-list--open" role="menu">
                 <li role="none"><a href="{{ route('public.docs') }}" class="public-header__dropdown-item" role="menuitem">Documentation</a></li>
@@ -175,7 +191,9 @@
                 aria-controls="dropdown-resources-dev"
               >
                 Developers
-                <i class="fa-solid fa-chevron-down public-header__dropdown-chevron" aria-hidden="true"></i>
+                <svg class="public-header__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
               <ul id="dropdown-resources-dev" class="public-header__dropdown-list public-header__dropdown-list--open" role="menu">
                 <li role="none"><a href="{{ route('public.api-reference') }}" class="public-header__dropdown-item" role="menuitem">API Reference</a></li>
@@ -195,7 +213,9 @@
             aria-controls="dropdown-company"
           >
             Company
-            <i class="fa-solid fa-chevron-down public-header__nav-chevron" aria-hidden="true"></i>
+            <svg class="public-header__nav-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
           </button>
           <div 
             id="dropdown-company" 
@@ -213,7 +233,9 @@
                 aria-controls="dropdown-company-about"
               >
                 About
-                <i class="fa-solid fa-chevron-down public-header__dropdown-chevron" aria-hidden="true"></i>
+                <svg class="public-header__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
               <ul id="dropdown-company-about" class="public-header__dropdown-list public-header__dropdown-list--open" role="menu">
                 <li role="none"><a href="{{ route('public.about') }}" class="public-header__dropdown-item" role="menuitem">About Us</a></li>
@@ -231,7 +253,9 @@
                 aria-controls="dropdown-company-legal"
               >
                 Legal & Security
-                <i class="fa-solid fa-chevron-down public-header__dropdown-chevron" aria-hidden="true"></i>
+                <svg class="public-header__dropdown-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
               </button>
               <ul id="dropdown-company-legal" class="public-header__dropdown-list public-header__dropdown-list--open" role="menu">
                 <li role="none"><a href="{{ route('public.security') }}" class="public-header__dropdown-item" role="menuitem">Security</a></li>
@@ -302,7 +326,9 @@
         aria-controls="sheet-product"
       >
         Product
-        <i class="fa-solid fa-chevron-down public-header__sheet-chevron" aria-hidden="true"></i>
+        <svg class="public-header__sheet-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
       </button>
       <ul id="sheet-product" class="public-header__sheet-list" role="menu">
         <li role="none"><a href="{{ route('public.features') }}" class="public-header__sheet-item" role="menuitem">Features</a></li>
@@ -323,7 +349,9 @@
         aria-controls="sheet-solutions"
       >
         Solutions
-        <i class="fa-solid fa-chevron-down public-header__sheet-chevron" aria-hidden="true"></i>
+        <svg class="public-header__sheet-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
       </button>
       <ul id="sheet-solutions" class="public-header__sheet-list" role="menu">
         <li role="none"><a href="{{ route('public.solutions.supervisors') }}" class="public-header__sheet-item" role="menuitem">For Supervisors</a></li>
@@ -343,7 +371,9 @@
         aria-controls="sheet-resources"
       >
         Resources
-        <i class="fa-solid fa-chevron-down public-header__sheet-chevron" aria-hidden="true"></i>
+        <svg class="public-header__sheet-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
       </button>
       <ul id="sheet-resources" class="public-header__sheet-list" role="menu">
         <li role="none"><a href="{{ route('public.docs') }}" class="public-header__sheet-item" role="menuitem">Documentation</a></li>
@@ -364,7 +394,9 @@
         aria-controls="sheet-company"
       >
         Company
-        <i class="fa-solid fa-chevron-down public-header__sheet-chevron" aria-hidden="true"></i>
+        <svg class="public-header__sheet-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                    <path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
       </button>
       <ul id="sheet-company" class="public-header__sheet-list" role="menu">
         <li role="none"><a href="{{ route('public.about') }}" class="public-header__sheet-item" role="menuitem">About Us</a></li>

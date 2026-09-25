@@ -2,9 +2,11 @@
     <div class="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-6 lg:px-8">
         <div class="flex min-w-0 items-center gap-2 sm:gap-3 lg:flex-[0_1_28rem]">
             <button type="button" data-mobile-nav-toggle aria-controls="{{ $sidebarId }}" aria-expanded="false" aria-label="Open navigation menu" class="mobile-nav-toggle {{ $mobileToggleHiddenClass }} -ml-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700/50">
-                <span class="mobile-nav-line" aria-hidden="true"></span>
-                <span class="mobile-nav-line" aria-hidden="true"></span>
-                <span class="mobile-nav-line" aria-hidden="true"></span>
+                <svg class="mobile-nav-icon" width="22" height="16" viewBox="0 0 22 16" fill="none" aria-hidden="true">
+                    <line class="mobile-nav-line" x1="0" y1="2" x2="22" y2="2" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                    <line class="mobile-nav-line" x1="0" y1="8" x2="22" y2="8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                    <line class="mobile-nav-line" x1="0" y1="14" x2="22" y2="14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                </svg>
             </button>
 
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-academic-900 via-academic-800 to-amber-600 shadow-md ring-1 ring-white/10">
