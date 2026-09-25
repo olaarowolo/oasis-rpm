@@ -32,6 +32,17 @@ class FooterTest extends TestCase
             ->assertDontSee('Public footer navigation', false);
     }
 
+    public function test_auth_variant_uses_secure_access_configuration(): void
+    {
+        $html = view('components.layouts.footer', [
+            'variant' => 'auth',
+        ])->render();
+
+        $this->assertStringContainsString('Secure access', $html);
+        $this->assertStringContainsString('Choose a role and continue', $html);
+        $this->assertStringNotContainsString('Student research workspace', $html);
+    }
+
     public function test_authenticated_footer_renders_role_specific_actions(): void
     {
         $html = view('components.layouts.footer', [
@@ -44,6 +55,20 @@ class FooterTest extends TestCase
         $this->assertStringContainsString('Defence readiness', $html);
         $this->assertStringContainsString('Help and support', $html);
         $this->assertStringNotContainsString('Platform operations', $html);
+    }
+
+    public function test_admin_and_supervisor_footers_expose_their_operational_links(): void
+    {
+        foreach (['admin', 'supervisor'] as $role) {
+            $html = view('components.layouts.footer', [
+                'variant' => 'authenticated',
+                'role' => $role,
+                'scope' => 'University scope',
+            ])->render();
+
+            $this->assertStringContainsString('Dashboard', $html, $role);
+            $this->assertStringContainsString($role === 'admin' ? 'Configuration' : 'Resource approvals', $html, $role);
+        }
     }
 
     public function test_super_admin_footer_renders_platform_status_and_governance_actions(): void

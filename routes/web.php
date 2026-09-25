@@ -81,6 +81,9 @@ Route::prefix('api/auth')->group(function () {
     // Student OTP flow
     Route::post('/student/send-otp', [AuthController::class, 'sendStudentOtp'])->name('auth.student.send-otp');
     Route::post('/student/verify-otp', [AuthController::class, 'verifyStudentOtp'])->name('auth.student.verify-otp');
+    // Student account recovery (matric + lastname + knowledge-based detail)
+    Route::post('/student/recovery/start', [AuthController::class, 'studentRecoveryStart'])->name('auth.student.recovery.start');
+    Route::post('/student/recovery/confirm', [AuthController::class, 'studentRecoveryConfirm'])->name('auth.student.recovery.confirm');
     // Supervisor email verification (before credentials)
     Route::post('/supervisor/send-otp', [AuthController::class, 'sendSupervisorOtp'])->name('auth.supervisor.send-otp');
     Route::post('/supervisor/verify-otp', [AuthController::class, 'verifySupervisorOtp'])->name('auth.supervisor.verify-otp');

@@ -34,7 +34,9 @@
 
     $brandConfig = config('footer.brand', []);
     $publicConfig = config('footer.public', []);
-    $roleConfig = config('footer.roles.' . $role, config('footer.roles.student', []));
+    $roleConfig = $role === 'auth'
+        ? config('footer.auth', [])
+        : config('footer.roles.' . $role, config('footer.roles.student', []));
 
     $resolvedColumns = $columns ?: ($isMegaPublic ? ($publicConfig['columns'] ?? []) : []);
     $resolvedCtaLinks = $ctaLinks ?: ($isMegaPublic ? ($publicConfig['cta'] ?? []) : []);
@@ -233,7 +235,26 @@
         </div>
 
         @if($showQuickLinks && count($resolvedQuickLinks) > 0)
-          <nav class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs" aria-label="{{ $roleConfig['label'] ?? 'Authenticated' }} footer navigation">
+          <div class="lg:hidden">
+            <details class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/60">
+              <summary class="flex cursor-pointer list-none items-center justify-between text-xs font-semibold text-slate-800 dark:text-slate-100">
+                <span>{{ $roleConfig['label'] ?? 'Authenticated' }} quick actions</span>
+                <i class="fa-solid fa-chevron-down text-[11px] text-slate-500" aria-hidden="true"></i>
+              </summary>
+              <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs">
+                @foreach($resolvedQuickLinks as $link)
+                  <a href="{{ $link['href'] }}" class="inline-flex items-center gap-1.5 text-slate-600 transition hover:text-academic-700 dark:text-slate-300 dark:hover:text-academic-300">
+                    @if(isset($link['icon']))
+                      <i class="fa-solid {{ $link['icon'] }} text-[11px]" aria-hidden="true"></i>
+                    @endif
+                    <span>{{ $link['label'] }}</span>
+                  </a>
+                @endforeach
+              </div>
+            </details>
+          </div>
+
+          <nav class="hidden lg:flex lg:flex-wrap lg:items-center lg:gap-x-4 lg:gap-y-2 text-xs" aria-label="{{ $roleConfig['label'] ?? 'Authenticated' }} footer navigation">
             @foreach($resolvedQuickLinks as $link)
               <a href="{{ $link['href'] }}" class="inline-flex items-center gap-1.5 text-slate-600 transition hover:text-academic-700 dark:text-slate-300 dark:hover:text-academic-300">
                 @if(isset($link['icon']))
