@@ -45,9 +45,7 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['student', 'supervisor', 'admin', 'super_admin'])->default('student')->change();
-        });
+        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('student', 'supervisor', 'admin', 'super_admin') NOT NULL DEFAULT 'student'");
     }
 
     /**
@@ -88,8 +86,6 @@ return new class extends Migration
             return;
         }
 
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['student', 'supervisor', 'admin'])->default('student')->change();
-        });
+        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('student', 'supervisor', 'admin') NOT NULL DEFAULT 'student'");
     }
 };

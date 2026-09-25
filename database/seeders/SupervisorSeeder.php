@@ -6,12 +6,15 @@ use App\Models\Supervisor;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class SupervisorSeeder extends Seeder
 {
     public function run(): void
     {
+        Schema::disableForeignKeyConstraints();
         Supervisor::truncate();
+        Schema::enableForeignKeyConstraints();
 
         // olaarowolo.ng@gmail.com - NG Supervisor
         $this->createSupervisorProfile(

@@ -7,13 +7,16 @@ use App\Models\Supervisor;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class StudentSeeder extends Seeder
 {
     public function run(): void
     {
         // Clear existing students
+        Schema::disableForeignKeyConstraints();
         Student::truncate();
+        Schema::enableForeignKeyConstraints();
 
         // Get supervisor by email
         $supervisorUser = User::where('email', 'olaarowolo.ng@gmail.com')->first();

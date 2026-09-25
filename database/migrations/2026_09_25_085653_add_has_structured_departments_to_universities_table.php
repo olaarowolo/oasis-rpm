@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('universities', function (Blueprint $table) {
-            $table->boolean('has_structured_departments')->default(false)->after('features_enabled');
-        });
+        if (! Schema::hasColumn('universities', 'has_structured_departments')) {
+            Schema::table('universities', function (Blueprint $table) {
+                $table->boolean('has_structured_departments')->default(false)->after('features_enabled');
+            });
+        }
     }
 
     /**
@@ -21,8 +23,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('universities', function (Blueprint $table) {
-            $table->dropColumn('has_structured_departments');
-        });
+        if (Schema::hasColumn('universities', 'has_structured_departments')) {
+            Schema::table('universities', function (Blueprint $table) {
+                $table->dropColumn('has_structured_departments');
+            });
+        }
     }
 };

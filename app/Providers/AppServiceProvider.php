@@ -5,6 +5,9 @@ namespace App\Providers;
 use App\Models\Student;
 use App\Models\Supervisor;
 use App\Models\User;
+use Doctrine\DBAL\Types\Type;
+use Illuminate\Database\MySqlConnection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (DB::connection() instanceof MySqlConnection && class_exists(Type::class)) {
+            DB::connection()
+                ->getDoctrineConnection()
+                ->getDatabasePlatform()
+                ->registerDoctrineTypeMapping('enum', 'string');
+        }
+
         if ($this->app->environment('local') && config('mail.simulation.enabled', false)) {
             Mail::alwaysTo(config('mail.simulation.address', 'olasunkanmiarowolo@gmail.com'));
         }
