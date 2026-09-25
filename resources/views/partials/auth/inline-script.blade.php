@@ -1025,16 +1025,21 @@
         return;
       }
 
-      // For regular admins, include university_id from selector
-      const universityInput = document.getElementById('login-university-code-admin');
-      const universityId = universityInput ? normalizeUniversityCode(universityInput.value || '') : '';
+      let endpoint = '/api/auth/login-admin';
       const body = { email: email, password: password };
-      if (!pendingAdminIsSuperAdmin && universityId) {
-        body.university_id = universityId;
+
+      if (pendingAdminIsSuperAdmin) {
+        endpoint = '/api/auth/super-admin/login';
+      } else {
+        const universityInput = document.getElementById('login-university-code-admin');
+        const universityId = universityInput ? normalizeUniversityCode(universityInput.value || '') : '';
+        if (universityId) {
+          body.university_id = universityId;
+        }
       }
 
       try {
-        const res = await apiRequest('/api/auth/login-admin', {
+        const res = await apiRequest(endpoint, {
           method: 'POST',
           body: body
         });
