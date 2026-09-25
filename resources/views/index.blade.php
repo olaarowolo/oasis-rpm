@@ -7,8 +7,6 @@
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Font Awesome 6 Icons -->
-  <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
   <!-- Google Fonts: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -103,8 +101,9 @@
        max-height: 0;
        overflow: hidden;
      }
-   </style>
+    </style>
 
+  @vite(['resources/js/header.js'])
 </head>
 
 <body class="h-full flex flex-col font-sans antialiased bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 transition-colors duration-200">

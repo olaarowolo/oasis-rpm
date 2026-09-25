@@ -8,39 +8,57 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+     steps:
+       - name: Checkout code
+         uses: actions/checkout@v4
 
-      # ---------------------------------------------------------
-      # Deploy application
-      # ---------------------------------------------------------
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+           node-version: '20'
+           cache: 'npm'
 
-          # Change this if your FTP account does not start
-          # directly inside the Laravel application directory.
-          server-dir: /
+       # ---------------------------------------------------------
+       # Install dependencies and build frontend assets
+       # ---------------------------------------------------------
+       - name: Install npm dependencies
+         run: npm ci
 
-          dangerous-clean-slate: false
+       - name: Build frontend assets
+         run: npm run build
 
-          exclude: |
-            **/.git/**
-            **/.git*
-            **/.github/**
-            **/.github*
-            **/node_modules/**
-            **/tests/**
-            **/.env
-            **/.env.*
-            **/.gitignore
-            **/.gitattributes
-            **/.DS_Store
-            **/.vscode/**
-            **/.kilo/**
-            **/deploy.sh
-            **/deploy-exclude.txt
+       # ---------------------------------------------------------
+       # Deploy application
+       # ---------------------------------------------------------
+       - name: Deploy via FTP
+         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+         with:
+           server: ${{ secrets.FTP_SERVER }}
+           username: ${{ secrets.FTP_USERNAME }}
+           password: ${{ secrets.FTP_PASSWORD }}
+
+           # Change this if your FTP account does not start
+           # directly inside the Laravel application directory.
+           server-dir: /
+
+           dangerous-clean-slate: false
+
+           exclude: |
+             **/.git/**
+             **/.git*
+             **/.github/**
+             **/.github*
+             **/node_modules/**
+             **/tests/**
+             **/.env
+             **/.env.*
+             **/.gitignore
+             **/.gitattributes
+             **/.DS_Store
+             **/.vscode/**
+             **/.kilo/**
+             **/deploy.sh
+             **/deploy-exclude.txt
+             **/postcss.config.js
+             **/tailwind.config.js
+             **/vite.config.js
