@@ -48,15 +48,16 @@ class NotificationController extends BaseController
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|email',
-            'university_code' => 'required|string|max:50',
+            'university_code' => 'nullable|string|max:50',
             'department' => 'nullable|string|max:255',
             'notes' => 'nullable|string|max:2000',
         ]);
 
         $recipient = env('DEMO_REQUEST_EMAIL', env('MAIL_USERNAME', 'support@afriscribe.org'));
-        $universityCode = strtoupper(trim($validated['university_code']));
-        $subject = 'Demo Request - ' . $universityCode . ' Research Supervision Portal';
-        
+        $universityCode = strtoupper(trim((string) ($validated['university_code'] ?? '')));
+        $subject = ($universityCode !== '' ? 'Demo Request - ' . $universityCode : 'Demo Request')
+            . ' Research Supervision Portal';
+
         $body = implode(PHP_EOL, [
             'Hello Team,',
             '',
@@ -64,9 +65,9 @@ class NotificationController extends BaseController
             '',
             'Name: ' . $validated['name'],
             'Email: ' . $validated['email'],
-            'University Code: ' . $universityCode,
+            'University Code: ' . ($universityCode !== '' ? $universityCode : 'N/A'),
             'Department: ' . ($validated['department'] ?? 'N/A'),
-            'Notes: ' . ($validated['notes'] ?? 'N/A'),
+            'Context: ' . ($validated['notes'] ?? 'N/A'),
             '',
             'Thank you.',
         ]);
@@ -77,8 +78,8 @@ class NotificationController extends BaseController
                 'message' => $validated['email'],
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'universityName' => $universityCode,
-                'universityCode' => $universityCode,
+                'universityName' => $universityCode !== '' ? $universityCode : 'Unspecified Institution',
+                'universityCode' => $universityCode !== '' ? $universityCode : 'N/A',
                 'department' => $validated['department'] ?? 'N/A',
                 'notes' => $validated['notes'] ?? '',
                 'portalName' => 'TheOAsis Research Supervision Portal',

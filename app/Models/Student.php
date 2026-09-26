@@ -70,6 +70,11 @@ class Student extends Model
         return $this->hasOne(ArchiveSubmission::class);
     }
 
+    public function defenseReadinessDocument(): HasOne
+    {
+        return $this->hasOne(DefenseReadinessDocument::class, 'student_id');
+    }
+
     public function notifications(): HasMany
     {
         return $this->hasMany(Notification::class, 'user_id', 'user_id');

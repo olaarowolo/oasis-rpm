@@ -93,7 +93,7 @@
             </summary>
             <pre class="mt-2 overflow-x-auto rounded-md bg-slate-50 p-3 text-xs text-slate-700">
 full_name,lastname,matric_number,email,degree_level,phone,supervisor_email,faculty,department,programme,research_topic
-Adewale,Ogunsiji,CS/2020/001,adewale.ogunsiji@universe.edu,BSc,08030000001,,Science,Computer Science,BSc Computer Science,Machine Learning in Agriculture
+Adewale,Ogunsiji,CS/2020/001,adewale.ogunsiji@universe.edu.ng,BSc,08030000001,,Science,Computer Science,BSc Computer Science,Machine Learning in Agriculture
             </pre>
         </details>
     </div>

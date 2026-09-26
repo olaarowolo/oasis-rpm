@@ -1,5 +1,5 @@
 @props([
-    'title' => 'TheOAsis Research Portal',
+    'title' => 'AfriScribe Supervise',
     'description' => '',
 ])
 

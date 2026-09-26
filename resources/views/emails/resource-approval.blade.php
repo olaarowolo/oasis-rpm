@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resource Approval - TheOAsis Portal</title>
+    <title>Resource Approval - AfriScribe Supervise</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(135deg, #102a43 0%, #0b69a3 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -44,7 +44,7 @@
 
         <p>Thank you for your continued efforts in your research journey.</p>
 
-        <p>Best regards,<br>TheOAsis Research Supervision Portal Team</p>
+        <p>Best regards,<br>AfriScribe Supervise Team</p>
 
         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
 
@@ -56,7 +56,7 @@
 
     <div style="text-align: center; padding: 20px; color: #666; font-size: 12px;">
         <p>Lagos State University - Department of Journalism & Media Studies</p>
-        <p>&copy; {{ date('Y') }} TheOAsis Research Supervision Portal. All rights reserved.</p>
+        <p>&copy; {{ date('Y') }} AfriScribe Supervise. All rights reserved.</p>
     </div>
 </body>
 </html>

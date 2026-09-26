@@ -181,7 +181,7 @@ class StudentSeeder extends Seeder
             [
                 'full_name' => 'Benjamin Jennifer Oluchukwu',
                 'matric_number' => '230910047',
-                'email' => 'jennifer.benjamin230910047@st.lasu.ng.edu',
+                'email' => 'jennifer.benjamin230910047@st.lasu.edu.ng',
                 'phone' => '09015320886',
                 'degree_level' => '400 Level',
                 'research_topic' => null,

@@ -31,7 +31,7 @@ class PasswordResetMail extends Mailable
         $resetUrl = config('app.url') . "/reset-password?token={$this->token}";
 
         return $this->subject('Password Reset Request - TheOAsis Research Portal')
-            ->text('emails.password-reset')
+            ->view('emails.password-reset')
             ->with([
                 'resetUrl' => $resetUrl,
                 'userName' => $this->userName,

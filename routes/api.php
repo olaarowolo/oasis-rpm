@@ -12,6 +12,7 @@ use App\Http\Controllers\AIAssistantController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\DefenseReadinessController;
 use App\Http\Middleware\CheckUniversity;
 use App\Http\Middleware\EnsureStudentLogin;
 use App\Http\Middleware\EnsureSupervisorLogin;
@@ -105,6 +106,16 @@ Route::middleware([CheckUniversity::class])->group(function () {
         Route::post('/archive', [StudentController::class, 'upsertArchiveSubmission']);
         Route::post('/archive/upload', [StudentController::class, 'uploadArchiveDocument']);
         Route::post('/archive/submit', [StudentController::class, 'submitArchiveSubmission']);
+
+        // Defense Readiness Manuscript
+        Route::get('/defense-readiness', [DefenseReadinessController::class, 'studentIndex']);
+        Route::get('/defense-readiness/settings', [DefenseReadinessController::class, 'studentSettings']);
+        Route::patch('/defense-readiness/settings', [DefenseReadinessController::class, 'studentUpdateSettings']);
+        Route::put('/defense-readiness/sections/{section}/content', [DefenseReadinessController::class, 'studentAutosave']);
+        Route::post('/defense-readiness/sections/{section}/submit', [DefenseReadinessController::class, 'studentSubmitSection']);
+        Route::post('/defense-readiness/sections/{section}/acknowledge-conditions', [DefenseReadinessController::class, 'studentAcknowledgeConditions']);
+        Route::post('/defense-readiness/sections', [DefenseReadinessController::class, 'studentAddCustomSection']);
+        Route::delete('/defense-readiness/sections/{section}', [DefenseReadinessController::class, 'studentDeleteSection']);
     });
 
     // ========================================================
@@ -160,6 +171,11 @@ Route::middleware([CheckUniversity::class])->group(function () {
         Route::get('/archive/submissions/{id}', [SupervisorController::class, 'getArchiveSubmission']);
         Route::patch('/archive/submissions/{id}/approve', [SupervisorController::class, 'approveArchiveSubmission']);
         Route::patch('/archive/submissions/{id}/reject', [SupervisorController::class, 'rejectArchiveSubmission']);
+
+        // Defense Readiness Manuscripts
+        Route::get('/manuscripts', [DefenseReadinessController::class, 'supervisorIndex']);
+        Route::get('/manuscripts/{document}', [DefenseReadinessController::class, 'supervisorShow']);
+        Route::post('/sections/{section}/decision', [DefenseReadinessController::class, 'supervisorDecision']);
     });
 
     // ========================================================

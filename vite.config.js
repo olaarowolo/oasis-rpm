@@ -8,6 +8,8 @@ export default defineConfig({
         'resources/css/landing.css',
         'resources/js/header.js',
         'resources/js/public-header.js',
+        'resources/js/rich-text-editor.js',
+        'resources/js/defense-readiness.js',
       ],
       refresh: [
         'app/**',

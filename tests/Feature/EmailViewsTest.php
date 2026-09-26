@@ -23,6 +23,13 @@ class EmailViewsTest extends TestCase
             'resource-approved',
             'resource-rejected',
             'supervision-linked',
+            'defense-section-submitted',
+            'defense-section-accepted',
+            'defense-section-conditional',
+            'defense-section-revision',
+            'defense-section-rejected',
+            'defense-comment',
+            'defense-completed',
         ];
 
         foreach ($views as $view) {
@@ -45,6 +52,8 @@ class EmailViewsTest extends TestCase
                 'feedback' => 'Please revise and resubmit this section.',
                 'comment' => 'Keep the scope focused.',
                 'conditions' => "- Finalize your research gap\n- Add a method section",
+                'reviewerName' => 'Dr. Bola Adeyemi',
+                'statusLabel' => 'ACCEPTED',
                 'recipientName' => 'Ada Okafor',
                 'introText' => 'You have been linked to a supervisor in the portal.',
                 'counterpartName' => 'Dr. Bola Adeyemi',

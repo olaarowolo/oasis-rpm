@@ -39,7 +39,7 @@
                                 <tr>
                                     <td style="padding: 12px 0; border-bottom: 1px solid {{ $line }};">
                                         <strong style="color: {{ $muted }}; font-size: 14px;">University</strong><br>
-                                        <span style="color: {{ $ink }}; font-size: 16px; font-weight: 500;">{{ $universityName }} ({{ $universityCode }})</span>
+                                        <span style="color: {{ $ink }}; font-size: 16px; font-weight: 500;">{{ $universityCode === 'N/A' ? $universityName : $universityName . ' (' . $universityCode . ')' }}</span>
                                     </td>
                                 </tr>
                                 <tr>
@@ -53,7 +53,7 @@
                             @if(!empty($notes))
                             <div style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 6px; border-left: 4px solid {{ $brandBlue }};">
                                 <p style="margin: 0; color: {{ $ink }}; font-size: 14px; line-height: 1.6;">
-                                    <strong>Notes / What they want to evaluate:</strong><br>
+                                    <strong>What led them to request a demo:</strong><br>
                                     {{ $notes }}
                                 </p>
                             </div>

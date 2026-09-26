@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'System Configuration | TheOAsis Research Supervision System')
+@section('title', 'System Configuration | AfriScribe Supervise')
 
 @section('content')
     <section class="rounded-3xl p-6 sm:p-8 text-white shadow-xl bg-gradient-to-br from-slate-950 via-academic-900 to-academic-800 relative overflow-hidden">

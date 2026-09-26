@@ -68,7 +68,7 @@
               <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">University Email</label>
               <div class="relative">
                 <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
-                <input id="login-student-email" type="email" placeholder="name@university.edu" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+                <input id="login-student-email" type="email" placeholder="name@university.edu.ng" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
               </div>
             </div>
             <div id="email-verification-error" class="hidden text-[11px] text-rose-600 dark:text-rose-400 font-medium items-center gap-1.5 flex">
@@ -138,7 +138,7 @@
               <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">University Email</label>
               <div class="relative">
                 <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
-                <input id="recovery-email" type="email" placeholder="name@university.edu" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+                <input id="recovery-email" type="email" placeholder="name@university.edu.ng" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
               </div>
               <p class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
                 Enter the email we have on file (or a matric-based university email). A code will be sent here once your details are confirmed.
@@ -226,7 +226,7 @@
               <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Email</label>
               <div class="relative">
                 <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
-                <input id="login-supervisor-email" type="email" placeholder="you@university.edu" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+                <input id="login-supervisor-email" type="email" placeholder="you@university.edu.ng" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
               </div>
             </div>
             <div id="supervisor-email-error" class="hidden text-[11px] text-rose-600 dark:text-rose-400 font-medium items-center gap-1.5 flex">
@@ -313,7 +313,7 @@
               <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Admin Email</label>
               <div class="relative">
                 <i class="fa-solid fa-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></i>
-                <input id="login-admin-email" type="email" placeholder="admin@university.edu" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
+                <input id="login-admin-email" type="email" placeholder="admin@university.edu.ng" autocomplete="email" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 focus:border-academic-600 outline-none transition dark:text-white">
               </div>
             </div>
             <div id="admin-email-error" class="hidden text-[11px] text-rose-600 dark:text-rose-400 font-medium items-center gap-1.5 flex">

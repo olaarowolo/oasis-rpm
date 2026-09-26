@@ -12,7 +12,7 @@
                 <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden; border:1px solid #e5e7eb;">
                     <tr style="background:#0f172a;">
                         <td style="padding:24px; color:#ffffff; font-size:28px; font-weight:bold; text-align:center;">
-                            TheOAsis
+                            AfriScribe Supervise
                         </td>
                     </tr>
                     <tr>

@@ -1,4 +1,4 @@
-<x-layouts.app title="Student Portal | TheOAsis Research Supervision System">
+<x-layouts.app title="Student Portal | AfriScribe Supervise">
 
   <x-slot:head>
     @include('partials.dashboards.student-styles')

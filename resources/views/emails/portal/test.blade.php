@@ -13,7 +13,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $title ?? 'TheOAsis Portal' }}</title>
+    <title>{{ $title ?? 'AfriScribe Supervise Portal' }}</title>
 </head>
 <body style="margin:0;padding:24px 0;background:{{ $bg }};font-family:Arial,Helvetica,sans-serif;">
     <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid {{ $line }};border-radius:16px;overflow:hidden;">
@@ -31,7 +31,7 @@
         </div>
 
         <div style="padding:14px 24px;border-top:1px solid {{ $line }};color:{{ $muted }};font-size:11px;">
-            This is an automated message from the {{ $portalBrand ?? 'TheOAsis' }} {{ $portalName ?? 'Research Supervision Portal' }} for {{ $universityName ?? 'your university' }}. Please do not reply.
+            This is an automated message from the {{ $portalBrand ?? 'AfriScribe Supervise' }} {{ $portalName ?? 'Research Supervision Portal' }} for {{ $universityName ?? 'your university' }}. Please do not reply.
         </div>
     </div>
 </body>

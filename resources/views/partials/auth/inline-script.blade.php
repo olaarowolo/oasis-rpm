@@ -1140,9 +1140,25 @@
         errorEl.innerText = '';
       }
 
-      if (!name || !email || !tenant) {
+      if (!name) {
         if (errorEl) {
-          errorEl.innerText = 'Please provide your name, work email, and university code.';
+          errorEl.innerText = 'Please provide your full name.';
+          errorEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (!email) {
+        if (errorEl) {
+          errorEl.innerText = 'Please provide your work email address.';
+          errorEl.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        if (errorEl) {
+          errorEl.innerText = 'Please enter a valid work email address.';
           errorEl.classList.remove('hidden');
         }
         return;
@@ -1154,7 +1170,7 @@
           body: {
             name: name,
             email: email,
-            university_code: tenant,
+            university_code: tenant || null,
             department: department || null,
             notes: notes || null
           }

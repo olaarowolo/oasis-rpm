@@ -2,6 +2,11 @@
 
 @import "tailwindcss";
 @import '@fortawesome/fontawesome-free/css/fontawesome.css';
+@import '@fortawesome/fontawesome-free/css/solid.css';
+@import '@fortawesome/fontawesome-free/css/brands.css';
+@import '@fortawesome/fontawesome-free/css/regular.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: 'Inter', sans-serif;
@@ -195,6 +200,15 @@
 
 .mobile-nav-toggle[aria-expanded="true"]::after {
   transform: translateY(-8px) rotate(-45deg);
+}
+
+/* The sidebar is always visible from md up, so the hamburger is mobile-only.
+   This must live after the display:flex rule above, which is emitted after
+   Tailwind utilities and would otherwise beat the md:hidden class. */
+@media (min-width: 768px) {
+  .mobile-nav-toggle {
+    display: none;
+  }
 }
 
 /* Dark mode support */

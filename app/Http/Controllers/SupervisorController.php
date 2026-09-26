@@ -117,7 +117,7 @@ class SupervisorController extends BaseController
             $department = is_array($departments) && count($departments) > 0 ? reset($departments) : 'General';
             $degree = ($i % 2 === 0) ? 'MSc' : 'BSc';
             $rows[] = sprintf(
-                'Student %s,Lastname,MAT/%04d,%s@universe.edu,%s,080300%04d,,%s,%s,%s %s,',
+                'Student %s,Lastname,MAT/%04d,%s@universe.edu.ng,%s,080300%04d,,%s,%s,%s %s,',
                 $i, $i, strtolower($faculty), $degree, $i, $faculty, $department, $degree, strtolower(preg_replace('/\s+/', '', $department))
             );
             $i++;

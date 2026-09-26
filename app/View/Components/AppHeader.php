@@ -73,6 +73,7 @@ class AppHeader extends Component
                     ['label' => 'Meetings', 'href' => route('supervisor.meetings'), 'icon' => 'fa-comments', 'match' => ['supervisor.meetings', 'supervisor.meetings.*']],
                     ['label' => 'Analytics', 'href' => route('supervisor.analytics'), 'icon' => 'fa-chart-pie', 'match' => ['supervisor.analytics']],
                     ['label' => 'Resources', 'href' => route('supervisor.resources.pending'), 'icon' => 'fa-check-to-mark', 'match' => ['supervisor.resources.pending']],
+                    ['label' => 'Manuscripts', 'href' => route('supervisor.manuscripts'), 'icon' => 'fa-file-lines', 'match' => ['supervisor.manuscripts*']],
                 ],
                 'menu_links' => [
                     ['label' => 'Supervisor Dashboard', 'href' => route('supervisor.dashboard'), 'icon' => 'fa-chart-line'],
@@ -83,6 +84,8 @@ class AppHeader extends Component
                     'supervisor.meetings' => ['label' => 'Schedule Meeting', 'href' => route('supervisor.meetings.create'), 'icon' => 'fa-calendar-plus'],
                     'supervisor.meetings.create' => ['label' => 'Meeting Queue', 'href' => route('supervisor.meetings'), 'icon' => 'fa-comments'],
                     'supervisor.resources.pending' => ['label' => 'Review Submissions', 'href' => route('supervisor.resources.pending'), 'icon' => 'fa-check-to-mark'],
+                    'supervisor.manuscripts' => ['label' => 'Review Manuscripts', 'href' => route('supervisor.manuscripts'), 'icon' => 'fa-file-lines'],
+                    'supervisor.manuscripts.show' => ['label' => 'Review Manuscripts', 'href' => route('supervisor.manuscripts'), 'icon' => 'fa-file-lines'],
                     'supervisor.students' => ['label' => 'View Analytics', 'href' => route('supervisor.analytics'), 'icon' => 'fa-chart-pie'],
                 ],
             ],

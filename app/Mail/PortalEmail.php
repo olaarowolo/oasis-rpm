@@ -234,6 +234,91 @@ class PortalEmail extends Mailable
                     'url' => $this->data['url'] ?? '',
                 ],
             ],
+            'defense-section-submitted' => [
+                'subject' => 'New defense manuscript section submitted by '.($this->data['studentName'] ?? 'a student'),
+                'data' => [
+                    'title' => 'New section submitted',
+                    'studentName' => $this->data['studentName'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'sectionTitle' => $this->data['sectionTitle'] ?? '',
+                    'comment' => $this->data['comment'] ?? '',
+                    'url' => $this->data['url'] ?? '',
+                    'statusLabel' => 'SUBMITTED',
+                ],
+            ],
+            'defense-section-accepted' => [
+                'subject' => 'Your "' . ($this->data['sectionTitle'] ?? 'section') . '" section has been ACCEPTED',
+                'data' => [
+                    'title' => 'Section accepted',
+                    'studentName' => $this->data['studentName'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'sectionTitle' => $this->data['sectionTitle'] ?? '',
+                    'comment' => $this->data['comment'] ?? '',
+                    'reviewerName' => $this->data['reviewerName'] ?? '',
+                    'statusLabel' => $this->data['statusLabel'] ?? 'ACCEPTED',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
+            'defense-section-conditional' => [
+                'subject' => 'Your "' . ($this->data['sectionTitle'] ?? 'section') . '" section has been CONDITIONALLY APPROVED',
+                'data' => [
+                    'title' => 'Section conditionally approved',
+                    'studentName' => $this->data['studentName'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'sectionTitle' => $this->data['sectionTitle'] ?? '',
+                    'comment' => $this->data['comment'] ?? '',
+                    'conditions' => $this->data['conditions'] ?? '',
+                    'reviewerName' => $this->data['reviewerName'] ?? '',
+                    'statusLabel' => $this->data['statusLabel'] ?? 'CONDITIONALLY APPROVED',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
+            'defense-section-revision' => [
+                'subject' => 'Revision requested on your "' . ($this->data['sectionTitle'] ?? 'section') . '" section',
+                'data' => [
+                    'title' => 'Revision requested',
+                    'studentName' => $this->data['studentName'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'sectionTitle' => $this->data['sectionTitle'] ?? '',
+                    'comment' => $this->data['comment'] ?? '',
+                    'reviewerName' => $this->data['reviewerName'] ?? '',
+                    'statusLabel' => $this->data['statusLabel'] ?? 'REVISION REQUESTED',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
+            'defense-section-rejected' => [
+                'subject' => 'Your "' . ($this->data['sectionTitle'] ?? 'section') . '" section has been REJECTED — manuscript halted',
+                'data' => [
+                    'title' => 'Section rejected — manuscript halted',
+                    'studentName' => $this->data['studentName'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'sectionTitle' => $this->data['sectionTitle'] ?? '',
+                    'comment' => $this->data['comment'] ?? '',
+                    'reviewerName' => $this->data['reviewerName'] ?? '',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
+            'defense-comment' => [
+                'subject' => 'New comment on your "' . ($this->data['sectionTitle'] ?? 'section') . '" section',
+                'data' => [
+                    'title' => 'New comment',
+                    'studentName' => $this->data['studentName'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'sectionTitle' => $this->data['sectionTitle'] ?? '',
+                    'comment' => $this->data['comment'] ?? '',
+                    'reviewerName' => $this->data['reviewerName'] ?? '',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
+            'defense-completed' => [
+                'subject' => 'Manuscript defense readiness complete',
+                'data' => [
+                    'title' => 'Manuscript ready',
+                    'studentName' => $this->data['studentName'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
         ];
 
         $view = $viewMap[$this->viewName] ?? [

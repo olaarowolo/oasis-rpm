@@ -105,8 +105,15 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 
         function iconForType(type) {
           if (type === 'success' || /approved/.test(type)) return 'fa-circle-check text-emerald-500';
-          if (type === 'warning' || /rejected/.test(type)) return 'fa-circle-exclamation text-amber-500';
+          if (type === 'warning' || /rejected/.test(type)) return 'fa-circle-exclamation text-red-500';
           if (/meeting/.test(type)) return 'fa-calendar-check text-blue-500';
+          if (/defense_section_accepted/.test(type) || /defense_completed/.test(type)) return 'fa-circle-check text-emerald-500';
+          if (/defense_section_conditional/.test(type)) return 'fa-circle-half-stroke text-blue-500';
+          if (/defense_section_revision/.test(type)) return 'fa-rotate-right text-amber-500';
+          if (/defense_section_rejected/.test(type)) return 'fa-circle-exclamation text-red-500';
+          if (/defense_section_submitted/.test(type)) return 'fa-file-arrow-up text-blue-500';
+          if (/defense_comment/.test(type)) return 'fa-comment-dots text-slate-500';
+          if (/defense_conditions_acked/.test(type)) return 'fa-tag text-slate-500';
           return 'fa-bell text-slate-400';
         }
 

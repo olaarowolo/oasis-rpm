@@ -1,6 +1,6 @@
 <x-layouts.public
-  title="TheOAsis Research Supervision Portal | From Topic To Completion"
-  description="A multi-tenant research supervision portal for universities. Track 12 research stages, streamline supervisor feedback, and improve student outcomes."
+  title="AfriScribe Supervise | Research Supervision From Topic To Completion"
+  description="A multi-tenant research supervision platform for universities. Track 12 research stages, streamline supervisor feedback, and improve student outcomes."
 >
   <section id="hero-section" class="mesh-bg relative overflow-hidden section-reveal in-view">
     <span class="float-orb w-56 h-56 bg-amber-300/40 top-16 -right-20"></span>

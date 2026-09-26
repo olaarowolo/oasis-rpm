@@ -1,8 +1,8 @@
 name: Deploy Laravel to SharedHost
 
 on:
-  push:
-    # branches: [main]
+  # push:
+  #   # branches: [main]
 
 jobs:
   deploy:

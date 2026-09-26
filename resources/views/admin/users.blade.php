@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Manage Users | TheOAsis Research Supervision System')
+@section('title', 'Manage Users | AfriScribe Supervise')
 
 @section('content')
   @php

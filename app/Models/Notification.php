@@ -20,6 +20,14 @@ class Notification extends Model
     public const TYPE_RESOURCE_REJECTED = 'resource_rejected';
     public const TYPE_ARCHIVE_SUBMITTED = 'archive_submitted';
     public const TYPE_ARCHIVE_APPROVED = 'archive_approved';
+    public const TYPE_DEFENSE_SECTION_SUBMITTED = 'defense_section_submitted';
+    public const TYPE_DEFENSE_SECTION_ACCEPTED = 'defense_section_accepted';
+    public const TYPE_DEFENSE_SECTION_CONDITIONAL = 'defense_section_conditional';
+    public const TYPE_DEFENSE_SECTION_REVISION = 'defense_section_revision';
+    public const TYPE_DEFENSE_SECTION_REJECTED = 'defense_section_rejected';
+    public const TYPE_DEFENSE_COMMENT = 'defense_comment';
+    public const TYPE_DEFENSE_CONDITIONS_ACKED = 'defense_conditions_acked';
+    public const TYPE_DEFENSE_COMPLETED = 'defense_completed';
 
     protected $fillable = [
         'university_id',

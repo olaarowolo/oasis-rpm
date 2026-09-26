@@ -6,7 +6,7 @@
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
     
     <!-- Brand -->
-    <a href="/" class="flex items-center gap-3 min-w-0" aria-label="TheOAsis Research Portal - Home">
+    <a href="/" class="flex items-center gap-3 min-w-0" aria-label="AfriScribe Supervise - Home">
       <span class="h-11 px-3 flex items-center justify-center shrink-0 rounded-xl bg-academic-900 shadow-sm">
         <img 
           src="{{ asset('img/afriscribe-logo-white.png') }}" 
@@ -17,17 +17,9 @@
         >
       </span>
       <div class="min-w-0">
-        <span class="font-display font-bold text-sm sm:text-base text-academic-900 truncate block">TheOAsis Research Portal</span>
+        <span class="font-display font-bold text-sm sm:text-base text-academic-900 truncate block">AfriScribe Supervise</span>
       </div>
     </a>
-
-    <!-- Trust Signal -->
-    <div class="public-header__trust hidden lg:inline-flex" aria-hidden="true">
-      <svg class="public-header__trust-icon" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-                    <path d="M2.5 5L4.5 7L7.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-      <span>Built for UG and PG research</span>
-    </div>
 
     <!-- Desktop Navigation -->
     <nav class="public-header__nav hidden lg:flex items-center gap-2" aria-label="Main navigation">

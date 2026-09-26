@@ -16,9 +16,14 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-v4compatibility.woff2"
   },
   "resources/css/landing.css": {
-    "file": "assets/landing-a22bfba7.css",
+    "file": "assets/landing-32e5c750.css",
     "isEntry": true,
     "src": "resources/css/landing.css"
+  },
+  "resources/js/defense-readiness.js": {
+    "file": "assets/defense-readiness-f1ace710.js",
+    "isEntry": true,
+    "src": "resources/js/defense-readiness.js"
   },
   "resources/js/header.css": {
     "file": "assets/header-21febd1a.css",
@@ -34,7 +39,7 @@
     "css": [
       "assets/header-21febd1a.css"
     ],
-    "file": "assets/header-b3006ad9.js",
+    "file": "assets/header-ceb59999.js",
     "isEntry": true,
     "src": "resources/js/header.js"
   },
@@ -42,5 +47,10 @@
     "file": "assets/public-header-f1647c96.js",
     "isEntry": true,
     "src": "resources/js/public-header.js"
+  },
+  "resources/js/rich-text-editor.js": {
+    "file": "assets/rich-text-editor-532e0227.js",
+    "isEntry": true,
+    "src": "resources/js/rich-text-editor.js"
   }
 }

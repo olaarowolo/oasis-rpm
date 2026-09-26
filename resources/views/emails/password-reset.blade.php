@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Password Reset - TheOAsis Research Portal</title>
+    <title>Password Reset - AfriScribe Supervise</title>
 </head>
 <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
     <div style="background: linear-gradient(to right, #002744, #0b69a3); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0;">TheOAsis Research Portal</h1>
+        <h1 style="color: white; margin: 0;">AfriScribe Supervise</h1>
         <p style="color: #a0c0e0; margin: 5px 0 0;">Password Reset Request</p>
     </div>
 
     <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
         <h2 style="color: #002744; margin-top: 0;">Hello, {{ $userName }}!</h2>
 
-        <p>We received a request to reset your password for your TheOAsis Research Portal account. If you didn't make this request, you can safely ignore this email.</p>
+        <p>We received a request to reset your password for your AfriScribe Supervise account. If you didn't make this request, you can safely ignore this email.</p>
 
         <p>To reset your password, click the button below:</p>
 
@@ -39,8 +39,7 @@
         </p>
 
         <p style="color: #999; font-size: 12px; margin-top: 30px;">
-            TheOAsis Research Portal<br>
-            by Afriscribe
+            AfriScribe Supervise
         </p>
     </div>
 

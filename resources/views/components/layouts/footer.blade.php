@@ -114,7 +114,7 @@
               <img src="{{ asset('img/afriscribe-logo-white.png') }}" alt="AfriScribe" class="h-6 w-auto object-contain" loading="lazy" decoding="async">
             </div>
             <div>
-              <p id="footer-brand-title" class="text-base font-bold text-white sm:text-lg">{{ $brandConfig['name'] ?? config('app.name', 'TheOAsis Research Supervision Portal') }}</p>
+              <p id="footer-brand-title" class="text-base font-bold text-white sm:text-lg">{{ $brandConfig['name'] ?? config('app.name', 'AfriScribe Supervise') }}</p>
               <p class="text-xs text-amber-200/90">{{ $brandConfig['tagline'] ?? 'From topic to completion, with clarity.' }}</p>
             </div>
           </div>
@@ -187,7 +187,8 @@
           @if(isset($slot->bottom) && $slot->bottom)
             {{ $slot->bottom }}
           @else
-            <p>&copy; {{ date('Y') }} {{ $brandConfig['name'] ?? config('app.name', 'TheOAsis Research Supervision Portal') }}. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} {{ $brandConfig['name'] ?? config('app.name', 'AfriScribe Supervise') }}. All rights reserved.</p>
+            <p class="mt-1 text-[11px] text-slate-500">Inspired by <a href="https://olaarowolo.com/OAsis-AA" target="_blank" rel="noopener" class="underline hover:text-amber-300 transition">OAsis Academic Adventures</a>.</p>
           @endif
         </div>
 
@@ -224,7 +225,7 @@
                 <i class="fa-solid {{ $role === 'super_admin' ? 'fa-crown' : 'fa-flask' }} text-xs"></i>
               </div>
               <div class="min-w-0">
-                <p class="truncate text-xs font-bold text-slate-900 dark:text-white">{{ $brandConfig['name'] ?? config('app.name', 'TheOAsis Research Supervision Portal') }}</p>
+                <p class="truncate text-xs font-bold text-slate-900 dark:text-white">{{ $brandConfig['name'] ?? config('app.name', 'AfriScribe Supervise') }}</p>
                 <p class="truncate text-[11px] text-slate-500 dark:text-slate-400">{{ $roleConfig['label'] ?? 'Research Supervision Portal' }} &bull; {{ $scopeLabel }}</p>
                 @if($showVersion)
                   <p class="truncate text-[10px] text-slate-400 dark:text-slate-500">v{{ config('app.version', '1.0.0') }}</p>

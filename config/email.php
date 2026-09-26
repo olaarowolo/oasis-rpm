@@ -9,9 +9,9 @@ return [
     |
     */
 
-    'from_address' => env('MAIL_FROM_ADDRESS', 'noreply@research.edu'),
+    'from_address' => env('MAIL_FROM_ADDRESS', 'noreply@research.edu.ng'),
     'from_name' => env('MAIL_FROM_NAME', 'Research Supervision Portal'),
-    'reply_to' => env('MAIL_REPLY_TO_ADDRESS', 'support@research.edu'),
+    'reply_to' => env('MAIL_REPLY_TO_ADDRESS', 'support@research.edu.ng'),
 
     /*
     |--------------------------------------------------------------------------

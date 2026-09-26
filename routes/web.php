@@ -21,6 +21,7 @@ use App\Models\MeetingLog;
 use App\Models\ResourceProgress;
 use App\Models\University;
 use App\Models\User;
+use App\Models\DefenseReadinessDocument;
 
 /*
 |--------------------------------------------------------------------------
@@ -347,6 +348,38 @@ Route::middleware(['app.auth', 'role:supervisor'])->prefix('/supervisor')->group
 
         return view('supervisor.resources', compact('pendingResources'));
     })->name('supervisor.resources.pending');
+
+    Route::get('/manuscripts', function () {
+        $documents = DefenseReadinessDocument::where('university_id', session('university_id'))
+            ->whereHas('student', function ($q) {
+                $q->where('supervisor_id', session('supervisor_id'));
+            })
+            ->with('student')
+            ->get();
+
+        return view('supervisor.manuscripts.index', compact('documents'));
+    })->name('supervisor.manuscripts');
+
+    Route::get('/manuscripts/{document}', function ($documentId) {
+        $document = DefenseReadinessDocument::where('university_id', session('university_id'))
+            ->whereHas('student', function ($q) {
+                $q->where('supervisor_id', session('supervisor_id'));
+            })
+            ->with([
+                'student.user',
+                'sections.versions',
+                'sections.reviews.reviewer',
+                'sections.children.versions',
+                'sections.children.reviews.reviewer',
+            ])
+            ->find($documentId);
+
+        if (! $document) {
+            abort(404);
+        }
+
+        return view('supervisor.manuscripts.show', compact('document'));
+    })->name('supervisor.manuscripts.show');
 });
 
 // ================= STUDENT ROUTES =================
@@ -425,10 +458,12 @@ Route::middleware(['app.auth', 'role:student'])->prefix('/student')->group(funct
             + ($resourceRatio * 15)
         );
 
+        $sectionId = request()->query('section');
+
         return view('student.defense-readiness', compact(
             'hasApprovedTopic', 'progressPercentage', 'hasFinalDocument',
             'completedMeetings', 'requiredMeetings', 'completedResources',
-            'totalResources', 'defenseScore'
+            'totalResources', 'defenseScore', 'sectionId'
         ));
     })->name('student.defense-readiness');
 });

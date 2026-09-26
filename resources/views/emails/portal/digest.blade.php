@@ -30,7 +30,7 @@
       <p style="margin:6px 0 14px;"><a href="{{ $url }}" style="display:inline-block;padding:10px 18px;background:{{ $brandDark }};color:#fff;text-decoration:none;border-radius:10px;font-size:13px;font-weight:700;">Open the portal</a></p>
     @endif
   </div>
-  <div style="padding:14px 24px;border-top:1px solid {{ $line }};color:{{ $muted }};font-size:11px;">This is an automated message from the {{ $portalBrand ?? 'TheOAsis' }} {{ $portalName ?? 'Research Supervision Portal' }} for {{ $universityName ?? 'your university' }}. Please do not reply.</div>
+  <div style="padding:14px 24px;border-top:1px solid {{ $line }};color:{{ $muted }};font-size:11px;">This is an automated message from the {{ $portalBrand ?? 'AfriScribe Supervise' }} {{ $portalName ?? 'Research Supervision Portal' }} for {{ $universityName ?? 'your university' }}. Please do not reply.</div>
 </div>
 </body>
 </html>

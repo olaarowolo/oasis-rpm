@@ -1,6 +1,6 @@
 @extends('layouts.supervisor')
 
-@section('title', 'Supervisor Hub | TheOAsis Research Supervision System')
+@section('title', 'Supervisor Hub | AfriScribe Supervise')
 
 @section('content')
   @include('partials.dashboards.supervisor-welcome')

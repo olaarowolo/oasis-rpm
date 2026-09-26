@@ -152,7 +152,7 @@
           <form id="gate-student-email-form" onsubmit="handleStudentEmailSubmit(event)" class="space-y-3 text-xs">
             <div>
               <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">University Email</label>
-              <input id="login-student-email" type="email" placeholder="name@university.edu" autocomplete="email" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 f      <!-- Student login form (default tab) - Email based OTP flow -->
+              <input id="login-student-email" type="email" placeholder="name@university.edu.ng" autocomplete="email" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 f      <!-- Student login form (default tab) - Email based OTP flow -->
       <div id="gate-student-box" class="space-y-3">
         <!-- Step 1: Email verificationon      <div id="gate-student-box" class="space-y-3">
         <!-- Step f        <!-- Step 1: Email verification -->
@@ -160,7 +160,7 @@
                 <p class="text-[11px] textsu            Enter your <strong>university email</strong> to receive00          </p>
           <form id="gate-student-email-form" onsubmit="handleStudentEmaiti          <fo-2            <div>
               <label class="block font-semibold text-slate-700 dark:text-slate-300 
-          </f              <liv              <input id="login-student-email" type="email" placeholder="name@university.edu" autocomplete="email-y      <div id="gate-student-box" class="space-y-3">
+          </f              <liv              <input id="login-student-email" type="email" placeholder="name@university.edu.ng" autocomplete="email-y      <div id="gate-student-box" class="space-y-3">
         <!-- Step 1: Email verificationon      <div id="gate-student-box" class="space-y-3">
         <!-- Step f        <!-- Step 1: Email verification -->
       d=        <div id="student-email-step">
@@ -289,7 +289,7 @@
         </div>
         <div>
           <label class="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Work Email</label>
-          <input id="demo-email" type="email" placeholder="name@university.edu" autocomplete="email" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 dark:text-white">
+          <input id="demo-email" type="email" placeholder="name@university.edu.ng" autocomplete="email" class="w-full p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-academic-600 dark:text-white">
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>

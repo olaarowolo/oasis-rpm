@@ -2,7 +2,7 @@
 
 return [
     'brand' => [
-        'name' => 'TheOAsis Research Supervision Portal',
+        'name' => 'AfriScribe Supervise',
         'tagline' => 'From topic to completion, with clarity.',
         'description' => 'A multi-tenant research supervision platform for universities, students, supervisors and research leaders.',
     ],
@@ -119,6 +119,7 @@ return [
                 ['label' => 'Meetings', 'route' => 'supervisor.meetings', 'icon' => 'fa-comments'],
                 ['label' => 'Analytics', 'route' => 'supervisor.analytics', 'icon' => 'fa-chart-pie'],
                 ['label' => 'Resource approvals', 'route' => 'supervisor.resources.pending', 'icon' => 'fa-check-to-mark'],
+                ['label' => 'Manuscripts', 'route' => 'supervisor.manuscripts', 'icon' => 'fa-file-lines'],
             ],
             'support' => [
                 ['label' => 'Help and support', 'route' => 'public.contact'],
