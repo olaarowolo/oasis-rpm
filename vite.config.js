@@ -10,6 +10,7 @@ export default defineConfig({
         'resources/js/public-header.js',
         'resources/js/rich-text-editor.js',
         'resources/js/defense-readiness.js',
+        'resources/js/error-page.js',
       ],
       refresh: [
         'app/**',

@@ -16,7 +16,7 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-v4compatibility.woff2"
   },
   "resources/css/landing.css": {
-    "file": "assets/landing-32e5c750.css",
+    "file": "assets/landing-9d274cd9.css",
     "isEntry": true,
     "src": "resources/css/landing.css"
   },
@@ -24,6 +24,11 @@
     "file": "assets/defense-readiness-f1ace710.js",
     "isEntry": true,
     "src": "resources/js/defense-readiness.js"
+  },
+  "resources/js/error-page.js": {
+    "file": "assets/error-page-89a7fc87.js",
+    "isEntry": true,
+    "src": "resources/js/error-page.js"
   },
   "resources/js/header.css": {
     "file": "assets/header-21febd1a.css",

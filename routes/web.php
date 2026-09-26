@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ErrorReportController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SupervisorController;
 use App\Http\Controllers\UserInvitationController;
@@ -65,6 +66,13 @@ Route::controller(PublicPageController::class)->group(function () {
     Route::get('/security', 'security')->name('public.security');
     Route::get('/privacy', 'privacy')->name('public.privacy');
 });
+
+// Error page support reports. Publicly reachable because errors also happen
+// before sign in, and throttled so the endpoint cannot be used to flood the
+// support mailbox.
+Route::post('/support/error-report', [ErrorReportController::class, 'store'])
+    ->middleware('throttle:3,1')
+    ->name('support.error-report');
 
 // Login page - redirects authenticated users to their dashboard
 Route::get('/login', function (Request $request) {

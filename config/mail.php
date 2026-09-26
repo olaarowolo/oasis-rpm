@@ -42,7 +42,10 @@ return [
             'encryption' => env('MAIL_ENCRYPTION', 'tls'),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            // Bounded so a hung mail server cannot stall a response. This
+            // matters most on the error reporting path, which sends from
+            // inside exception handling.
+            'timeout' => env('MAIL_TIMEOUT', 15),
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
             // Some shared-hosting mail servers (older Exim on cPanel) complete
             // the TLS handshake in a way PHP's strict defaults reject, surfacing

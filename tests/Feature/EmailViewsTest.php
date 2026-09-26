@@ -2,8 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Mail\ErrorAlertMail;
 use App\Mail\PortalEmail;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 use Tests\TestCase;
 
 class EmailViewsTest extends TestCase
@@ -32,8 +34,7 @@ class EmailViewsTest extends TestCase
             'defense-completed',
         ];
 
-        foreach ($views as $view) {
-            $mail = new PortalEmail($view, [
+        foreach ($views as $view) {            $mail = new PortalEmail($view, [
                 'studentName' => 'Ada Okafor',
                 'topic' => 'AI for Student Mentoring',
                 'resourceTitle' => 'Project Planning Guide',
@@ -69,6 +70,48 @@ class EmailViewsTest extends TestCase
             $this->assertIsString($html);
             $this->assertStringContainsString('TheOAsis', $html);
         }
+    }
+
+    public function test_error_alert_view_renders_for_both_sources(): void
+    {
+        $context = [
+            'source' => 'automatic',
+            'reference_code' => 'SUP-AB12CD',
+            'environment' => 'production',
+            'level' => 'CRITICAL',
+            'exception' => RuntimeException::class,
+            'message' => 'Call to a member function on null',
+            'origin' => '/app/Http/Controllers/ProposalController.php:118',
+            'occurred_at' => '2026-09-26T14:00:00+00:00',
+            'trace' => [
+                ['file' => '/app/Http/Controllers/ProposalController.php', 'line' => 118, 'call' => 'App\Http\Controllers\ProposalController->store'],
+            ],
+            'request' => [
+                'method' => 'POST',
+                'url' => 'https://supervise.afriscribe.org/api/student/proposals',
+                'route' => 'student.proposals.store',
+                'ip' => '203.0.113.9',
+                'headers' => ['user-agent' => 'Mozilla/5.0'],
+                'input' => ['topic' => 'AI and supervision', 'password' => '[redacted]'],
+            ],
+            'identity' => ['user_id' => 12, 'role' => 'student'],
+            'user_note' => null,
+        ];
+
+        $automatic = (new ErrorAlertMail($context))->renderHtml();
+        $this->assertStringContainsString('SUP-AB12CD', $automatic);
+        $this->assertStringContainsString('AI and supervision', $automatic);
+        $this->assertStringContainsString('Call to a member function on null', $automatic);
+        $this->assertStringNotContainsString('What the user was doing', $automatic);
+
+        $userReport = array_merge($context, [
+            'source' => 'user-report',
+            'user_note' => 'I was saving my proposal when the page stopped responding.',
+        ]);
+
+        $report = (new ErrorAlertMail($userReport))->renderHtml();
+        $this->assertStringContainsString('What the user was doing', $report);
+        $this->assertStringContainsString('stopped responding', $report);
     }
 
     public function test_demo_request_submission_sends_email_and_returns_success_message(): void
