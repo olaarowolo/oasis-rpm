@@ -29,3 +29,4 @@ yarn-error.log
 /vendor
 /public/css
 /public/js
+*.blade.php.backup
