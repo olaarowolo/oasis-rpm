@@ -29,8 +29,19 @@ APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://your-domain.example
 
-LOG_CHANNEL=stack
+LOG_CHANNEL=daily
 LOG_LEVEL=error
+
+ERROR_ALERT_ENABLED=true
+ERROR_ALERT_TO="tech@olaarowolo.com"
+ERROR_ALERT_ENVIRONMENTS=production
+ERROR_ALERT_THROTTLE_MINUTES=10
+ERROR_ALERT_MAX_PER_HOUR=10
+ERROR_ALERT_INCLUDE_REQUEST=true
+ERROR_PAGE_COUNTDOWN=10
+ERROR_PAGE_SUPPORT_EMAIL=tech@olaarowolo.com
+
+MAIL_TIMEOUT=15
 
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -62,6 +73,18 @@ Notes:
 
 - Set `FILESYSTEM_DISK=public` because uploaded archive documents are returned through `/storage/...` URLs.
 - Enable `SENDGRID_ENABLED` or `GEMINI_ENABLED` only when the corresponding credentials are valid on the server.
+- `LOG_CHANNEL=daily` keeps a rotating 14 day log, which is what an error alert points you at. The former `stack`/`single` channel never rotated.
+- The `ERROR_ALERT_*` keys drive the automated error emails to the support mailbox and the `ERROR_PAGE_*` keys drive the user facing error page. With `ERROR_ALERT_ENVIRONMENTS=production` nothing is emailed outside production. Set `ERROR_ALERT_ENABLED=false` as a kill switch during an incident, and `ERROR_PAGE_COUNTDOWN=0` to remove the countdown redirect entirely.
+- `MAIL_FROM_ADDRESS` must stay on the sending domain so alerts and user reports pass SPF/DKIM. `MAIL_TIMEOUT` bounds the SMTP wait, which matters because an alert is sent while a request is already failing.
+- After changing `.env` on the server run `php artisan config:clear` (or `php artisan config:cache` when caching), otherwise the old values stay in force.
+- Verify delivery once after deploying, with the real SMTP credentials in place:
+
+```bash
+php artisan errors:test
+php artisan errors:test --user-report --note="Post-deploy check"
+```
+
+Both commands print the resolved recipient, sender and reference code, and send a real email to `ERROR_ALERT_TO`. If nothing arrives, check the mail transport first, then the log: a failed alert is recorded as a `warning` and never interrupts the request.
 
 ## 4. First-time server setup
 
