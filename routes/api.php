@@ -81,8 +81,9 @@ Route::middleware([CheckUniversity::class])->group(function () {
         // Proposals
         Route::get('/proposals', [ProposalController::class, 'listStudentProposals']);
         Route::post('/proposals', [ProposalController::class, 'submitProposal']);
-        Route::get('/proposals/{id}', [ProposalController::class, 'getProposal']);
-        Route::put('/proposals/{id}', [ProposalController::class, 'updateProposal']);
+        Route::get('/proposals/{id}', [ProposalController::class, 'studentGetProposal']);
+        Route::put('/proposals/{id}', [ProposalController::class, 'studentUpdateProposal']);
+        Route::delete('/proposals/{id}', [ProposalController::class, 'studentDeleteProposal']);
 
         // Meeting Logs
         Route::get('/meetings', [MeetingLogController::class, 'listStudentMeetings']);

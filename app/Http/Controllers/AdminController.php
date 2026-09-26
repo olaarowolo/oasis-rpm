@@ -134,7 +134,7 @@ class AdminController extends BaseController
 
     public function createUser(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $request->validate(array_merge([
             'university_id' => 'required|exists:universities,id',
             'email' => 'required|email|unique:users',
             'name' => 'required|string',
@@ -147,13 +147,17 @@ class AdminController extends BaseController
                 'nullable',
                 'exists:supervisors,id',
             ],
-        ]);
+        ], $this->roleSpecificRules($request->input('role'))));
 
         $validated['require_supervisor_selection'] = $request->boolean('require_supervisor_selection');
 
         if (! $this->currentUserIsSuperAdmin()) {
-            if ($validated['role'] === 'super_admin') {
-                return $this->error('Unauthorized to create super admin accounts', 403);
+            // An admin may only enrol supervisors and students. The privileged
+            // roles are reserved to platform-level operators; attempting to
+            // supply them is refused rather than silently downgraded, so the
+            // policy is enforced here and in the web controller consistently.
+            if (in_array((string) $validated['role'], ['admin', 'super_admin'], true)) {
+                return $this->error('You are not authorised to create admin or super admin accounts.', 403);
             }
 
             $validated['university_id'] = $this->currentUniversityId();
@@ -209,8 +213,8 @@ class AdminController extends BaseController
         ]);
 
         if (! $this->currentUserIsSuperAdmin()) {
-            if (($validated['role'] ?? $user->role) === 'super_admin') {
-                return $this->error('Unauthorized to assign the super admin role', 403);
+            if (in_array((string) ($validated['role'] ?? $user->role), ['admin', 'super_admin'], true)) {
+                return $this->error('You are not authorised to assign the admin or super admin role.', 403);
             }
 
             $validated['university_id'] = $this->currentUniversityId();
@@ -475,7 +479,22 @@ class AdminController extends BaseController
             return true;
         }
 
-        return $user->role !== 'super_admin'
+        // Non-super-admin operators may not touch admin or super admin
+        // records at all, so privileged accounts are invisible to them.
+        return ! in_array($user->role, ['admin', 'super_admin'], true)
             && $this->canManageUniversityRecord($user->university_id === null ? null : (int) $user->university_id);
+    }
+
+    protected function roleSpecificRules(string $role): array
+    {
+        if ($role === 'supervisor') {
+            return [
+                'supervisor_title' => 'required|string|max:255',
+                'research_areas' => 'nullable|string',
+                'booking_url' => 'nullable|url|max:2048',
+            ];
+        }
+
+        return [];
     }
 }

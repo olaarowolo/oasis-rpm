@@ -138,6 +138,18 @@ class PortalEmail extends Mailable
                     'url' => $this->data['url'] ?? '',
                 ],
             ],
+            'topic-revised' => [
+                'subject' => 'Topic proposal revised by '.($this->data['studentName'] ?? 'a student'),
+                'data' => [
+                    'title' => 'Topic proposal revised',
+                    'studentName' => $this->data['studentName'] ?? 'Student',
+                    'topic' => $this->data['topic'] ?? '',
+                    'matric' => $this->data['matric'] ?? '',
+                    'proposalId' => $this->data['proposalId'] ?? '',
+                    'note' => $this->data['note'] ?? '',
+                    'url' => $this->data['url'] ?? '',
+                ],
+            ],
             'topic-conditionally-approved' => [
                 'subject' => 'Your topic proposal has been CONDITIONALLY APPROVED',
                 'data' => [

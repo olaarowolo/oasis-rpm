@@ -84,31 +84,34 @@ Route::get('/login', function (Request $request) {
 })->name('login');
 
 // ================= AUTHENTICATION ROUTES =================
+// OTP send and verify routes are publicly reachable by necessity, so they carry
+// their own throttling. Without it the login gate could be used to flood a
+// mailbox or to brute force a 6-digit code.
 Route::prefix('api/auth')->group(function () {
     // Student login
     Route::post('/student/login', [AuthController::class, 'loginStudent'])->name('auth.student.login');
     // Student OTP flow
-    Route::post('/student/send-otp', [AuthController::class, 'sendStudentOtp'])->name('auth.student.send-otp');
-    Route::post('/student/verify-otp', [AuthController::class, 'verifyStudentOtp'])->name('auth.student.verify-otp');
+    Route::post('/student/send-otp', [AuthController::class, 'sendStudentOtp'])->middleware('throttle:6,1')->name('auth.student.send-otp');
+    Route::post('/student/verify-otp', [AuthController::class, 'verifyStudentOtp'])->middleware('throttle:10,1')->name('auth.student.verify-otp');
     // Student account recovery (matric + lastname + knowledge-based detail)
     Route::post('/student/recovery/start', [AuthController::class, 'studentRecoveryStart'])->name('auth.student.recovery.start');
     Route::post('/student/recovery/confirm', [AuthController::class, 'studentRecoveryConfirm'])->name('auth.student.recovery.confirm');
     // Supervisor email verification (before credentials)
-    Route::post('/supervisor/send-otp', [AuthController::class, 'sendSupervisorOtp'])->name('auth.supervisor.send-otp');
-    Route::post('/supervisor/verify-otp', [AuthController::class, 'verifySupervisorOtp'])->name('auth.supervisor.verify-otp');
+    Route::post('/supervisor/send-otp', [AuthController::class, 'sendSupervisorOtp'])->middleware('throttle:6,1')->name('auth.supervisor.send-otp');
+    Route::post('/supervisor/verify-otp', [AuthController::class, 'verifySupervisorOtp'])->middleware('throttle:10,1')->name('auth.supervisor.verify-otp');
     // Supervisor login
-    Route::post('/supervisor/login', [AuthController::class, 'loginSupervisor'])->name('auth.supervisor.login');
+    Route::post('/supervisor/login', [AuthController::class, 'loginSupervisor'])->middleware('throttle:5,1')->name('auth.supervisor.login');
     // Admin email verification (before credentials)
-    Route::post('/admin/send-otp', [AuthController::class, 'sendAdminOtp'])->name('auth.admin.send-otp');
-    Route::post('/admin/verify-otp', [AuthController::class, 'verifyAdminOtp'])->name('auth.admin.verify-otp');
+    Route::post('/admin/send-otp', [AuthController::class, 'sendAdminOtp'])->middleware('throttle:6,1')->name('auth.admin.send-otp');
+    Route::post('/admin/verify-otp', [AuthController::class, 'verifyAdminOtp'])->middleware('throttle:10,1')->name('auth.admin.verify-otp');
     // Admin login (NEW FLOW: requires university_code)
-    Route::post('/admin/login', [AuthController::class, 'loginAdmin'])->name('auth.admin.login');
-    Route::post('/admin/verify-mfa', [AuthController::class, 'verifyAdminMfa'])->name('auth.admin.verify-mfa');
+    Route::post('/admin/login', [AuthController::class, 'loginAdmin'])->middleware('throttle:5,1')->name('auth.admin.login');
+    Route::post('/admin/verify-mfa', [AuthController::class, 'verifyAdminMfa'])->middleware('throttle:10,1')->name('auth.admin.verify-mfa');
     // Super Admin (platform-level) - NEW
     Route::prefix('super-admin')->group(function () {
-        Route::post('/send-otp', [AuthController::class, 'sendSuperAdminOtp'])->name('auth.super-admin.send-otp');
-        Route::post('/verify-otp', [AuthController::class, 'verifySuperAdminOtp'])->name('auth.super-admin.verify-otp');
-        Route::post('/login', [AuthController::class, 'loginSuperAdmin'])->name('auth.super-admin.login');
+        Route::post('/send-otp', [AuthController::class, 'sendSuperAdminOtp'])->middleware('throttle:6,1')->name('auth.super-admin.send-otp');
+        Route::post('/verify-otp', [AuthController::class, 'verifySuperAdminOtp'])->middleware('throttle:10,1')->name('auth.super-admin.verify-otp');
+        Route::post('/login', [AuthController::class, 'loginSuperAdmin'])->middleware('throttle:5,1')->name('auth.super-admin.login');
     });
 });
 
@@ -301,10 +304,10 @@ Route::middleware(['app.auth', 'role:supervisor'])->prefix('/supervisor')->group
             ->whereHas('student', function ($query) {
                 $query->where('supervisor_id', session('supervisor_id'));
             })
-            ->with('student')
-            ->orderByRaw("case when status = 'pending' then 0 when status = 'revision_required' then 1 when status = 'approved' then 2 else 3 end")
+            ->with(['student', 'topicHistory'])
+            ->orderByRaw("case when status = 'pending' then 0 when status = 'revision_required' then 1 when status = 'conditional' then 2 when status = 'approved' then 3 else 4 end")
             ->orderByDesc('date_submitted')
-            ->get();
+            ->paginate(15);
 
         return view('supervisor.proposals', compact('proposals'));
     })->name('supervisor.proposals');

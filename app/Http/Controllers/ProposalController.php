@@ -80,10 +80,12 @@ class ProposalController extends BaseController
 
     public function listStudentProposals(Request $request)
     {
+        $perPage = $request->get('per_page', 15);
         $proposals = Proposal::where([
             ['university_id', '=', session('university_id')],
             ['student_id', '=', session('student_id')],
-        ])->get();
+        ])->orderByDesc('date_submitted')
+            ->paginate($perPage);
 
         return $this->success($proposals, 'Proposals retrieved successfully');
     }
@@ -117,14 +119,131 @@ class ProposalController extends BaseController
         return $this->success($proposal, 'Proposal updated successfully');
     }
 
+    public function studentGetProposal(Request $request, $id)
+    {
+        $proposal = Proposal::with(['topicHistory'])->where([
+            ['university_id', '=', session('university_id')],
+            ['student_id', '=', session('student_id')],
+            ['id', '=', $id],
+        ])->first();
+
+        if (!$proposal) {
+            return $this->error('Proposal not found', 404);
+        }
+
+        return $this->success($proposal, 'Proposal retrieved successfully');
+    }
+
+    public function studentUpdateProposal(Request $request, $id)
+    {
+        $proposal = Proposal::where([
+            ['university_id', '=', session('university_id')],
+            ['student_id', '=', session('student_id')],
+            ['id', '=', $id],
+        ])->first();
+
+        if (!$proposal) {
+            return $this->error('Proposal not found', 404);
+        }
+
+        // Students can only edit proposals that are revision_required or conditional
+        if (!in_array($proposal->status, ['revision_required', 'conditional'], true)) {
+            return $this->error('Can only edit proposals with revision required or conditional status', 400);
+        }
+
+        $validated = $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'location' => 'sometimes|string|max:255',
+            'abstract' => 'sometimes|string',
+        ]);
+
+        $oldTitle = $proposal->title;
+
+        $proposal->update($validated);
+
+        TopicHistory::create([
+            'university_id' => session('university_id'),
+            'student_id' => session('student_id'),
+            'proposal_id' => $proposal->id,
+            'topic_title' => $proposal->title,
+            'action' => 'revised',
+            'note' => $oldTitle !== $validated['title'] ? 'Title changed from: ' . $oldTitle : 'Proposal revised by student',
+        ]);
+
+        // Notify supervisor of revision
+        $student = $proposal->student;
+        $supervisor = $student?->supervisor;
+
+        if ($supervisor?->user?->email) {
+            $mail = new PortalEmail('topic-revised', [
+                'studentName' => $student->full_name,
+                'studentEmail' => $student->user?->email ?? $student->email,
+                'topic' => $proposal->title,
+                'matric' => $student->matric_number,
+                'proposalId' => $proposal->proposal_id,
+                'url' => route('supervisor.proposals'),
+            ]);
+
+            try {
+                Mail::to($supervisor->user->email)->send($mail);
+            } catch (\Throwable $exception) {
+                Log::warning('Supervisor proposal revision email failed', [
+                    'proposal_id' => $proposal->proposal_id,
+                    'student_id' => $student?->id,
+                    'supervisor_id' => $supervisor->id,
+                    'recipient' => $supervisor->user->email,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        return $this->success($proposal, 'Proposal revised successfully');
+    }
+
+    public function studentDeleteProposal(Request $request, $id)
+    {
+        $proposal = Proposal::where([
+            ['university_id', '=', session('university_id')],
+            ['student_id', '=', session('student_id')],
+            ['id', '=', $id],
+        ])->first();
+
+        if (!$proposal) {
+            return $this->error('Proposal not found', 404);
+        }
+
+        // Students can only delete proposals that are not approved
+        if ($proposal->status === 'approved') {
+            return $this->error('Cannot delete approved proposal', 400);
+        }
+
+        $proposalId = $proposal->proposal_id;
+        $proposalTitle = $proposal->title;
+
+        $proposal->delete();
+
+        TopicHistory::create([
+            'university_id' => session('university_id'),
+            'student_id' => session('student_id'),
+            'proposal_id' => $id,
+            'topic_title' => $proposalTitle,
+            'action' => 'deleted',
+            'note' => 'Proposal deleted by student',
+        ]);
+
+        return $this->success(null, 'Proposal deleted successfully');
+    }
+
     public function listPendingProposals(Request $request)
     {
+        $perPage = $request->get('per_page', 15);
         $proposals = Proposal::where([
             ['university_id', '=', session('university_id')],
             ['status', '=', 'pending'],
         ])->whereHas('student', function ($query) {
             $query->where('supervisor_id', session('supervisor_id'));
-        })->with('student')->get();
+        })->with('student')->orderByDesc('date_submitted')
+            ->paginate($perPage);
 
         return $this->success($proposals, 'Pending proposals retrieved successfully');
     }

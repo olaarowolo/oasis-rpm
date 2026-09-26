@@ -242,6 +242,15 @@ class AuthController extends BaseController
             return $this->success(null, $genericMessage);
         }
 
+        if (! $this->isLoginEligible($user)) {
+            $this->logOtpLookupMiss('super_admin_precheck', 'account_not_eligible', [
+                'user_id' => $user->id,
+                'user_is_active' => (bool) $user->is_active,
+            ]);
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
         // Generate a cryptographically secure OTP
         $code = $this->generateSecureOtp();
         $expiresAt = now()->addMinutes(5);
@@ -467,6 +476,17 @@ class AuthController extends BaseController
                 'student_id' => $student->id,
                 'user_id' => $student->user_id,
             ]);
+            return $this->success(null, 'If an account matches this email, a verification code will be sent');
+        }
+
+        if (! $this->isLoginEligible($user) || ! in_array($student->status, ['active', 'graduated'], true)) {
+            $this->logOtpLookupMiss('student_precheck', 'account_not_eligible', [
+                'student_id' => $student->id,
+                'user_id' => $user->id,
+                'user_is_active' => (bool) $user->is_active,
+                'student_status' => $student->status,
+            ]);
+            $this->simulateSlowOperation();
             return $this->success(null, 'If an account matches this email, a verification code will be sent');
         }
 
@@ -863,6 +883,18 @@ public function verifyAdminOtp(Request $request)
             $this->logOtpLookupMiss('role_precheck', 'user_not_found', [
                 'role' => $role,
                 'email' => $validated['email'],
+            ]);
+            $this->simulateSlowOperation();
+            return $this->success(null, $genericMessage);
+        }
+
+        // A deactivated account must not be able to start a login. The generic
+        // response is kept so the caller cannot probe which emails are active.
+        if (! $this->isLoginEligible($user)) {
+            $this->logOtpLookupMiss('role_precheck', 'account_not_eligible', [
+                'role' => $role,
+                'user_id' => $user->id,
+                'user_is_active' => (bool) $user->is_active,
             ]);
             $this->simulateSlowOperation();
             return $this->success(null, $genericMessage);
@@ -1344,10 +1376,33 @@ public function verifyAdminOtp(Request $request)
 
     private function logOtpLookupMiss(string $flow, string $reason, array $context = []): void
     {
-        Log::debug('OTP request did not resolve to a sendable account', array_merge([
+        Log::warning('OTP request did not resolve to a sendable account', array_merge([
             'flow' => $flow,
             'reason' => $reason,
         ], $context));
+    }
+
+    /**
+     * Whether an account may begin a login. Deactivated users are refused an
+     * OTP up front rather than being allowed to reach the credential step and
+     * fail there, which produced a confusing second error after the code was
+     * already delivered.
+     */
+    private function isLoginEligible(User $user): bool
+    {
+        if (! $user->is_active) {
+            return false;
+        }
+
+        if ($user->role === 'supervisor') {
+            $supervisor = Supervisor::where('user_id', $user->id)->first();
+
+            if (! $supervisor || ! $supervisor->is_active) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

@@ -874,7 +874,7 @@ class SuperAdminWebController extends BaseController
 
     public function createUser(): View
     {
-        $selectedRole = in_array((string) request('role'), ['student', 'supervisor', 'admin', 'super_admin'], true)
+        $selectedRole = in_array((string) request('role'), ['student', 'supervisor', 'admin'], true)
             ? (string) request('role')
             : 'admin';
 
@@ -902,6 +902,17 @@ class SuperAdminWebController extends BaseController
         ]);
 
         $validated['require_supervisor_selection'] = $request->boolean('require_supervisor_selection');
+
+        // Only platform-level operators may assign the privileged roles. The
+        // enum above keeps super_admin selectable so an existing super admin
+        // can still create peers; the explicit guard below refuses anyone
+        // else, including an admin reaching this endpoint through the API.
+        if (! $this->actingUserIsSuperAdmin() && in_array((string) ($validated['role'] ?? null), ['admin', 'super_admin'], true)) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'You are not authorised to assign the selected role.');
+        }
 
         if (($validated['role'] ?? null) === 'student' && !$this->validateSupervisorMapping($validated)) {
             return redirect()->back()->withInput()->with('error', 'Selected supervisor must belong to the same university as the student.');
@@ -956,6 +967,18 @@ class SuperAdminWebController extends BaseController
             'password' => 'nullable|string|min:12|confirmed',
             'is_active' => 'nullable|boolean',
         ], $this->roleSpecificRules($request->input('role'), $user)));
+
+        // Only platform-level operators may assign the privileged roles. This
+        // screen is super-admin only by middleware, but the guard is stated
+        // explicitly so the policy cannot silently regress if the middleware
+        // broadens, and so a non-super-admin reaching this endpoint is refused
+        // rather than silently downgraded to a lesser role.
+        if (! $this->actingUserIsSuperAdmin() && in_array((string) ($validated['role'] ?? $user->role), ['admin', 'super_admin'], true)) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', 'You are not authorised to assign the selected role.');
+        }
 
         if (!$this->validateSupervisorMapping($validated)) {
             return redirect()->back()->withInput()->with('error', 'Selected supervisor must belong to the same university as the student.');
@@ -1609,6 +1632,11 @@ class SuperAdminWebController extends BaseController
         }
 
         return University::orderBy('id')->first();
+    }
+
+    protected function actingUserIsSuperAdmin(): bool
+    {
+        return session('role') === 'super_admin';
     }
 
     protected function roleSpecificRules(string $role, ?User $user = null): array

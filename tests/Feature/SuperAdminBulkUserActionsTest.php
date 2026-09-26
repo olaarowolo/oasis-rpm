@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\PortalEmail;
 use App\Models\AuditLog;
+use App\Models\Supervisor;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -161,6 +162,153 @@ class SuperAdminBulkUserActionsTest extends TestCase
         ]);
 
         $response->assertSessionHasErrors(['user_ids']);
+    }
+
+    public function test_admin_cannot_create_another_admin_or_super_admin(): void
+    {
+        $university = $this->createUniversity('Admin Scope University', 'ASU');
+        $admin = $this->createUser($university, 'scoped-admin@asu.edu', 'Scoped Admin', 'admin', true, now());
+
+        // The /super-admin/users route is gated by the super_admin role
+        // middleware, so an admin is redirected away from the operator
+        // workspace rather than being allowed to submit the form.
+        $response = $this->adminSession($admin, $university)->post('/super-admin/users', [
+            'university_id' => $university->id,
+            'name' => 'New Admin',
+            'email' => 'new-admin@asu.edu',
+            'role' => 'admin',
+            'password' => 'Password@2026',
+            'password_confirmation' => 'Password@2026',
+        ]);
+
+        $response->assertRedirect('/');
+        $this->assertNull(User::where('email', 'new-admin@asu.edu')->first());
+    }
+
+    public function test_admin_cannot_create_a_super_admin(): void
+    {
+        $university = $this->createUniversity('Admin Scope University 2', 'ASU2');
+        $admin = $this->createUser($university, 'scoped-admin2@asu2.edu', 'Scoped Admin', 'admin', true, now());
+
+        $response = $this->adminSession($admin, $university)->post('/super-admin/users', [
+            'university_id' => $university->id,
+            'name' => 'New Super Admin',
+            'email' => 'new-super@asu2.edu',
+            'role' => 'super_admin',
+            'password' => 'Password@2026',
+            'password_confirmation' => 'Password@2026',
+        ]);
+
+        $response->assertRedirect('/');
+        $this->assertNull(User::where('email', 'new-super@asu2.edu')->first());
+    }
+
+    public function test_admin_can_create_supervisors_and_students(): void
+    {
+        $university = $this->createUniversity('Admin Scope University 3', 'ASU3');
+        $admin = $this->createUser($university, 'scoped-admin3@asu3.edu', 'Scoped Admin', 'admin', true, now());
+
+        // A supervisor enrolled via the API is created inactive pending
+        // onboarding, so it cannot serve as the auto-assigned supervisor for a
+        // new student. Create one active supervisor in the database first.
+        $supervisorUser = User::create([
+            'university_id' => $university->id,
+            'email' => 'active-supervisor@asu3.edu',
+            'password' => 'Password@2026',
+            'name' => 'Active Supervisor',
+            'role' => 'supervisor',
+            'is_active' => true,
+            'email_verified_at' => now(),
+        ]);
+        \App\Models\Supervisor::create([
+            'user_id' => $supervisorUser->id,
+            'university_id' => $university->id,
+            'title' => 'Dr.',
+            'department' => 'Mass Communication',
+            'research_areas' => 'Media studies, communication',
+            'booking_url' => 'https://example.com/book',
+            'pin_code' => \Illuminate\Support\Facades\Hash::make('12345678'),
+            'passphrase' => \Illuminate\Support\Facades\Hash::make('longenoughpassphrase'),
+            'is_active' => true,
+        ]);
+
+        $supervisorResponse = $this->adminSession($admin, $university)->postJson('/api/admin/users', [
+            'university_id' => $university->id,
+            'name' => 'New Supervisor',
+            'email' => 'new-supervisor@asu3.edu',
+            'role' => 'supervisor',
+            'password' => 'Password@2026',
+            'password_confirmation' => 'Password@2026',
+            'supervisor_title' => 'Dr.',
+            'department' => 'Mass Communication',
+            'research_areas' => 'Media studies, communication',
+            'booking_url' => 'https://example.com/book',
+        ]);
+
+        $supervisorResponse->assertJsonPath('success', true);
+        $this->assertNotNull(User::where('email', 'new-supervisor@asu3.edu')->first());
+
+        $studentResponse = $this->adminSession($admin, $university)->postJson('/api/admin/users', [
+            'university_id' => $university->id,
+            'name' => 'New Student',
+            'email' => 'new-student@asu3.edu',
+            'role' => 'student',
+            'password' => 'Password@2026',
+            'password_confirmation' => 'Password@2026',
+        ]);
+
+        $studentResponse->assertJsonPath('success', true);
+        $this->assertNotNull(User::where('email', 'new-student@asu3.edu')->first());
+    }
+
+    public function test_super_admin_can_still_create_admins(): void
+    {
+        $university = $this->createUniversity('Admin Scope University 4', 'ASU4');
+        $superAdmin = $this->createUser($university, 'scoped-super@asu4.edu', 'Scoped Super Admin', 'super_admin', true, now());
+
+        $response = $this->superAdminSession($superAdmin, $university)->post('/super-admin/users', [
+            'university_id' => $university->id,
+            'name' => 'New Admin',
+            'email' => 'new-admin@asu4.edu',
+            'role' => 'admin',
+            'password' => 'Password@2026',
+            'password_confirmation' => 'Password@2026',
+        ]);
+
+        $response->assertRedirect('/super-admin/users');
+        $response->assertSessionHas('success');
+        $this->assertNotNull(User::where('email', 'new-admin@asu4.edu')->first());
+    }
+
+    public function test_super_admin_can_still_create_super_admins(): void
+    {
+        $university = $this->createUniversity('Admin Scope University 5', 'ASU5');
+        $superAdmin = $this->createUser($university, 'scoped-super2@asu5.edu', 'Scoped Super Admin', 'super_admin', true, now());
+
+        $response = $this->superAdminSession($superAdmin, $university)->post('/super-admin/users', [
+            'university_id' => $university->id,
+            'name' => 'New Super Admin',
+            'email' => 'new-super@asu5.edu',
+            'role' => 'super_admin',
+            'password' => 'Password@2026',
+            'password_confirmation' => 'Password@2026',
+        ]);
+
+        $response->assertRedirect('/super-admin/users');
+        $response->assertSessionHas('success');
+        $this->assertNotNull(User::where('email', 'new-super@asu5.edu')->first());
+    }
+
+    private function adminSession(User $actor, University $university): self
+    {
+        return $this->withSession([
+            'user_id' => $actor->id,
+            'role' => 'admin',
+            'university_id' => $university->id,
+            'mfa_verified' => true,
+            'last_activity' => time(),
+            'session_started' => time(),
+        ]);
     }
 
     private function superAdminSession(User $actor, University $university): self

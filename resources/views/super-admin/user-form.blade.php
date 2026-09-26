@@ -89,7 +89,13 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Role</label>
                         <select id="role" name="role" required class="mt-1.5 block w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:border-slate-700 dark:bg-slate-700 dark:text-white">
-                            @foreach (['super_admin' => 'Super Admin', 'admin' => 'Admin', 'supervisor' => 'Supervisor', 'student' => 'Student'] as $value => $label)
+                            @php
+                                $roleOptions = ['student' => 'Student', 'supervisor' => 'Supervisor', 'admin' => 'Admin'];
+                                if (session('role') === 'super_admin') {
+                                    $roleOptions['super_admin'] = 'Super Admin';
+                                }
+                            @endphp
+                            @foreach ($roleOptions as $value => $label)
                                 <option value="{{ $value }}" {{ old('role', $user->role) === $value ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>

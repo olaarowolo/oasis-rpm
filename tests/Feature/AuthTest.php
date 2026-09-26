@@ -847,6 +847,104 @@ class AuthTest extends TestCase
             ->assertJsonPath('message', 'If an account matches this email, a verification code will be sent');
     }
 
+    public function test_active_supervisor_receives_otp_at_their_own_address(): void
+    {
+        Mail::fake();
+
+        $context = $this->createDefenseReadinessContext();
+        $supervisor = $context['supervisor'];
+
+        $response = $this->postJson('/api/auth/supervisor/send-otp', [
+            'email' => $supervisor->user->email,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'Verification code sent to your email');
+
+        // The code must be addressed to the supervisor, not diverted elsewhere.
+        Mail::assertSent(LoginOtpMail::class, function (LoginOtpMail $mail) use ($supervisor) {
+            return $mail->hasTo($supervisor->user->email);
+        });
+
+        $this->assertDatabaseHas('otp_tokens', [
+            'user_id' => $supervisor->user_id,
+            'role' => 'supervisor',
+            'email' => $supervisor->user->email,
+        ]);
+    }
+
+    public function test_deactivated_supervisor_is_not_sent_an_otp(): void
+    {
+        Mail::fake();
+
+        $context = $this->createDefenseReadinessContext();
+        $supervisor = $context['supervisor'];
+        $supervisor->update(['is_active' => false]);
+
+        $response = $this->postJson('/api/auth/supervisor/send-otp', [
+            'email' => $supervisor->user->email,
+        ]);
+
+        // The generic response is preserved so the caller cannot probe status.
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'If an account matches this email, a verification code will be sent');
+
+        Mail::assertNothingSent();
+
+        $this->assertDatabaseMissing('otp_tokens', [
+            'user_id' => $supervisor->user_id,
+        ]);
+    }
+
+    public function test_deactivated_admin_is_not_sent_an_otp(): void
+    {
+        Mail::fake();
+
+        $context = $this->createDefenseReadinessContext();
+        $user = User::create([
+            'university_id' => $context['university']->id,
+            'email' => 'suspended.admin@fut.edu',
+            'password' => 'Admin@2026',
+            'name' => 'Suspended Admin',
+            'role' => 'admin',
+            'is_active' => false,
+        ]);
+
+        $response = $this->postJson('/api/auth/admin/send-otp', [
+            'email' => $user->email,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('message', 'If an account matches this email, a verification code will be sent');
+
+        Mail::assertNothingSent();
+
+        $this->assertDatabaseMissing('otp_tokens', [
+            'user_id' => $user->id,
+        ]);
+    }
+
+    public function test_otp_send_route_is_throttled(): void
+    {
+        Mail::fake();
+
+        $context = $this->createDefenseReadinessContext();
+        $supervisor = $context['supervisor'];
+
+        foreach (range(1, 6) as $ignored) {
+            $this->postJson('/api/auth/supervisor/send-otp', [
+                'email' => $supervisor->user->email,
+            ])->assertOk();
+        }
+
+        $this->postJson('/api/auth/supervisor/send-otp', [
+            'email' => $supervisor->user->email,
+        ])->assertStatus(429);
+    }
+
     private function makeRecoveryStudent(array $overrides = []): array
     {
         $university = University::create([

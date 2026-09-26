@@ -17,6 +17,7 @@ class EmailViewsTest extends TestCase
             'topic-submitted',
             'topic-approved',
             'topic-revision',
+            'topic-revised',
             'topic-conditionally-approved',
             'meeting-status',
             'stage-advanced',

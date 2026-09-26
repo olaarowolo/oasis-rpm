@@ -8,6 +8,7 @@ use App\Models\User;
 use Doctrine\DBAL\Types\Type;
 use Illuminate\Database\MySqlConnection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -35,7 +36,17 @@ class AppServiceProvider extends ServiceProvider
         }
 
         if ($this->app->environment('local') && config('mail.simulation.enabled', false)) {
-            Mail::alwaysTo(config('mail.simulation.address', 'olasunkanmiarowolo@gmail.com'));
+            $simulationAddress = config('mail.simulation.address', 'olasunkanmiarowolo@gmail.com');
+
+            Mail::alwaysTo($simulationAddress);
+
+            // Always announce the redirect. A silent alwaysTo() is easy to
+            // forget, and it makes OTP and notification mail look delivered
+            // while it is actually going to a single catch-all inbox.
+            Log::warning('MAIL SIMULATION IS ON: all outgoing mail is redirected to a single address', [
+                'redirect_to' => $simulationAddress,
+                'mailer' => config('mail.default'),
+            ]);
         }
 
         $resolveSupervisorSidebarData = function (): array {
