@@ -25431,3 +25431,41 @@ Did you mean one of these?
 [2026-09-25 04:12:46] testing.INFO: OTP email dispatched successfully {"email":"admin-mfa@afriscribe.org","role":"admin","user_id":1,"mailer":"array"} 
 [2026-09-25 04:13:01] testing.INFO: OTP email dispatched successfully {"email":"admin2@afriscribe.org","role":"admin","user_id":1,"mailer":"array"} 
 [2026-09-25 04:13:04] testing.DEBUG: OTP request did not resolve to a sendable account {"flow":"student_precheck","reason":"student_not_found","email":"ghost@example.com"} 
+[2026-09-26 01:43:07] local.ERROR: PHP Parse error: Syntax error, unexpected T_STRING, expecting ';' on line 1 {"exception":"[object] (Psy\\Exception\\ParseErrorException(code: 0): PHP Parse error: Syntax error, unexpected T_STRING, expecting ';' on line 1 at /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/psy/psysh/src/Exception/ParseErrorException.php:44)
+[stacktrace]
+#0 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/psy/psysh/src/CodeCleaner.php(657): Psy\\Exception\\ParseErrorException::fromParseError(Object(PhpParser\\Error))
+#1 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/psy/psysh/src/CodeCleaner.php(273): Psy\\CodeCleaner->parse('<?php echo coll...', false)
+#2 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/psy/psysh/src/Shell.php(1399): Psy\\CodeCleaner->clean(Array, false)
+#3 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/psy/psysh/src/Shell.php(1506): Psy\\Shell->appendCode('echo collect(co...', true, false)
+#4 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/psy/psysh/src/Shell.php(2215): Psy\\Shell->setCode('echo collect(co...', true)
+#5 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/tinker/src/Console/TinkerCommand.php(77): Psy\\Shell->execute('echo collect(co...')
+#6 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(36): Laravel\\Tinker\\Console\\TinkerCommand->handle()
+#7 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Container/Util.php(41): Illuminate\\Container\\BoundMethod::{closure:Illuminate\\Container\\BoundMethod::call():35}()
+#8 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(93): Illuminate\\Container\\Util::unwrapIfClosure(Object(Closure))
+#9 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Container/BoundMethod.php(35): Illuminate\\Container\\BoundMethod::callBoundMethod(Object(Illuminate\\Foundation\\Application), Array, Object(Closure))
+#10 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Container/Container.php(662): Illuminate\\Container\\BoundMethod::call(Object(Illuminate\\Foundation\\Application), Array, Array, NULL)
+#11 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Console/Command.php(211): Illuminate\\Container\\Container->call(Array)
+#12 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Command/Command.php(326): Illuminate\\Console\\Command->execute(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Illuminate\\Console\\OutputStyle))
+#13 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Console/Command.php(180): Symfony\\Component\\Console\\Command\\Command->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Illuminate\\Console\\OutputStyle))
+#14 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Application.php(1121): Illuminate\\Console\\Command->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#15 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Application.php(324): Symfony\\Component\\Console\\Application->doRunCommand(Object(Laravel\\Tinker\\Console\\TinkerCommand), Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#16 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Application.php(175): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#17 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(201): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#18 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/artisan(35): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#19 {main}
+"} 
+[2026-09-26 01:45:55] local.ERROR: The "--format" option does not exist. {"exception":"[object] (Symfony\\Component\\Console\\Exception\\RuntimeException(code: 0): The \"--format\" option does not exist. at /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Input/ArgvInput.php:222)
+[stacktrace]
+#0 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Input/ArgvInput.php(149): Symfony\\Component\\Console\\Input\\ArgvInput->addLongOption('format', 'json')
+#1 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Input/ArgvInput.php(85): Symfony\\Component\\Console\\Input\\ArgvInput->parseLongOption('--format=json')
+#2 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Input/ArgvInput.php(74): Symfony\\Component\\Console\\Input\\ArgvInput->parseToken('--format=json', true)
+#3 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Input/Input.php(56): Symfony\\Component\\Console\\Input\\ArgvInput->parse()
+#4 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Command/Command.php(285): Symfony\\Component\\Console\\Input\\Input->bind(Object(Symfony\\Component\\Console\\Input\\InputDefinition))
+#5 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Console/Command.php(180): Symfony\\Component\\Console\\Command\\Command->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Illuminate\\Console\\OutputStyle))
+#6 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Application.php(1121): Illuminate\\Console\\Command->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#7 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Application.php(324): Symfony\\Component\\Console\\Application->doRunCommand(Object(Illuminate\\Foundation\\Console\\RouteListCommand), Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#8 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/symfony/console/Application.php(175): Symfony\\Component\\Console\\Application->doRun(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#9 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/vendor/laravel/framework/src/Illuminate/Foundation/Console/Kernel.php(201): Symfony\\Component\\Console\\Application->run(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#10 /Users/olasunkanmiarowolo/Documents/supervise.afriscribe.org/artisan(35): Illuminate\\Foundation\\Console\\Kernel->handle(Object(Symfony\\Component\\Console\\Input\\ArgvInput), Object(Symfony\\Component\\Console\\Output\\ConsoleOutput))
+#11 {main}
+"} 
